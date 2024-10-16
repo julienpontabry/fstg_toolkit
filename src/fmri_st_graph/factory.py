@@ -4,6 +4,8 @@ import numpy as np
 import networkx as nx
 import pandas as pd
 
+from .graph import RC5
+
 
 def graph_from_corr_matrix(matrix: np.array, areas_desc: pd.DataFrame, corr_thr: float = 0.4,
                            abs_thr: bool = True, area_col_name: str = 'Name_Area',
@@ -218,3 +220,123 @@ def networks_from_connect_graph(graph: nx.Graph, regions: list[str]) -> nx.Graph
                 networks_graph.add_edge(i + 1, j + 1, correlation=correlation)
 
     return networks_graph
+
+
+def __find_temporal_transition(network1: set[int], network2: set[int]) -> RC5:
+    """
+    Find an RC5 temporal transition between two successive networks in time.
+
+    Parameters
+    ----------
+    network1: set[int]
+        A network at time t.
+    network2: set[int]
+        Another network at time t+1.
+
+    Returns
+    -------
+    RC5
+        The RC5 transition between the networks.
+    """
+    if len(network1 & network2) == 0:
+        return RC5.DC
+    else:
+        if network1 <= network2:
+            return RC5.EQ if network1 >= network2 else RC5.PP
+        else:
+            return RC5.PPi if network1 >= network2 else RC5.PO
+
+
+def __add_networks_graph(st_graph: nx.DiGraph, networks_graph: nx.Graph, time: int) -> None:
+    """
+    Add the networks graph at time point to the spatio-temporal graph.
+
+    Parameters
+    ----------
+    st_graph: networkx.DiGraph
+        The spatio-temporal graph.
+    networks_graph: networkx.Graph
+        The networks graph.
+    time: int
+        The time point index of the networks graph.
+    """
+    nb_nodes = len(st_graph)
+
+    for node, data in networks_graph.nodes.items():
+        st_graph.add_node(nb_nodes + node, t=time, **data)
+
+    # add twice the spatial edges because the ST-graph is directed
+    for (node1, node2), data in networks_graph.edges.items():
+        new_node1 = nb_nodes + node1
+        new_node2 = nb_nodes + node2
+        st_graph.add_edge(new_node1, new_node2, t=time, type='spatial', **data)
+        st_graph.add_edge(new_node2, new_node1, t=time, type='spatial', **data)
+
+
+def spatio_temporal_graph_from_networks_graphs(networks_graphs: tuple[nx.Graph]) -> nx.DiGraph:
+    """
+    Compute a spatio-temporal graph that encompasses networks graphs at successive time points.
+
+    Parameters
+    ----------
+    networks_graphs: tuple[networkx.Graph]
+        The networks graphs at successive time points.
+
+    Returns
+    -------
+    networkx.DiGraph
+        The spatio-temporal graph.
+
+    Example
+    -------
+    >>> netG1 = nx.Graph()
+    >>> netG1.add_nodes_from([
+    ...     (1, {'areas': {1}, 'region': 'R1', 'internal_strength': 1}),
+    ...     (2, {'areas': {2, 3}, 'region': 'R2', 'internal_strength': -0.5})])
+    >>> netG1.add_edges_from([(1, 2, {'correlation': -0.42})])
+    >>> netG2 = nx.Graph()
+    >>> netG2.add_nodes_from([
+    ...     (1, {'areas': {1, 2}, 'region': 'R1', 'internal_strength': 0.75}),
+    ...     (2, {'areas': {3}, 'region': 'R2', 'internal_strength': 1})])
+    >>> netG2.add_edges_from([(1, 2, {'correlation': 0.41})])
+    >>> st_G = spatio_temporal_graph_from_networks_graphs((netG1, netG2))
+    >>> st_G.nodes(data=True)
+    NodeDataView({1: {'t': 0, 'areas': {1}, 'region': 'R1', 'internal_strength': 1},
+                  2: {'t': 0, 'areas': {2, 3}, 'region': 'R2', 'internal_strength': -0.5},
+                  3: {'t': 1, 'areas': {1, 2}, 'region': 'R1', 'internal_strength': 0.75},
+                  4: {'t': 1, 'areas': {3}, 'region': 'R2', 'internal_strength': 1}})
+    >>> st_G.edges(data=True)
+    OutEdgeDataView([(1, 2, {'t': 0, 'type': 'spatial', 'correlation': -0.42}),
+                     (1, 3, {'type': 'temporal', 'transition': <RC5.PP: 2>}),
+                     (2, 1, {'t': 0, 'type': 'spatial', 'correlation': -0.42}),
+                     (2, 3, {'type': 'temporal', 'transition': <RC5.PO: 4>}),
+                     (2, 4, {'type': 'temporal', 'transition': <RC5.PPi: 3>}),
+                     (3, 4, {'t': 1, 'type': 'spatial', 'correlation': 0.41}),
+                     (4, 3, {'t': 1, 'type': 'spatial', 'correlation': 0.41})])
+    """
+    nb_networks_graphs = len(networks_graphs)
+    st_graph = nx.DiGraph(min_time=0, max_time=nb_networks_graphs)
+    __add_networks_graph(st_graph, networks_graphs[0], 0)
+    prev_node = 0
+
+    for t in range(nb_networks_graphs - 1):
+        networks_graph_t0 = networks_graphs[t]
+        networks_graph_t1 = networks_graphs[t + 1]
+
+        __add_networks_graph(st_graph, networks_graph_t1, t + 1)
+
+        cur_node = prev_node  # initialize variable in case there is no nodes in t0 graph
+        for node_t0, data_t0 in networks_graph_t0.nodes.items():
+            cur_node = prev_node + len(networks_graph_t0)
+
+            # filter by regions?
+            for n_t1, d_t1 in networks_graph_t1.nodes.items():
+                transition = __find_temporal_transition(data_t0['areas'], d_t1['areas'])
+
+                if transition != RC5.DC:
+                    st_graph.add_edge(prev_node + node_t0, cur_node + n_t1,
+                                      type='temporal', transition=transition)
+
+        prev_node = cur_node
+
+    return st_graph
