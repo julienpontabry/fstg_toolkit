@@ -34,6 +34,35 @@ class RC5(Enum):
         Raises
         ------
         ValueError: if no RC5 transition can be found with the given name.
+
+        Examples
+        --------
+        Access to a transition is simple as typing the right transition.
+        >>> RC5.PPi
+        <RC5.PPi: 3>
+
+        To access to all the available transition, one can iterate on the RC5 enumeration.
+        >>> for transition in RC5:
+        ...     print(transition)
+        ...
+        RC5.EQ
+        RC5.PP
+        RC5.PPi
+        RC5.PO
+        RC5.DC
+
+        When only the transition name is available, the transition itself can be retrieved
+        from it with the `from_name` static method.
+        >>> RC5.from_name("PO")
+        <RC5.PO: 4>
+        >>> RC5.from_name("EQ")
+        <RC5.EQ: 1>
+
+        When the provided name does not match any available transition, a `ValueError`
+        transition is thrown.
+        >>> RC5.from_name("NN")
+        Traceback (most recent call last):
+        ValueError: Unable to find a transition named "NN"!
         """
         available = [e for e in RC5 if e.name == name]
 
@@ -45,5 +74,6 @@ class RC5(Enum):
 
 @dataclass
 class SpatioTemporalGraph:
+    """Defines a spatio-temporal graph for functional connectivity data."""
     graph: nx.DiGraph
     areas: pd.DataFrame
