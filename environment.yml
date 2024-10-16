@@ -1,0 +1,8 @@
+name: MoS-T_fMRI
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - uv
+prefix: /home/jpontabry/opt/miniconda3/envs/MoS-T_fMRI
