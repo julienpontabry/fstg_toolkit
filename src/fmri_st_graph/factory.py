@@ -1,10 +1,12 @@
 """Defines helpers to create spatio-temporal graphs."""
 
+from typing import Iterable
+
 import numpy as np
 import networkx as nx
 import pandas as pd
 
-from .graph import RC5
+from .graph import RC5, SpatioTemporalGraph
 
 
 def graph_from_corr_matrix(matrix: np.array, areas_desc: pd.DataFrame, corr_thr: float = 0.4,
@@ -273,7 +275,7 @@ def __add_networks_graph(st_graph: nx.DiGraph, networks_graph: nx.Graph, time: i
         st_graph.add_edge(new_node2, new_node1, t=time, type='spatial', **data)
 
 
-def spatio_temporal_graph_from_networks_graphs(networks_graphs: tuple[nx.Graph]) -> nx.DiGraph:
+def spatio_temporal_graph_from_networks_graphs(networks_graphs: tuple[nx.Graph, ...]) -> nx.DiGraph:
     """
     Compute a spatio-temporal graph that encompasses networks graphs at successive time points.
 
@@ -340,3 +342,66 @@ def spatio_temporal_graph_from_networks_graphs(networks_graphs: tuple[nx.Graph])
         prev_node = cur_node
 
     return st_graph
+
+
+def spatio_temporal_graph_from_corr_matrices(corr_matrices: Iterable[np.array], areas_desc: pd.DataFrame,
+                                             region_col_name: str = 'Name_Region',
+                                             **corr_mat_kwd) -> SpatioTemporalGraph:
+    """
+    Build a spatio-temporal graph a set of temporal correlation matrices and areas description.
+
+    Parameters
+    ----------
+    corr_matrices: numpy.array
+        The successive correlation matrices (one per time point).
+    areas_desc: pandas.DataFrame
+        The description of areas to consider.
+    region_col_name: str, optional
+        The name of the column in areas_desc that gives the associated region name (default
+        is 'Name_Region').
+    corr_mat_kwd: dict, optional
+        The options for the construction of a connectivity graph from a correlation matrix.
+        For more information, see :func:`~factory.graph_from_corr_matrix`.
+
+    Returns
+    -------
+    SpatioTemporalGraph
+        A structure that hold a spatio-temporal graph of functional connectivity data.
+
+    Example
+    -------
+    >>> M1 = np.array([
+    ...     [          1,  0.12873788, -0.41853318],
+    ...     [ 0.12873788,           1,  0.75087697],
+    ...     [-0.41853318,  0.75087697,           1]])
+    >>> M2 = np.array([
+    ...     [          1,  0.52873788, -0.41853318],
+    ...     [ 0.52873788,           1,  0.75087697],
+    ...     [-0.41853318,  0.75087697,           1]])
+    >>> areas = pd.DataFrame({'Id': [1, 2, 3], 'Name_Area': ['A1', 'A2', 'A3'], 'Name_Region': ['R1', 'R1', 'R2']})
+    >>> areas.set_index('Id', inplace=True)
+    >>> result = spatio_temporal_graph_from_corr_matrices((M1, M2), areas)
+    >>> result.graph.nodes(data=True)
+    NodeDataView({1: {'t': 0, 'areas': {1}, 'region': 'R1', 'internal_strength': 1},
+                  2: {'t': 0, 'areas': {2}, 'region': 'R1', 'internal_strength': 1},
+                  3: {'t': 0, 'areas': {3}, 'region': 'R2', 'internal_strength': 1},
+                  4: {'t': 1, 'areas': {1, 2}, 'region': 'R1', 'internal_strength': 0.52873788},
+                  5: {'t': 1, 'areas': {3}, 'region': 'R2', 'internal_strength': 1}})
+    >>> result.graph.edges(data=True)
+    OutEdgeDataView([(1, 3, {'t': 0, 'type': 'spatial', 'correlation': -0.41853318}),
+                     (1, 4, {'type': 'temporal', 'transition': <RC5.PP: 2>}),
+                     (2, 3, {'t': 0, 'type': 'spatial', 'correlation': 0.75087697}),
+                     (2, 4, {'type': 'temporal', 'transition': <RC5.PP: 2>}),
+                     (3, 1, {'t': 0, 'type': 'spatial', 'correlation': -0.41853318}),
+                     (3, 2, {'t': 0, 'type': 'spatial', 'correlation': 0.75087697}),
+                     (3, 5, {'type': 'temporal', 'transition': <RC5.EQ: 1>}),
+                     (4, 5, {'t': 1, 'type': 'spatial', 'correlation': 0.75087697}),
+                     (5, 4, {'t': 1, 'type': 'spatial', 'correlation': 0.75087697})])
+    """
+    regions = areas_desc[region_col_name].unique()
+    graph =  spatio_temporal_graph_from_networks_graphs(tuple(
+        networks_from_connect_graph(
+            graph_from_corr_matrix(corr_matrix, areas_desc, region_col_name=region_col_name, **corr_mat_kwd),
+            regions)
+        for corr_matrix in corr_matrices))
+    return SpatioTemporalGraph(graph, areas_desc)
