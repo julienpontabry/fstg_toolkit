@@ -29,7 +29,7 @@ class RC5(Enum):
         Returns
         -------
         RC5
-        The corresponding RC5 transition if it has been found.
+            The corresponding RC5 transition if it has been found.
 
         Raises
         ------
