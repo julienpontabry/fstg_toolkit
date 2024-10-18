@@ -2,9 +2,12 @@
 
 from enum import Enum, auto, unique
 from dataclasses import dataclass
+from typing import Any, Hashable
 
 import networkx as nx
 import pandas as pd
+from networkx import Graph
+from networkx.classes.reportviews import NodeView
 
 
 @unique
@@ -71,8 +74,21 @@ class RC5(Enum):
             raise ValueError(f"Unable to find a transition named \"{name}\"!")
 
 
-@dataclass
+@dataclass(frozen=True)
 class SpatioTemporalGraph:
     """Defines a spatio-temporal graph for functional connectivity data."""
     graph: nx.DiGraph
     areas: pd.DataFrame
+
+    @property
+    def time_range(self) -> range:
+        return range(self.graph.graph['max_time']+1)
+
+    @property
+    def nodes(self) -> NodeView:
+        return self.graph.nodes
+
+    def subgraph(self, **conditions) -> nx.DiGraph:
+        return self.graph.subgraph([node
+                                    for node, data in self.graph.nodes.items()
+                                    if all([data[k] == v for k, v in conditions.items()])])
