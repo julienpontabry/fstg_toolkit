@@ -1,12 +1,10 @@
 """Defines spatio-temporal graphs and related structures."""
 
-from enum import Enum, auto, unique
 from dataclasses import dataclass
-from typing import Any, Hashable
+from enum import Enum, auto, unique
 
 import networkx as nx
 import pandas as pd
-from networkx import Graph
 from networkx.classes.reportviews import NodeView
 
 
@@ -74,6 +72,41 @@ class RC5(Enum):
             raise ValueError(f"Unable to find a transition named \"{name}\"!")
 
 
+def subgraph(graph: nx.Graph, **conditions: any) -> nx.Graph:
+    """Take the subgraph that matches the conditions on the nodes.
+
+    Parameters
+    ----------
+    graph: nx.Graph
+        The initial graph.
+    conditions: dict[str, any]
+        The conditions on the nodes of the subgraph as keywords arguments.
+
+    Returns
+    -------
+    nx.Graph
+        The subgraph matching the specified conditions.
+
+    Example
+    -------
+    >>> G = nx.Graph()
+    >>> G.add_nodes_from([(1, dict(a=0, b=1)), (2, dict(a=2, b=1)), (3, dict(a=2, b=2)), (4, dict(a=2, b=1))])
+    >>> G.add_edges_from([(1, 2), (3, 4), (1, 4)])
+    >>> subgraph(G).nodes
+    NodeView((1, 2, 3, 4))
+    >>> subgraph(G, a=0).nodes
+    NodeView((1,))
+    >>> subgraph(G, b=1).nodes
+    NodeView((1, 2, 4))
+    >>> subgraph(G, a=2).nodes
+    NodeView((2, 3, 4))
+    >>> subgraph(G, a=2, b=2).nodes
+    NodeView((3,))
+    """
+    return graph.subgraph([node
+                           for node, data in graph.nodes.items()
+                           if all([data[k] == v for k, v in conditions.items()])])
+
 @dataclass(frozen=True)
 class SpatioTemporalGraph:
     """Defines a spatio-temporal graph for functional connectivity data."""
@@ -82,13 +115,17 @@ class SpatioTemporalGraph:
 
     @property
     def time_range(self) -> range:
+        """Get the time range covered by the spatio-temporal graph."""
         return range(self.graph.graph['max_time']+1)
 
     @property
     def nodes(self) -> NodeView:
+        """Get the nodes of the spatio-temporal graph."""
         return self.graph.nodes
 
     def subgraph(self, **conditions) -> nx.DiGraph:
-        return self.graph.subgraph([node
-                                    for node, data in self.graph.nodes.items()
-                                    if all([data[k] == v for k, v in conditions.items()])])
+        """Helper to take the subgraph of the spatio-temporal graph matching the specified conditions.
+
+        See :func:`~graph.subgraph` for the arguments.
+        """
+        return subgraph(self.graph, **conditions)
