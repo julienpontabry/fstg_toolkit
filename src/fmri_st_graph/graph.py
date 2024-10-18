@@ -107,6 +107,7 @@ def subgraph(graph: nx.Graph, **conditions: any) -> nx.Graph:
                            for node, data in graph.nodes.items()
                            if all([data[k] == v for k, v in conditions.items()])])
 
+# TODO subclass DiGraph instead of composing it? Avoiding doing graph.graph to get the graph and remove nodes property
 @dataclass(frozen=True)
 class SpatioTemporalGraph:
     """Defines a spatio-temporal graph for functional connectivity data."""

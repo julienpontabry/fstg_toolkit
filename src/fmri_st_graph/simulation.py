@@ -1,11 +1,15 @@
 """Defines the tools to simulate spatio-temporal graphs and functional connectivity data."""
 from dataclasses import dataclass
+from functools import reduce
 from itertools import combinations
+from typing import Iterable
 
 import networkx as nx
 import numpy as np
+import pandas as pd
+from networkx.classes.reportviews import NodeView
 
-from .graph import SpatioTemporalGraph
+from .graph import RC5, SpatioTemporalGraph, subgraph
 
 
 def _fill_matrix(connections, correlations, matrix):
@@ -151,3 +155,178 @@ class CorrelationMatrixSequenceSimulator:
     def simulate(self) -> np.array:
         return np.array([self.__simulate_corr_matrix(self.graph_struct.subgraph(t=t))
                          for t in self.graph_struct.time_range])
+
+
+def __trans(sources: Iterable[int] | int, targets: Iterable[int] | int, kind: str) -> list[tuple[int, int, RC5]]:
+    if kind.lower() == 'split':
+        return [(sources, target, RC5.PPi) for target in targets]
+    elif kind.lower() == 'merge':
+        return [(source, targets, RC5.PP) for source in sources]
+    else:
+        trans = RC5.EQ if kind.lower() == 'eq' else RC5.PO
+        return [(sources, targets, trans)]
+
+
+def __id2reg(rid: int, regions: list[str]) -> str:
+    try:
+        return regions[rid-1]
+    except IndexError:
+        return "Unknown"
+
+
+def __def2areas(areas_def: tuple[int, int] | Iterable[int] | int) -> set[int]:
+    if isinstance(areas_def, tuple) and len(areas_def) == 2:
+        start, end = areas_def
+        return set(range(start, end + 1))
+    elif isinstance(areas_def, Iterable):
+        return set(areas_def)
+    else:
+        return {areas_def}
+
+
+def generate_pattern(networks_list: list[list[tuple[tuple[int, int], int, float]]],
+                     spatial_links: list[tuple[int, int, float]],
+                     temporal_links: list[tuple[Iterable[int] | int, Iterable[int] | int, str]],
+                     regions: list[str]):
+    """Generate a pattern with the specified properties.
+
+    Parameters
+    ----------
+    networks_list: list[list[tuple[tuple[int, int], int, float]]]
+        A list of nodes per time instant, defined themselves by a tuple of area range, region id and
+        internal strength.
+    spatial_links: list[tuple[int, int, float]]
+        A list of spatial edges defined by a tuple of source/target nodes and a correlation.
+    temporal_links: list[tuple[Iterable[int] | int, Iterable[int] | int, str]]
+        A list of temporal edges, defined by a tuple of source(s)/target(s) nodes and a transition.
+    regions: list[str]
+        A list of regions referenced in the pattern definition.
+
+    Returns
+    -------
+    TODO
+
+    Example
+    -------
+    >>> pattern = generate_pattern(
+    ...     networks_list=[[((1, 5), 1, -0.2), ((6, 7), 2, 0.3), ((8, 10), 2, 0.6)],
+    ...                    [((1, 5), 1, 0.6), ((6, 10), 2, -0.5)]],
+    ...     spatial_links=[(1, 2, 0.45), (4, 5, 0.8)],
+    ...     temporal_links=[(1, 4, 'eq'), ((2, 3), 5, 'merge')],
+    ...     regions=['Region 1', 'Region 2'])
+    >>> pattern.nodes
+    NodeView((1, 2, 3, 4, 5))
+    >>> pattern.edges
+    OutEdgeView([(1, 2), (1, 4), (2, 1), (2, 5), (3, 5), (4, 5), (5, 4)])
+    """
+    g = nx.DiGraph()
+    g.graph['min_time'] = 0
+    g.graph['max_time'] = len(networks_list) - 1
+
+    k = 1
+    for t, networks in enumerate(networks_list):
+        for areas_def, region_id, strength in networks:
+            g.add_node(k, t=t, areas=__def2areas(areas_def),
+                       region=__id2reg(region_id, regions),
+                       internal_strength=strength)
+            k += 1
+
+    for source, target, corr in spatial_links:
+        t = g.nodes[source]['t']
+        g.add_edge(source, target, correlation=corr, t=t, type='spatial')
+        g.add_edge(target, source, correlation=corr, t=t, type='spatial')
+
+    for temporal_link in temporal_links:
+        for source, target, rc5 in __trans(*temporal_link):
+            g.add_edge(source, target, transition=rc5, type='temporal')
+
+    return g
+
+
+class SpatioTemporalGraphSimulator:
+    def __init__(self, **patterns: SpatioTemporalGraph) -> None:
+        self.__patterns = patterns
+
+    def _simulate_areas_description(self, nb_areas_per_regions: list[int]) -> pd.DataFrame:
+        nb_regions = len(nb_areas_per_regions)
+        regions = pd.DataFrame({
+            'Id': range(1, nb_regions + 1),
+            'Name': [f"Region {k + 1}" for k in range(nb_regions)]})
+        regions.set_index('Id', inplace=True)
+
+        nb_areas = sum([n for n in nb_areas_per_regions])
+        areas = pd.DataFrame({
+            'Id': range(1, nb_areas + 1),
+            'Name': [f"Area {k + 1}" for k in range(nb_areas)]})
+        areas.set_index('Id', inplace=True)
+
+        areas_desc = pd.DataFrame({
+            'Id_Area': areas.index,
+            'Name_Area': areas['Name'],
+            'Name_Region': list(reduce(lambda x, y: x + y,
+                                       [[regions.loc[k + 1]['Name']] * n
+                                        for k, n in enumerate(nb_areas_per_regions)],
+                                       []))})
+        areas_desc.set_index('Id_Area', inplace=True)
+
+        return areas_desc
+
+    def _simulate_areas_descriptions(self, patterns: list[str | int]) -> pd.DataFrame:
+        areas_descriptions = [self.__patterns[pattern].areas
+                              for pattern in patterns
+                              if isinstance(pattern, str)]
+        return pd.concat(areas_descriptions).drop_duplicates()
+
+    @staticmethod
+    def __shift_node_data(data: dict[str, any], dt: int) -> dict[str, any]:
+        tmp = dict(data)
+        tmp['t'] += dt
+        return tmp
+
+    @staticmethod
+    def __shift_nodes(nodes: NodeView, dt: int, k: int) -> list[tuple[int, dict[str, any]]]:
+        return [(n + k, SpatioTemporalGraphSimulator.__shift_node_data(d, dt))
+                for n, d in sorted(nodes.items(), key=lambda x: x[0])]
+
+    def _simulate_graph_from_patterns(self, patterns: list[str | int]) -> nx.DiGraph:
+        g = nx.DiGraph(self.__patterns[patterns[0]].graph)
+
+        for next_pattern in patterns[1:]:
+            last_t = g.graph['max_time']
+            last_out = subgraph(g, t=last_t)
+
+            if isinstance(next_pattern, int):
+                for i in range(next_pattern):
+                    k = len(last_out.nodes)
+                    g.add_nodes_from(SpatioTemporalGraphSimulator.__shift_nodes(last_out.nodes, i+1, (i+1) * k))
+                    g.add_edges_from([(n + i * k, n + (i+1) * k,
+                                       dict(transition=RC5.EQ, type='temporal'))
+                                      for n in sorted(last_out.nodes)])
+
+                g.graph['max_time'] += next_pattern
+            elif isinstance(next_pattern, str):
+                next_pattern = self.__patterns[next_pattern].graph
+                k = max(g.nodes)
+                dt = g.graph['max_time'] - g.graph['min_time'] + 1
+
+                # add pattern (with time and nodes shifted appropriately)
+                g.add_nodes_from(SpatioTemporalGraphSimulator.__shift_nodes(next_pattern.nodes, dt, k))
+                g.add_edges_from([(e1 + k, e2 + k, d)
+                                  for (e1, e2), d in next_pattern.edges.items()])
+                g.graph['max_time'] += next_pattern.graph['max_time'] + 1
+
+                # make the connection between last pattern and next one
+                next_in = subgraph(next_pattern, t=next_pattern.graph['min_time'])
+
+                for nout, nin in zip(sorted(last_out.nodes), sorted(next_in.nodes)):
+                    g.add_edge(nout, nin + k, transition=RC5.EQ, type='temporal')
+            else:
+                raise ValueError(f"pattern type {type(next_pattern)} "
+                                 "is not recognized! It must be either "
+                                 "int or nx.DiGraph.")
+
+        return g
+
+    def simulate(self, patterns: list[str | int]) -> SpatioTemporalGraph:
+        return SpatioTemporalGraph(graph=self._simulate_graph_from_patterns(patterns),
+                                   areas=self._simulate_areas_descriptions(patterns))
