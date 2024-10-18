@@ -12,8 +12,7 @@ from .graph import RC5, SpatioTemporalGraph
 def graph_from_corr_matrix(matrix: np.array, areas_desc: pd.DataFrame, corr_thr: float = 0.4,
                            abs_thr: bool = True, area_col_name: str = 'Name_Area',
                            region_col_name: str = 'Name_Region') -> nx.Graph:
-    """
-    Compute a symmetric graph from a symmetric correlation matrix.
+    """Compute a symmetric graph from a symmetric correlation matrix.
 
     Parameters
     ----------
@@ -76,8 +75,7 @@ def graph_from_corr_matrix(matrix: np.array, areas_desc: pd.DataFrame, corr_thr:
 
 
 def __find_networks_per_region(graph: nx.Graph, regions: list[str]) -> list[tuple[str, set[int]]]:
-    """
-    Find the networks (connected components) per region in the input graph.
+    """Find the networks (connected components) per region in the input graph.
 
     Parameters
     ----------
@@ -105,8 +103,7 @@ def __find_networks_per_region(graph: nx.Graph, regions: list[str]) -> list[tupl
 
 
 def __compute_network_internal_strength(graph: nx.Graph, network: set[int]) -> float:
-    """
-    Compute the internal strength of a network in a graph.
+    """Compute the internal strength of a network in a graph.
 
     Parameters
     ----------
@@ -126,8 +123,7 @@ def __compute_network_internal_strength(graph: nx.Graph, network: set[int]) -> f
 
 
 def __find_adjacent_areas(graph: nx.Graph, network1: set[int], network2: set[int]) -> list[tuple[int, int]]:
-    """
-    Find the areas in the given networks that are adjacent in the connectivity graph.
+    """Find the areas in the given networks that are adjacent in the connectivity graph.
 
     Parameters
     ----------
@@ -150,8 +146,7 @@ def __find_adjacent_areas(graph: nx.Graph, network1: set[int], network2: set[int
 
 
 def __compute_correlation_between_networks(graph: nx.Graph, adjacent_areas: list[tuple[int, int]]) -> float:
-    """
-    Compute the correlation between networks.
+    """Compute the correlation between networks.
 
     Parameters
     ----------
@@ -170,8 +165,7 @@ def __compute_correlation_between_networks(graph: nx.Graph, adjacent_areas: list
 
 
 def networks_from_connect_graph(graph: nx.Graph, regions: list[str]) -> nx.Graph:
-    """
-    Compute a graph of networks grouped by regions from an areas connectivity graph.
+    """Compute a graph of networks grouped by regions from an areas connectivity graph.
 
     The networks are groups of areas that forms connected components within a region.
 
@@ -225,8 +219,7 @@ def networks_from_connect_graph(graph: nx.Graph, regions: list[str]) -> nx.Graph
 
 
 def __find_temporal_transition(network1: set[int], network2: set[int]) -> RC5:
-    """
-    Find an RC5 temporal transition between two successive networks in time.
+    """Find an RC5 temporal transition between two successive networks in time.
 
     Parameters
     ----------
@@ -250,8 +243,7 @@ def __find_temporal_transition(network1: set[int], network2: set[int]) -> RC5:
 
 
 def __add_networks_graph(st_graph: nx.DiGraph, networks_graph: nx.Graph, time: int) -> None:
-    """
-    Add the networks graph at time point to the spatio-temporal graph.
+    """Add the networks graph at time point to the spatio-temporal graph.
 
     Parameters
     ----------
@@ -276,8 +268,7 @@ def __add_networks_graph(st_graph: nx.DiGraph, networks_graph: nx.Graph, time: i
 
 
 def spatio_temporal_graph_from_networks_graphs(networks_graphs: tuple[nx.Graph, ...]) -> nx.DiGraph:
-    """
-    Compute a spatio-temporal graph that encompasses networks graphs at successive time points.
+    """Compute a spatio-temporal graph that encompasses networks graphs at successive time points.
 
     Parameters
     ----------
@@ -347,8 +338,7 @@ def spatio_temporal_graph_from_networks_graphs(networks_graphs: tuple[nx.Graph, 
 def spatio_temporal_graph_from_corr_matrices(corr_matrices: Iterable[np.array], areas_desc: pd.DataFrame,
                                              region_col_name: str = 'Name_Region',
                                              **corr_mat_kwd) -> SpatioTemporalGraph:
-    """
-    Build a spatio-temporal graph a set of temporal correlation matrices and areas description.
+    """Build a spatio-temporal graph a set of temporal correlation matrices and areas description.
 
     Parameters
     ----------

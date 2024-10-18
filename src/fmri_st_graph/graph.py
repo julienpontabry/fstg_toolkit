@@ -18,8 +18,7 @@ class RC5(Enum):
 
     @staticmethod
     def from_name(name: str) -> 'RC5':
-        """
-        Find the RC5 transition from its name.
+        """Find the RC5 transition from its name.
 
         Parameters
         ----------
