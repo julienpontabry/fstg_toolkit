@@ -51,12 +51,12 @@ def __spatio_temporal_object_hook(obj: dict) -> dict:
     return obj
 
 
-def load_spatio_temporal_graph(filepath: Path) -> SpatioTemporalGraph:
+def load_spatio_temporal_graph(filepath: Path | str) -> SpatioTemporalGraph:
     """Load a spatio-temporal graph from its zip file.
 
     Parameters
     ----------
-    filepath: Path
+    filepath: Path | str
         The path to the zip file.
 
     Returns
@@ -103,14 +103,14 @@ def load_spatio_temporal_graph(filepath: Path) -> SpatioTemporalGraph:
         return SpatioTemporalGraph(graph, areas)
 
 
-def save_spatio_temporal_graph(graph: SpatioTemporalGraph, filepath: Path) -> None:
+def save_spatio_temporal_graph(graph: SpatioTemporalGraph, filepath: Path | str) -> None:
     """Save a spatio-temporal graph to a zip file.
 
     Parameters
     ----------
     graph: SpatioTemporalGraph
         The spatio-temporal graph to save.
-    filepath: Path
+    filepath: Path | str
         THe path to the zip file.
 
     Example

@@ -103,10 +103,9 @@ class _CorrelationMatrixInterRegionEdgesFiller:
         def __choose_inter_region_connection(k: int, network: set, n: int) -> list[tuple[int, int]]:
             combs = list(zip([k]*len(network), network))
             selected = []
-            combs_size = len(combs)
 
-            for _ in range(min(n, combs_size)):
-                elem = combs.pop(self.rng.integers(combs_size))
+            for _ in range(min(n, len(combs))):
+                elem = combs.pop(self.rng.integers(len(combs)))
                 selected.append(elem)
 
             return selected
@@ -128,11 +127,12 @@ class _CorrelationMatrixInterRegionEdgesFiller:
 
 
 class CorrelationMatrixSequenceSimulator:
-    def __init__(self, graph_struct: SpatioTemporalGraph, threshold: float = 0.4) -> None:
+    def __init__(self, graph_struct: SpatioTemporalGraph, threshold: float = 0.4,
+                 rng: np.random.Generator = np.random.default_rng()) -> None:
         self.graph_struct = graph_struct
         self.threshold = threshold
 
-        self.__rng = np.random.default_rng()
+        self.__rng = rng
         self.__network_edges_filler = _CorrelationMatrixNetworksEdgesFiller(self.threshold, self.__rng)
         self.__inter_region_edges_filler = _CorrelationMatrixInterRegionEdgesFiller(self.threshold, self.__rng)
 
@@ -151,6 +151,8 @@ class CorrelationMatrixSequenceSimulator:
         null_elements = matrix == 0
         bound = self.threshold * 0.99
         matrix[null_elements] = self.__rng.uniform(low=-bound, high=bound, size=null_elements.sum())
+
+        return matrix
 
     def simulate(self) -> np.array:
         return np.array([self.__simulate_corr_matrix(self.graph_struct.subgraph(t=t))
