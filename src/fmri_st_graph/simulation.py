@@ -169,13 +169,6 @@ def __trans(sources: Iterable[int] | int, targets: Iterable[int] | int, kind: st
         return [(sources, targets, trans)]
 
 
-def __id2reg(rid: int, regions: list[str]) -> str:
-    try:
-        return regions[rid-1]
-    except IndexError:
-        return "Unknown"
-
-
 def __def2areas(areas_def: tuple[int, int] | Iterable[int] | int) -> set[int]:
     if isinstance(areas_def, tuple) and len(areas_def) == 2:
         start, end = areas_def
@@ -187,9 +180,8 @@ def __def2areas(areas_def: tuple[int, int] | Iterable[int] | int) -> set[int]:
 
 
 def generate_pattern(networks_list: list[list[tuple[tuple[int, int], int, float]]],
-                     spatial_links: list[tuple[int, int, float]],
-                     temporal_links: list[tuple[Iterable[int] | int, Iterable[int] | int, str]],
-                     regions: list[str]):
+                     spatial_edges: list[tuple[int, int, float]],
+                     temporal_edges: list[tuple[Iterable[int] | int, Iterable[int] | int, str]]) -> SpatioTemporalGraph:
     """Generate a pattern with the specified properties.
 
     Parameters
@@ -197,52 +189,76 @@ def generate_pattern(networks_list: list[list[tuple[tuple[int, int], int, float]
     networks_list: list[list[tuple[tuple[int, int], int, float]]]
         A list of nodes per time instant, defined themselves by a tuple of area range, region id and
         internal strength.
-    spatial_links: list[tuple[int, int, float]]
+    spatial_edges: list[tuple[int, int, float]]
         A list of spatial edges defined by a tuple of source/target nodes and a correlation.
-    temporal_links: list[tuple[Iterable[int] | int, Iterable[int] | int, str]]
+    temporal_edges: list[tuple[Iterable[int] | int, Iterable[int] | int, str]]
         A list of temporal edges, defined by a tuple of source(s)/target(s) nodes and a transition.
-    regions: list[str]
-        A list of regions referenced in the pattern definition.
 
     Returns
     -------
-    TODO
+    SpatioTemporalGraph
+        A spatio-temporal graph that can be used as a pattern.
 
     Example
     -------
     >>> pattern = generate_pattern(
     ...     networks_list=[[((1, 5), 1, -0.2), ((6, 7), 2, 0.3), ((8, 10), 2, 0.6)],
     ...                    [((1, 5), 1, 0.6), ((6, 10), 2, -0.5)]],
-    ...     spatial_links=[(1, 2, 0.45), (4, 5, 0.8)],
-    ...     temporal_links=[(1, 4, 'eq'), ((2, 3), 5, 'merge')],
-    ...     regions=['Region 1', 'Region 2'])
-    >>> pattern.nodes
+    ...     spatial_edges=[(1, 2, 0.45), (4, 5, 0.8)],
+    ...     temporal_edges=[(1, 4, 'eq'), ((2, 3), 5, 'merge')])
+    >>> pattern.graph.nodes
     NodeView((1, 2, 3, 4, 5))
-    >>> pattern.edges
+    >>> pattern.graph.edges
     OutEdgeView([(1, 2), (1, 4), (2, 1), (2, 5), (3, 5), (4, 5), (5, 4)])
+    >>> pattern.areas
+            Name_Area Name_Region
+    Id_Area
+    1          Area 1    Region 1
+    2          Area 2    Region 1
+    3          Area 3    Region 1
+    4          Area 4    Region 1
+    5          Area 5    Region 1
+    6          Area 6    Region 2
+    7          Area 7    Region 2
+    8          Area 8    Region 2
+    9          Area 9    Region 2
+    10        Area 10    Region 2
     """
     g = nx.DiGraph()
     g.graph['min_time'] = 0
     g.graph['max_time'] = len(networks_list) - 1
 
     k = 1
+    all_areas = set()
+    areas_regions = dict()
     for t, networks in enumerate(networks_list):
         for areas_def, region_id, strength in networks:
-            g.add_node(k, t=t, areas=__def2areas(areas_def),
-                       region=__id2reg(region_id, regions),
-                       internal_strength=strength)
+            areas = __def2areas(areas_def)
+            all_areas |= areas
+
+            region = f"Region {region_id}"
+            for area in areas:
+                areas_regions[area] = region
+
+            g.add_node(k, t=t, areas=areas, region=region, internal_strength=strength)
             k += 1
 
-    for source, target, corr in spatial_links:
+    for source, target, corr in spatial_edges:
         t = g.nodes[source]['t']
         g.add_edge(source, target, correlation=corr, t=t, type='spatial')
         g.add_edge(target, source, correlation=corr, t=t, type='spatial')
 
-    for temporal_link in temporal_links:
+    for temporal_link in temporal_edges:
         for source, target, rc5 in __trans(*temporal_link):
             g.add_edge(source, target, transition=rc5, type='temporal')
 
-    return g
+    all_areas = sorted(list(all_areas))
+    areas = pd.DataFrame({'Id_Area': all_areas,
+                          'Name_Area': [f"Area {a}" for a in all_areas],
+                          'Name_Region': [areas_regions[a] for a in all_areas]})
+    areas.set_index('Id_Area', inplace=True)
+
+    return SpatioTemporalGraph(graph=g, areas=areas)
 
 
 class SpatioTemporalGraphSimulator:
