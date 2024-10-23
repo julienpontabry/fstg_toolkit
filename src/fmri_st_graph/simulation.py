@@ -127,6 +127,32 @@ class _CorrelationMatrixInterRegionEdgesFiller:
 
 
 class CorrelationMatrixSequenceSimulator:
+    """Simulate a sequence of correlation matrices from a spatio-temporal graph.
+
+    Examples
+    --------
+    >>> graph = nx.DiGraph()
+    >>> graph.add_node(1, t=0, areas={1, 2}, region='Region 1', internal_strength=0.98)
+    >>> graph.add_node(2, t=0, areas={3, 4}, region='Region 2', internal_strength=-0.98)
+    >>> graph.add_edge(1, 2, correlation=0.94, t=0, type='spatial')
+    >>> graph.add_edge(2, 1, correlation=0.94, t=0, type='spatial')
+    >>> graph.graph['min_time'] = 0
+    >>> graph.graph['max_time'] = 0
+    >>> areas = pd.DataFrame({'Id_Area': [1, 2, 3, 4],
+    ...                       'Name_Area': ['A1', 'A2', 'A3', 'A4'],
+    ...                       'Name_Region': ['R1', 'R1', 'R2', 'R2']})
+    >>> areas.set_index('Id_Area', inplace=True)
+    >>> simulator = CorrelationMatrixSequenceSimulator(SpatioTemporalGraph(graph, areas), threshold=0.4,
+    ...                                                rng=np.random.default_rng(40))
+    >>> matrix = simulator.simulate()
+    >>> matrix.shape
+    (1, 4, 4)
+    >>> matrix
+    array([[[ 1.        ,  0.98      ,  0.65453818,  0.94      ],
+            [ 0.98      ,  1.        ,  0.85381682,  0.61873641],
+            [ 0.65453818,  0.85381682,  1.        , -0.98      ],
+            [ 0.94      ,  0.61873641, -0.98      ,  1.        ]]])
+    """
     def __init__(self, graph_struct: SpatioTemporalGraph, threshold: float = 0.4,
                  rng: np.random.Generator = np.random.default_rng()) -> None:
         self.graph_struct = graph_struct
@@ -155,6 +181,13 @@ class CorrelationMatrixSequenceSimulator:
         return matrix
 
     def simulate(self) -> np.array:
+        """Simulate the sequence of correlation matrices.
+
+        Returns
+        -------
+        numpy.array
+            A 3D-shaped array that contains the correlations matrices for each time.
+        """
         return np.array([self.__simulate_corr_matrix(self.graph_struct.subgraph(t=t))
                          for t in self.graph_struct.time_range])
 
@@ -261,6 +294,35 @@ def generate_pattern(networks_list: list[list[tuple[tuple[int, int], int, float]
 
 
 class SpatioTemporalGraphSimulator:
+    """Simulator for spatio-temporal graphs.
+
+    The simulator needs predefined patterns (created either manually or
+    automatically) to generate a full spatio-temporal graph with those patterns
+    included as instructed, eventually with in-between repeats.
+
+    Examples
+    --------
+    >>> pattern1 = generate_pattern(
+    ...     networks_list=[
+    ...         [((1, 2), 1, 0.7), (3, 1, 1), ((4, 5), 2, -0.8)],
+    ...         [((1, 3), 1, 0.8), ((4, 5), 2, -0.8)]],
+    ...     spatial_edges=[(1, 3, 0.5), (4, 5, 0.6)],
+    ...     temporal_edges=[((1, 2), 4, 'merge'), (3, 5, 'eq')])
+    >>> pattern2 = generate_pattern(
+    ...     networks_list=[
+    ...         [((1, 3), 1, 0.8), ((4, 5), 2, -0.8)],
+    ...         [((1, 2), 1, 0.7), (3, 1, 1), ((4, 5), 2, -0.8)]],
+    ...     spatial_edges=[(1, 2, 0.6), (3, 5, 0.5)],
+    ...     temporal_edges=[(1, (3, 4), 'split'), (2, 5, 'eq')])
+    >>> simulator = SpatioTemporalGraphSimulator(p1=pattern1, p2=pattern2)
+    >>> graph_struct = simulator.simulate(['p2', 3, 'p1'])
+    >>> graph_struct.graph.nodes
+    NodeView((1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19))
+    >>> graph_struct.graph.edges
+    OutEdgeView([(1, 2), (1, 3), (1, 4), (2, 1), (2, 5), (3, 5), (3, 6), (4, 7), (5, 3), (5, 8),
+    (6, 8), (6, 9), (7, 10), (8, 6), (8, 11), (9, 11), (9, 12), (10, 13), (11, 9), (11, 14), (12, 14),
+    (12, 15), (13, 16), (14, 12), (14, 17), (15, 17), (15, 18), (16, 18), (17, 15), (17, 19), (18, 19), (19, 18)])
+    """
     def __init__(self, **patterns: SpatioTemporalGraph) -> None:
         self.__patterns = patterns
 
@@ -327,5 +389,19 @@ class SpatioTemporalGraphSimulator:
         return g
 
     def simulate(self, patterns: list[str | int]) -> SpatioTemporalGraph:
+        """Simulate the given sequence of pattern.
+
+        Parameters
+        ----------
+        patterns: list[str | int]
+            The sequence of patterns. A string references a pattern registered at the
+            creation of the simulator and an integer reference a number of times repeats
+            in-between patterns. A repeat is a subgraph of the last time of the last pattern.
+
+        Returns
+        -------
+        SpatioTemporalGraph
+            The built spatio-temporal graph.
+        """
         return SpatioTemporalGraph(graph=self._simulate_graph_from_patterns(patterns),
                                    areas=self._simulate_areas_descriptions(patterns))
