@@ -1,5 +1,5 @@
 """Defines spatio-temporal graphs and related structures."""
-
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import Enum, auto, unique
 
@@ -130,3 +130,7 @@ class SpatioTemporalGraph:
         See :func:`~graph.subgraph` for the arguments.
         """
         return subgraph(self.graph, **conditions)
+
+    def __eq__(self, other: 'SpatioTemporalGraph') -> bool:
+        return nx.utils.graphs_equal(self.graph, other.graph) and \
+            self.areas.equals(other.areas)

@@ -244,9 +244,8 @@ def generate_pattern(networks_list: list[list[tuple[tuple[int, int], int, float]
             k += 1
 
     for source, target, corr in spatial_edges:
-        t = g.nodes[source]['t']
-        g.add_edge(source, target, correlation=corr, t=t, type='spatial')
-        g.add_edge(target, source, correlation=corr, t=t, type='spatial')
+        g.add_edge(source, target, correlation=corr, type='spatial')
+        g.add_edge(target, source, correlation=corr, type='spatial')
 
     for temporal_link in temporal_edges:
         for source, target, rc5 in __trans(*temporal_link):
@@ -264,30 +263,6 @@ def generate_pattern(networks_list: list[list[tuple[tuple[int, int], int, float]
 class SpatioTemporalGraphSimulator:
     def __init__(self, **patterns: SpatioTemporalGraph) -> None:
         self.__patterns = patterns
-
-    def _simulate_areas_description(self, nb_areas_per_regions: list[int]) -> pd.DataFrame:
-        nb_regions = len(nb_areas_per_regions)
-        regions = pd.DataFrame({
-            'Id': range(1, nb_regions + 1),
-            'Name': [f"Region {k + 1}" for k in range(nb_regions)]})
-        regions.set_index('Id', inplace=True)
-
-        nb_areas = sum([n for n in nb_areas_per_regions])
-        areas = pd.DataFrame({
-            'Id': range(1, nb_areas + 1),
-            'Name': [f"Area {k + 1}" for k in range(nb_areas)]})
-        areas.set_index('Id', inplace=True)
-
-        areas_desc = pd.DataFrame({
-            'Id_Area': areas.index,
-            'Name_Area': areas['Name'],
-            'Name_Region': list(reduce(lambda x, y: x + y,
-                                       [[regions.loc[k + 1]['Name']] * n
-                                        for k, n in enumerate(nb_areas_per_regions)],
-                                       []))})
-        areas_desc.set_index('Id_Area', inplace=True)
-
-        return areas_desc
 
     def _simulate_areas_descriptions(self, patterns: list[str | int]) -> pd.DataFrame:
         areas_descriptions = [self.__patterns[pattern].areas

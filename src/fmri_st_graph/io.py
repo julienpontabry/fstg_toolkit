@@ -84,8 +84,10 @@ def load_spatio_temporal_graph(filepath: Path | str) -> SpatioTemporalGraph:
     ...     (4, 5, {'t': 1, 'type': 'spatial', 'correlation': 0.75087697}),
     ...     (5, 4, {'t': 1, 'type': 'spatial', 'correlation': 0.75087697})])
     >>> areas_desc = pd.DataFrame({
+    ...     'Id_Area': [1, 2, 3],
     ...     'Name_Area': ['Area 1', 'Area 2', 'Area 3'],
-    ...     'Name_Region': ['R1', 'R2', 'R3']}, index=[1, 2, 3])
+    ...     'Name_Region': ['R1', 'R2', 'R3']})
+    >>> areas_desc.set_index('Id_Area', inplace=True)
     >>> graph_path = Path('/tmp/tmp.zip')
     >>> save_spatio_temporal_graph(SpatioTemporalGraph(G, areas_desc), graph_path)
     >>> graph_struct = load_spatio_temporal_graph(graph_path)
@@ -98,7 +100,7 @@ def load_spatio_temporal_graph(filepath: Path | str) -> SpatioTemporalGraph:
 
         # read the areas description from csv file
         with zfp.open('areas.csv', 'r') as fp:
-            areas = pd.read_csv(fp)
+            areas = pd.read_csv(fp, index_col='Id_Area')
 
         return SpatioTemporalGraph(graph, areas)
 
