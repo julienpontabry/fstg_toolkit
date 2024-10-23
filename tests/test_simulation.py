@@ -1,13 +1,12 @@
 import unittest
 from functools import reduce
-from statistics import correlation
 
 import networkx as nx
 import numpy as np
 import pandas as pd
 
 from fmri_st_graph import SpatioTemporalGraph, load_spatio_temporal_graph, generate_pattern, \
-    SpatioTemporalGraphSimulator
+    SpatioTemporalGraphSimulator, save_spatio_temporal_graph
 from fmri_st_graph.graph import RC5
 from fmri_st_graph.simulation import CorrelationMatrixSequenceSimulator
 
@@ -126,7 +125,7 @@ class SpatioTemporalGraphSimulationTestCase(unittest.TestCase):
             (3, dict(t=1, areas={1, 2}, region="Region 1", internal_strength=0.7)),
             (4, dict(t=1, areas={3}, region="Region 1", internal_strength=1)),
             (5, dict(t=1, areas={4, 5}, region="Region 2", internal_strength=-0.8))])
-        expected_graph.add_nodes_from(reduce(lambda a, b: a + b, [
+        expected_graph.add_nodes_from(reduce(list.__add__, [
             [(6+3*i, dict(t=2+i, areas={1, 2}, region="Region 1", internal_strength=0.7)),
              (7+3*i, dict(t=2+i, areas={3}, region="Region 1", internal_strength=1)),
              (8+3*i, dict(t=2+i, areas={4, 5}, region="Region 2", internal_strength=-0.8))]
@@ -137,7 +136,7 @@ class SpatioTemporalGraphSimulationTestCase(unittest.TestCase):
             (38, dict(t=12, areas={4, 5}, region="Region 2", internal_strength=-0.8)),
             (39, dict(t=13, areas={1, 2, 3}, region="Region 1", internal_strength=0.8)),
             (40, dict(t=13, areas={4, 5}, region="Region 2", internal_strength=-0.8))])
-        expected_graph.add_nodes_from(reduce(lambda a, b: a + b, [
+        expected_graph.add_nodes_from(reduce(list.__add__, [
             [(41+2*i, dict(t=14+i, areas={1, 2, 3}, region="Region 1", internal_strength=0.8)),
              (42+2*i, dict(t=14+i, areas={4, 5}, region="Region 2", internal_strength=-0.8))]
             for i in range(5)], []))
@@ -148,17 +147,15 @@ class SpatioTemporalGraphSimulationTestCase(unittest.TestCase):
         expected_graph.add_edges_from([
             (1, 2, dict(correlation=0.6, type='spatial')),
             (3, 5, dict(correlation=0.5, type='spatial'))])
-        # FIXME replicate spatial edges as well
-        # expected_graph.add_edges_from([
-        #     (6+3*i, 8+3*i, dict(correlation=0.5, type='spatial'))
-        #     for i in range(10)])
+        expected_graph.add_edges_from([
+            (6+3*i, 8+3*i, dict(correlation=0.5, type='spatial'))
+            for i in range(10)])
         expected_graph.add_edges_from([
             (36, 38, dict(correlation=0.5, type='spatial')),
             (39, 40, dict(correlation=0.6, type='spatial'))])
-        # FIXME replicate spatial edges as well
-        # expected_graph.add_edges_from([
-        #     (41+2*i, 42+2*i, dict(correlation=0.6, type='spatial'))
-        #     for i in range(5)])
+        expected_graph.add_edges_from([
+            (41+2*i, 42+2*i, dict(correlation=0.6, type='spatial'))
+            for i in range(5)])
         expected_graph.add_edges_from([
             (51, 52, dict(correlation=0.6, type='spatial'))])
 
@@ -168,7 +165,7 @@ class SpatioTemporalGraphSimulationTestCase(unittest.TestCase):
             (1, 3, dict(transition=RC5.PPi, type='temporal')),
             (1, 4, dict(transition=RC5.PPi, type='temporal')),
             (2, 5, dict(transition=RC5.EQ, type='temporal'))])
-        expected_graph.add_edges_from(reduce(lambda a, b : a + b, [
+        expected_graph.add_edges_from(reduce(list.__add__, [
             [(3+3*i, 6+3*i, dict(transition=RC5.EQ, type='temporal')),
              (4+3*i, 7+3*i, dict(transition=RC5.EQ, type='temporal')),
              (5+3*i, 8+3*i, dict(transition=RC5.EQ, type='temporal'))]
@@ -177,7 +174,7 @@ class SpatioTemporalGraphSimulationTestCase(unittest.TestCase):
             (36, 39, dict(transition=RC5.PP, type='temporal')),
             (37, 39, dict(transition=RC5.PP, type='temporal')),
             (38, 40, dict(transition=RC5.EQ, type='temporal'))])
-        expected_graph.add_edges_from(reduce(lambda a, b: a + b, [
+        expected_graph.add_edges_from(reduce(list.__add__, [
             [(39+2*i, 41+2*i, dict(transition=RC5.EQ, type='temporal')),
              (40+2*i, 42+2*i, dict(transition=RC5.EQ, type='temporal'))]
             for i in range(6)], []))

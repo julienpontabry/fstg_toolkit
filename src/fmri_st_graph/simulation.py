@@ -291,8 +291,14 @@ class SpatioTemporalGraphSimulator:
             if isinstance(next_pattern, int):
                 for i in range(next_pattern):
                     k = len(last_out.nodes)
-                    g.add_nodes_from(SpatioTemporalGraphSimulator.__shift_nodes(last_out.nodes, i+1, (i+1) * k))
-                    g.add_edges_from([(n + i * k, n + (i+1) * k,
+                    m = (i + 1) * k
+                    g.add_nodes_from(SpatioTemporalGraphSimulator.__shift_nodes(last_out.nodes, i + 1, m))
+                    g.add_edges_from(reduce(list.__add__, [
+                        [(n1 + m, n2 + m, d),
+                         (n2 + m, n1 + m, d)]
+                         for (n1, n2), d in last_out.edges.items()
+                         if d['type'] == 'spatial'], []))
+                    g.add_edges_from([(n + i * k, n + m,
                                        dict(transition=RC5.EQ, type='temporal'))
                                       for n in sorted(last_out.nodes)])
 
