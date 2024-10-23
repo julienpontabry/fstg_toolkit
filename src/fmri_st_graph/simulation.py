@@ -315,7 +315,7 @@ class SpatioTemporalGraphSimulator:
     ...     spatial_edges=[(1, 2, 0.6), (3, 5, 0.5)],
     ...     temporal_edges=[(1, (3, 4), 'split'), (2, 5, 'eq')])
     >>> simulator = SpatioTemporalGraphSimulator(p1=pattern1, p2=pattern2)
-    >>> graph_struct = simulator.simulate(['p2', 3, 'p1'])
+    >>> graph_struct = simulator.simulate('p2', 3, 'p1')
     >>> graph_struct.graph.nodes
     NodeView((1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19))
     >>> graph_struct.graph.edges
@@ -388,12 +388,12 @@ class SpatioTemporalGraphSimulator:
 
         return g
 
-    def simulate(self, patterns: list[str | int]) -> SpatioTemporalGraph:
+    def simulate(self, *patterns: str | int) -> SpatioTemporalGraph:
         """Simulate the given sequence of pattern.
 
         Parameters
         ----------
-        patterns: list[str | int]
+        patterns: tuple[str | int]
             The sequence of patterns. A string references a pattern registered at the
             creation of the simulator and an integer reference a number of times repeats
             in-between patterns. A repeat is a subgraph of the last time of the last pattern.
@@ -403,5 +403,5 @@ class SpatioTemporalGraphSimulator:
         SpatioTemporalGraph
             The built spatio-temporal graph.
         """
-        return SpatioTemporalGraph(graph=self._simulate_graph_from_patterns(patterns),
-                                   areas=self._simulate_areas_descriptions(patterns))
+        return SpatioTemporalGraph(graph=self._simulate_graph_from_patterns(list(patterns)),
+                                   areas=self._simulate_areas_descriptions(list(patterns)))

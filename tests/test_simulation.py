@@ -114,7 +114,7 @@ class SpatioTemporalGraphSimulationTestCase(unittest.TestCase):
             temporal_edges=[((1, 2), 4, 'merge'), (3, 5, 'eq')])
 
         simulator = SpatioTemporalGraphSimulator(p1=pattern1, p2=pattern2, p3=pattern3)
-        graph_struct = simulator.simulate(['p2', 10, 'p3', 5, 'p1'])
+        graph_struct = simulator.simulate('p2', 10, 'p3', 5, 'p1')
 
         expected_graph = nx.Graph()
         expected_graph.graph = {'min_time': 0, 'max_time': 19}
@@ -205,7 +205,7 @@ class SpatioTemporalGraphSimulationTestCase(unittest.TestCase):
             temporal_edges=[(1, 4, 'eq'), ((2, 3), 5, 'merge')])
 
         simulator = SpatioTemporalGraphSimulator(p1=pattern1, p2=pattern2)
-        graph_struct = simulator.simulate(['p1', 5, 'p2', 'p1', 10, 'p2', 'p1', 2, 'p2'])
+        graph_struct = simulator.simulate('p1', 5, 'p2', 'p1', 10, 'p2', 'p1', 2, 'p2')
 
         expected_graph_struct = load_spatio_temporal_graph('data/patterns-example.zip')
         self.assertEqual(expected_graph_struct, graph_struct)
