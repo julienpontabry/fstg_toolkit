@@ -1,4 +1,5 @@
 """Defines spatio-temporal graphs and related structures."""
+from collections.abc import Iterable
 from enum import Enum, auto, unique
 
 import networkx as nx
@@ -77,7 +78,8 @@ def subgraph(graph: nx.Graph, **conditions: any) -> nx.Graph:
     graph: nx.Graph
         The initial graph.
     conditions: dict[str, any]
-        The conditions on the nodes of the subgraph as keywords arguments.
+        The conditions on the nodes of the subgraph as keywords arguments. As value,
+        any single value or iterable of values is supported.
 
     Returns
     -------
@@ -99,10 +101,20 @@ def subgraph(graph: nx.Graph, **conditions: any) -> nx.Graph:
     NodeView((2, 3, 4))
     >>> subgraph(G, a=2, b=2).nodes
     NodeView((3,))
+    >>> subgraph(G, b=(1, 2), a=2).nodes
+    NodeView((2, 3, 4))
+    >>> subgraph(G, b=range(1, 3)).nodes
+    NodeView((1, 2, 3, 4))
     """
+    def __process(d: any, v: any):
+        if isinstance(v, Iterable):
+            return d in v
+        else:
+            return d == v
+
     return graph.subgraph([node
                            for node, data in graph.nodes.items()
-                           if all([data[k] == v for k, v in conditions.items()])])
+                           if all([__process(data[k], v) for k, v in conditions.items()])])
 
 
 class SpatioTemporalGraph(nx.DiGraph):
