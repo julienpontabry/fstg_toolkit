@@ -172,17 +172,49 @@ def are_st_graphs_close(graph1: SpatioTemporalGraph, graph2: SpatioTemporalGraph
     -------
     bool
         True if graphs are almost equal; false otherwise.
+
+    Examples
+    --------
+    >>> g1 = nx.DiGraph()
+    >>> g1.add_nodes_from([(1, dict(t=0, areas={1, 2}, region="R1", internal_strength=0.8)),
+    ...                    (2, dict(t=0, areas={3}, region="R1", internal_strength=1)),
+    ...                    (3, dict(t=1, areas={1, 2, 3}, region="R1", internal_strength=0.9))])
+    >>> g1.add_edges_from([(1, 3, dict(transition=RC5.PP, type='temporal'))])
+    >>> a1 = pd.DataFrame({'Id_Area': [1, 2, 3], 'Name_Area': ["A1", "A2", "A3"], 'Name_Region': ["R1", "R1", "R1"]})
+    >>> st_g1 = SpatioTemporalGraph(g1, a1)
+    >>> g2 = nx.DiGraph()
+    >>> g2.add_nodes_from([(1, dict(t=0, areas={1, 2}, region="R1", internal_strength=0.7999999999999)),
+    ...                    (2, dict(t=0, areas={3}, region="R1", internal_strength=1.000000000001)),
+    ...                    (3, dict(t=1, areas={1, 2, 3}, region="R1", internal_strength=0.8999999999999))])
+    >>> g2.add_edges_from([(1, 3, dict(transition=RC5.PP, type='temporal'))])
+    >>> a2 = pd.DataFrame({'Id_Area': [1, 2, 3], 'Name_Area': ["A1", "A2", "A3"], 'Name_Region': ["R1", "R1", "R1"]})
+    >>> st_g2 = SpatioTemporalGraph(g2, a2)
+    >>> g3 = nx.DiGraph()
+    >>> g3.add_nodes_from([(1, dict(t=0, areas={1, 2}, region="R1", internal_strength=0.8)),
+    ...                    (2, dict(t=1, areas={1, 2}, region="R1", internal_strength=0.8))])
+    >>> g3.add_edges_from([(1, 2, dict(transition=RC5.EQ, type='temporal'))])
+    >>> a3 = pd.DataFrame({'Id_Area': [1, 2], 'Name_Area': ["A1", "A2"], 'Name_Region': ["R1", "R1"]})
+    >>> st_g3 = SpatioTemporalGraph(g3, a3)
+    >>> are_st_graphs_close(st_g1, st_g1)
+    True
+    >>> are_st_graphs_close(st_g1, st_g2)
+    True
+    >>> are_st_graphs_close(st_g1, st_g3)
+    False
     """
-    # TODO make unit tests + doctests
     nodes1 = graph1.nodes
     nodes2 = graph2.nodes
     nodes_equal = list(nodes1) == list(nodes2)
+    if not nodes_equal:
+        return False
     nodes_data_almost_equal = all(__data_almost_equal(nodes1[n], nodes2[n])
                                   for n in nodes1)
 
     edges1 = graph1.edges
     edges2 = graph2.edges
     edges_equal = list(edges1) == list(edges2)
+    if not edges_equal:
+        return False
     edges_data_almost_equal = all(__data_almost_equal(edges1[e], edges2[e])
                                   for e in edges1)
 
