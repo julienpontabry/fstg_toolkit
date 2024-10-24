@@ -1,11 +1,8 @@
 """Defines spatio-temporal graphs and related structures."""
-from collections.abc import Iterable
-from dataclasses import dataclass
 from enum import Enum, auto, unique
 
 import networkx as nx
 import pandas as pd
-from networkx.classes.reportviews import NodeView
 
 
 @unique
@@ -107,30 +104,23 @@ def subgraph(graph: nx.Graph, **conditions: any) -> nx.Graph:
                            for node, data in graph.nodes.items()
                            if all([data[k] == v for k, v in conditions.items()])])
 
-# TODO subclass DiGraph instead of composing it? Avoiding doing graph.graph to get the graph and remove nodes property
-@dataclass(frozen=True)
-class SpatioTemporalGraph:
-    """Defines a spatio-temporal graph for functional connectivity data."""
-    graph: nx.DiGraph
-    areas: pd.DataFrame
+
+class SpatioTemporalGraph(nx.DiGraph):
+    def __init__(self, graph: nx.DiGraph = None, areas: pd.DataFrame = None) -> None:
+        super().__init__(graph)
+        self.areas = areas
 
     @property
     def time_range(self) -> range:
         """Get the time range covered by the spatio-temporal graph."""
-        return range(self.graph.graph['max_time']+1)
+        return range(self.graph['max_time']+1)
 
-    @property
-    def nodes(self) -> NodeView:
-        """Get the nodes of the spatio-temporal graph."""
-        return self.graph.nodes
-
-    def subgraph(self, **conditions) -> nx.DiGraph:
+    def conditional_subgraph(self, **conditions) -> 'SpatioTemporalGraph':
         """Helper to take the subgraph of the spatio-temporal graph matching the specified conditions.
 
         See :func:`~graph.subgraph` for the arguments.
         """
-        return subgraph(self.graph, **conditions)
+        return SpatioTemporalGraph(subgraph(self, **conditions), self.areas)
 
-    def __eq__(self, other: 'SpatioTemporalGraph') -> bool:
-        return nx.utils.graphs_equal(self.graph, other.graph) and \
-            self.areas.equals(other.areas)
+    def __eq__(self, other: 'SpatioTemporalGraph') -> 'SpatioTemporalGraph':
+        return nx.utils.graphs_equal(self, other) and self.areas.equals(other.areas)

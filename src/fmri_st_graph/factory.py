@@ -2,8 +2,8 @@
 
 from typing import Iterable
 
-import numpy as np
 import networkx as nx
+import numpy as np
 import pandas as pd
 
 from .graph import RC5, SpatioTemporalGraph
@@ -371,13 +371,13 @@ def spatio_temporal_graph_from_corr_matrices(corr_matrices: Iterable[np.array], 
     >>> areas = pd.DataFrame({'Id': [1, 2, 3], 'Name_Area': ['A1', 'A2', 'A3'], 'Name_Region': ['R1', 'R1', 'R2']})
     >>> areas.set_index('Id', inplace=True)
     >>> result = spatio_temporal_graph_from_corr_matrices((M1, M2), areas)
-    >>> result.graph.nodes(data=True)
+    >>> result.nodes(data=True)
     NodeDataView({1: {'t': 0, 'areas': {1}, 'region': 'R1', 'internal_strength': 1},
                   2: {'t': 0, 'areas': {2}, 'region': 'R1', 'internal_strength': 1},
                   3: {'t': 0, 'areas': {3}, 'region': 'R2', 'internal_strength': 1},
                   4: {'t': 1, 'areas': {1, 2}, 'region': 'R1', 'internal_strength': 0.52873788},
                   5: {'t': 1, 'areas': {3}, 'region': 'R2', 'internal_strength': 1}})
-    >>> result.graph.edges(data=True)
+    >>> result.edges(data=True)
     OutEdgeDataView([(1, 3, {'t': 0, 'type': 'spatial', 'correlation': -0.41853318}),
                      (1, 4, {'type': 'temporal', 'transition': <RC5.PP: 2>}),
                      (2, 3, {'t': 0, 'type': 'spatial', 'correlation': 0.75087697}),

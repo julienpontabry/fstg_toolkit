@@ -143,7 +143,7 @@ def save_spatio_temporal_graph(graph: SpatioTemporalGraph, filepath: Path | str)
     """
     with ZipFile(str(filepath), 'w') as zfp:
         # write the graph into json file
-        graph_dict = nx.json_graph.node_link_data(graph.graph, edges='edges')
+        graph_dict = nx.json_graph.node_link_data(graph, edges='edges')
         graph_json = json.dumps(graph_dict, indent=4, cls=__SpatioTemporalGraphEncoder)
         zfp.writestr('graph.json', data=graph_json)  # json cannot dump to a binary file pointer
 

@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from fmri_st_graph import SpatioTemporalGraph, load_spatio_temporal_graph, generate_pattern, \
-    SpatioTemporalGraphSimulator, save_spatio_temporal_graph
+    SpatioTemporalGraphSimulator
 from fmri_st_graph.graph import RC5
 from fmri_st_graph.simulation import CorrelationMatrixSequenceSimulator
 
@@ -31,7 +31,7 @@ class CorrelationMatrixSimulationTestCase(unittest.TestCase):
         areas.set_index('Id_Area', inplace=True)
 
         simulator = CorrelationMatrixSequenceSimulator(
-            graph_struct=SpatioTemporalGraph(graph, areas), threshold=0.4, rng=np.random.default_rng(10))
+            graph=SpatioTemporalGraph(graph, areas), threshold=0.4, rng=np.random.default_rng(10))
         matrix = simulator.simulate()[0]
 
         self.assertEqual(2, len(matrix.shape))
@@ -55,7 +55,7 @@ class CorrelationMatrixSimulationTestCase(unittest.TestCase):
         target = np.array([matrix for _, matrix in np.load('data/toy-example_matrices.npz').items()])
         graph_structure = load_spatio_temporal_graph('data/toy-example_graph.zip')
         simulator = CorrelationMatrixSequenceSimulator(
-            graph_struct=graph_structure, threshold=0.4, rng=np.random.default_rng(100))
+            graph=graph_structure, threshold=0.4, rng=np.random.default_rng(100))
         matrices = simulator.simulate()
         np.testing.assert_array_equal(target, matrices)
 

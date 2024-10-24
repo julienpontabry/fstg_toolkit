@@ -153,9 +153,10 @@ class CorrelationMatrixSequenceSimulator:
             [ 0.65453818,  0.85381682,  1.        , -0.98      ],
             [ 0.94      ,  0.61873641, -0.98      ,  1.        ]]])
     """
-    def __init__(self, graph_struct: SpatioTemporalGraph, threshold: float = 0.4,
+
+    def __init__(self, graph: SpatioTemporalGraph, threshold: float = 0.4,
                  rng: np.random.Generator = np.random.default_rng()) -> None:
-        self.graph_struct = graph_struct
+        self.graph = graph
         self.threshold = threshold
 
         self.__rng = rng
@@ -169,7 +170,7 @@ class CorrelationMatrixSequenceSimulator:
             raise ValueError("The threshold must be within range [0, 1]!")
 
     def __simulate_corr_matrix(self, spatial_graph: nx.DiGraph) -> np.array:
-        matrix = np.eye(len(self.graph_struct.areas))
+        matrix = np.eye(len(self.graph.areas))
 
         self.__network_edges_filler.fill(spatial_graph, matrix)
         self.__inter_region_edges_filler.fill(spatial_graph, matrix)
@@ -188,8 +189,8 @@ class CorrelationMatrixSequenceSimulator:
         numpy.array
             A 3D-shaped array that contains the correlations matrices for each time.
         """
-        return np.array([self.__simulate_corr_matrix(self.graph_struct.subgraph(t=t))
-                         for t in self.graph_struct.time_range])
+        return np.array([self.__simulate_corr_matrix(self.graph.conditional_subgraph(t=t))
+                         for t in self.graph.time_range])
 
 
 def __trans(sources: Iterable[int] | int, targets: Iterable[int] | int, kind: str) -> list[tuple[int, int, RC5]]:
@@ -239,9 +240,9 @@ def generate_pattern(networks_list: list[list[tuple[tuple[int, int], int, float]
     ...                    [((1, 5), 1, 0.6), ((6, 10), 2, -0.5)]],
     ...     spatial_edges=[(1, 2, 0.45), (4, 5, 0.8)],
     ...     temporal_edges=[(1, 4, 'eq'), ((2, 3), 5, 'merge')])
-    >>> pattern.graph.nodes
+    >>> pattern.nodes
     NodeView((1, 2, 3, 4, 5))
-    >>> pattern.graph.edges
+    >>> pattern.edges
     OutEdgeView([(1, 2), (1, 4), (2, 1), (2, 5), (3, 5), (4, 5), (5, 4)])
     >>> pattern.areas
             Name_Area Name_Region
@@ -290,7 +291,7 @@ def generate_pattern(networks_list: list[list[tuple[tuple[int, int], int, float]
                           'Name_Region': [areas_regions[a] for a in all_areas]})
     areas.set_index('Id_Area', inplace=True)
 
-    return SpatioTemporalGraph(graph=g, areas=areas)
+    return SpatioTemporalGraph(g, areas)
 
 
 class SpatioTemporalGraphSimulator:
@@ -315,10 +316,10 @@ class SpatioTemporalGraphSimulator:
     ...     spatial_edges=[(1, 2, 0.6), (3, 5, 0.5)],
     ...     temporal_edges=[(1, (3, 4), 'split'), (2, 5, 'eq')])
     >>> simulator = SpatioTemporalGraphSimulator(p1=pattern1, p2=pattern2)
-    >>> graph_struct = simulator.simulate('p2', 3, 'p1')
-    >>> graph_struct.graph.nodes
+    >>> graph = simulator.simulate('p2', 3, 'p1')
+    >>> graph.nodes
     NodeView((1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19))
-    >>> graph_struct.graph.edges
+    >>> graph.edges
     OutEdgeView([(1, 2), (1, 3), (1, 4), (2, 1), (2, 5), (3, 5), (3, 6), (4, 7), (5, 3), (5, 8),
     (6, 8), (6, 9), (7, 10), (8, 6), (8, 11), (9, 11), (9, 12), (10, 13), (11, 9), (11, 14), (12, 14),
     (12, 15), (13, 16), (14, 12), (14, 17), (15, 17), (15, 18), (16, 18), (17, 15), (17, 19), (18, 19), (19, 18)])
@@ -344,7 +345,7 @@ class SpatioTemporalGraphSimulator:
                 for n, d in sorted(nodes.items(), key=lambda x: x[0])]
 
     def _simulate_graph_from_patterns(self, patterns: list[str | int]) -> nx.DiGraph:
-        g = nx.DiGraph(self.__patterns[patterns[0]].graph)
+        g = nx.DiGraph(self.__patterns[patterns[0]])
 
         for next_pattern in patterns[1:]:
             last_t = g.graph['max_time']
@@ -366,7 +367,7 @@ class SpatioTemporalGraphSimulator:
 
                 g.graph['max_time'] += next_pattern
             elif isinstance(next_pattern, str):
-                next_pattern = self.__patterns[next_pattern].graph
+                next_pattern = self.__patterns[next_pattern]
                 k = max(g.nodes)
                 dt = g.graph['max_time'] - g.graph['min_time'] + 1
 
@@ -403,5 +404,5 @@ class SpatioTemporalGraphSimulator:
         SpatioTemporalGraph
             The built spatio-temporal graph.
         """
-        return SpatioTemporalGraph(graph=self._simulate_graph_from_patterns(list(patterns)),
-                                   areas=self._simulate_areas_descriptions(list(patterns)))
+        return SpatioTemporalGraph(self._simulate_graph_from_patterns(list(patterns)),
+                                   self._simulate_areas_descriptions(list(patterns)))
