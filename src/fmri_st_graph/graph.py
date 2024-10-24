@@ -1,6 +1,8 @@
 """Defines spatio-temporal graphs and related structures."""
 from collections.abc import Iterable
 from enum import Enum, auto, unique
+from math import isclose
+from numbers import Number
 
 import networkx as nx
 import pandas as pd
@@ -136,3 +138,53 @@ class SpatioTemporalGraph(nx.DiGraph):
 
     def __eq__(self, other: 'SpatioTemporalGraph') -> 'SpatioTemporalGraph':
         return nx.utils.graphs_equal(self, other) and self.areas.equals(other.areas)
+
+
+def __data_almost_equal(data1: dict[str, any], data2: dict[str, any],
+                        rel_tol: float = 1e-9, abs_tol: float = 0.0):
+    if len(data1) != len(data2):
+        return False
+
+    for key, item in data1.items():
+        if key not in data2:
+            return False
+        elif isinstance(item, Number):
+            if not isclose(data1[key], data2[key],
+                           rel_tol=rel_tol, abs_tol=abs_tol):
+                return False
+        elif data1[key] != data2[key]:
+            return False
+
+    return True
+
+
+def are_st_graphs_close(graph1: SpatioTemporalGraph, graph2: SpatioTemporalGraph) -> bool:
+    """Test if two spatio-temporal graphs are equal with some tolerance on numerical values.
+
+    Parameters
+    ----------
+    graph1: SpatioTemporalGraph
+        The first spatio-temporal graph to compare.
+    graph2: SpatioTemporalGraph
+        The second spatio-temporal graph to compare.
+
+    Returns
+    -------
+    bool
+        True if graphs are almost equal; false otherwise.
+    """
+    # TODO make unit tests + doctests
+    nodes1 = graph1.nodes
+    nodes2 = graph2.nodes
+    nodes_equal = list(nodes1) == list(nodes2)
+    nodes_data_almost_equal = all(__data_almost_equal(nodes1[n], nodes2[n])
+                                  for n in nodes1)
+
+    edges1 = graph1.edges
+    edges2 = graph2.edges
+    edges_equal = list(edges1) == list(edges2)
+    edges_data_almost_equal = all(__data_almost_equal(edges1[e], edges2[e])
+                                  for e in edges1)
+
+    return nodes_equal and edges_equal and nodes_data_almost_equal and \
+        edges_data_almost_equal and graph1.areas.equals(graph2.areas)
