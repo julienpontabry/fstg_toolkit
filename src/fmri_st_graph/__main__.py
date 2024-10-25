@@ -2,7 +2,7 @@ import click
 from matplotlib import pyplot as plt
 
 from .io import load_spatio_temporal_graph
-from .visualization import spatial_plot, temporal_plot
+from .visualization import spatial_plot, temporal_plot, multipartite_plot
 
 
 @click.group()
@@ -10,6 +10,13 @@ from .visualization import spatial_plot, temporal_plot
 @click.pass_context
 def plot(ctx: click.core.Context, path: str):
     ctx.obj = load_spatio_temporal_graph(path)
+
+
+@plot.command()
+@click.pass_context
+def multipartite(ctx: click.core.Context):
+    multipartite_plot(ctx.obj)
+    plt.show()
 
 
 @plot.command()

@@ -4,8 +4,46 @@ import numpy as np
 from matplotlib import colormaps as cm
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
+import networkx as nx
 
 from .graph import SpatioTemporalGraph, RC5
+
+
+# FIXME do we need a dist parameter?
+def __time_multipartite_layout(g: SpatioTemporalGraph, dist=1.0):
+    pos = {}
+
+    for t in range(g.graph['min_time'],
+                   g.graph['max_time'] + 1):
+        sub_g = g.conditional_subgraph(t=t)
+        nodes = sorted(sub_g.nodes)
+        half_height = dist * (len(nodes) - 1) / 2
+        heights = np.linspace(-half_height, half_height, len(nodes))
+
+        for n, height in zip(nodes, heights):
+            pos[n] = (t, height)
+
+    return pos
+
+
+# TODO add time scale at the bottom
+def multipartite_plot(g: SpatioTemporalGraph):
+    plt.figure()
+    pos = __time_multipartite_layout(g)
+    node_color = [d['internal_strength']
+                  for _, d in g.nodes.items()]
+    edge_color = ['red' if d['type'] == 'temporal' else 'limegreen'
+                  for _, d in g.edges.items()]
+    edge_labels = {e: d['correlation'] if d['type'] == 'spatial' else d['transition']
+                   for e, d in g.edges.items()}
+    edge_widths = [np.abs(d['correlation']) * 4 if d['type'] == 'spatial' else 2
+                   for _, d in g.edges.items()]
+    connectionstyle = 'arc3'
+    nx.draw_networkx(g, pos=pos, with_labels=True, node_color=node_color,
+                     cmap='coolwarm', vmin=-1, vmax=1, edge_color=edge_color,
+                     connectionstyle=connectionstyle, width=edge_widths)
+    nx.draw_networkx_edge_labels(g, pos=pos, edge_labels=edge_labels,
+                                 connectionstyle=connectionstyle)
 
 
 def __polar2cart(angles, distance):
@@ -172,6 +210,7 @@ def __draw_paths(axe, G, coords, nodes, base_y):
     return coords
 
 
+# TODO add time scale at the bottom
 def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None):
     if ax is None:
         ax = plt.gca()
