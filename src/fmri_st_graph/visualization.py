@@ -1,10 +1,14 @@
 """Plotting the spatio-temporal graphs."""
+from cmath import isclose
 
+import networkx as nx
 import numpy as np
+from line_profiler_pycharm import profile
 from matplotlib import colormaps as cm
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
-import networkx as nx
+from matplotlib.collections import LineCollection
+from networkx.classes import edges
 
 from .graph import SpatioTemporalGraph, RC5
 
@@ -46,18 +50,18 @@ def multipartite_plot(g: SpatioTemporalGraph):
                                  connectionstyle=connectionstyle)
 
 
-def __polar2cart(angles, distance):
+def __polar2cart(angles: np.array, distance: float) -> tuple[np.array, np.array]:
     pts = distance * np.exp(1j * angles)
     return np.real(pts), np.imag(pts)
 
 
-def __readable_angled_annotation(angle):
+def __readable_angled_annotation(angle: float) -> dict[str, float | str]:
     if angle <= 90 or angle >= 270:
         return dict(rotation=angle, ha='left')
     else:
         return dict(rotation=angle+180, ha='right')
 
-
+@profile
 def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None) -> None:
     if ax is None:
         ax = plt.gca()
@@ -75,7 +79,7 @@ def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None) -> None:
 
     # plot regions in a pie
     regions_cmap = cm.get_cmap('tab20')
-    ax.pie([len(rels[rels['Name_Region'] == region]) / len(rels)
+    ax.pie([len(rels[rels['Name_Region'] == region]) / n
             for region in regions],
            labels=regions, radius=2.25, startangle=-360 / n / 2,
            colors=[regions_cmap(i) for i in range(len(regions))],
@@ -84,21 +88,29 @@ def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None) -> None:
     ax.set_ylim(-3, 3)
 
     # plot networks
-    # FIXME network nodes may be overlapping (depends on the sorting)
     cmap = cm.get_cmap('coolwarm')
+    nodes_angles = {}
     nodes_coords = {}
     areas_network_map = {}
-    for n, d in sub_g.nodes.items():
-        network = list(d['areas'])
+    for node, data in sub_g.nodes.items():
+        network = list(data['areas'])
         indices = np.argwhere(np.isin(rels.index, network)).flatten().tolist()
-        x, y = __polar2cart(angles[indices].mean(), 1)
-        corr = d['internal_strength']
+
+        angle = angles[indices].mean()
+        closest_node = min([(on, abs(a-angle)) for on, a in nodes_angles.items()], default=(None, -1), key=lambda e: e[1])
+        if isclose(closest_node[1], 0):
+            angle += 2*np.pi/n/2
+        nodes_angles[node] = angle
+
+        x, y = __polar2cart(angle, 1)
+        corr = data['internal_strength']
         ax.plot(x, y, 'o', mfc=cmap(corr / 2 + 0.5),
-                mec='k', ms=15 * np.abs(corr), zorder=4)
-        nodes_coords[n] = (x, y)
+                mec='k', ms=(15 * np.abs(corr)), zorder=4)
+        nodes_coords[node] = (x, y)
         areas_network_map |= {i: (x, y) for i in indices}
 
     # plot areas' labels
+    # TODO make broken lines instead of direct lines
     for i, (x_area, y_area, area) in enumerate(zip(x_areas, y_areas,
                                                    rels['Name_Area'])):
         ax.annotate(text=area, xy=areas_network_map[i], xytext=(x_area, y_area),
@@ -108,10 +120,14 @@ def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None) -> None:
 
     # plot edges between networks
     # TODO make curved edges
+    edge_lines = {'segments': [], 'color': [], 'linewidth': [], 'alpha': []}
     for (e1, e2), d in sub_g.edges.items():
-        ax.plot(*tuple(zip(nodes_coords[e1], nodes_coords[e2])), '-',
-                lw=np.abs(d['correlation']) * 4, alpha=np.abs(d['correlation']),
-                color=cmap(d['correlation'] / 2 + 0.5))
+        edge_lines['segments'].append((nodes_coords[e1], nodes_coords[e2]))
+        edge_lines['color'].append(cmap(d['correlation']/2+0.5))
+        edge_lines['linewidth'].append(np.abs(d['correlation']) * 4)
+        edge_lines['alpha'].append(np.abs(d['correlation']))
+
+    ax.add_collection(LineCollection(**edge_lines))
 
 
 def __node_to_plot(t, r, n, cum_max_nodes):
