@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import click
 import numpy as np
 import pandas as pd
@@ -24,12 +26,25 @@ def build(correlation_matrices_path: str, areas_description_path: str, output_gr
     if isinstance(matrices, np.lib.npyio.NpzFile):
         click.echo("The following sequences of matrices are available from the file:")
         click.echo(";\n".join(matrices.keys()) + ".")
-        chosen = click.prompt("Which one to process?", default=list(matrices.keys())[0])
-        matrices = matrices[chosen]
+        chosen = click.prompt("Which one to process ('all' to process all)?", default='all')
+
+        if chosen == 'all':
+            output_path = Path(output_graph)
+            if not output_path.is_dir():
+                click.echo("Output path must be a directory!", err=True)
+                return
+            matrices = [(matrices[k], output_path / f"{k}.zip") for k in matrices.keys()]
+        else:
+            matrices = [(matrices[chosen], output_graph)]
+    else:
+        matrices = [(matrices, output_graph)]
 
     areas = pd.read_csv(areas_description_path, index_col='Id_Area')
-    graph = spatio_temporal_graph_from_corr_matrices(matrices, areas)
-    save_spatio_temporal_graph(graph, output_graph)
+
+    with click.progressbar(matrices) as bar:
+        for mat, output in bar:
+            graph = spatio_temporal_graph_from_corr_matrices(mat, areas)
+            save_spatio_temporal_graph(graph, output)
 
 
 @click.group()
