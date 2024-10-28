@@ -7,7 +7,8 @@ from line_profiler_pycharm import profile
 from matplotlib import colormaps as cm
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
-from matplotlib.collections import LineCollection
+from matplotlib.collections import LineCollection, PatchCollection
+from matplotlib.patches import FancyArrowPatch
 from networkx.classes import edges
 
 from .graph import SpatioTemporalGraph, RC5
@@ -60,6 +61,18 @@ def __readable_angled_annotation(angle: float) -> dict[str, float | str]:
         return dict(rotation=angle, ha='left')
     else:
         return dict(rotation=angle+180, ha='right')
+
+
+def __con_style(angle1: float, angle2: float, c: float = 5) -> str:
+    diff = angle1 - angle2
+    if diff > 180 or diff < -180:
+        sign = -np.sign(diff)
+        dist = (360 - abs(diff)) / 180
+    else:
+        sign = np.sign(diff)
+        dist = abs(diff) / 180
+    return f'arc3, rad={sign * (1 - dist) ** c}'
+
 
 @profile
 def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None) -> None:
@@ -119,15 +132,12 @@ def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None) -> None:
                     arrowprops=dict(arrowstyle='-', linestyle='--'))
 
     # plot edges between networks
-    # TODO make curved edges
-    edge_lines = {'segments': [], 'color': [], 'linewidth': [], 'alpha': []}
-    for (e1, e2), d in sub_g.edges.items():
-        edge_lines['segments'].append((nodes_coords[e1], nodes_coords[e2]))
-        edge_lines['color'].append(cmap(d['correlation']/2+0.5))
-        edge_lines['linewidth'].append(np.abs(d['correlation']) * 4)
-        edge_lines['alpha'].append(np.abs(d['correlation']))
-
-    ax.add_collection(LineCollection(**edge_lines))
+    for (n1, n2), d in sub_g.edges.items():
+        edge_patch = FancyArrowPatch(
+            posA=nodes_coords[n1], posB=nodes_coords[n2],arrowstyle='-',
+            connectionstyle=__con_style(np.rad2deg(nodes_angles[n1]), np.rad2deg(nodes_angles[n2])),
+            linewidth=np.abs(d['correlation'])*4, color=cmap(d['correlation']/2+0.5), alpha=np.abs(d['correlation']))
+        ax.add_artist(edge_patch)
 
 
 def __node_to_plot(t, r, n, cum_max_nodes):
