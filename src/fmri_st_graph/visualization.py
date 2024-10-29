@@ -3,13 +3,10 @@ from cmath import isclose
 
 import networkx as nx
 import numpy as np
-from line_profiler_pycharm import profile
 from matplotlib import colormaps as cm
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
-from matplotlib.collections import LineCollection, PatchCollection
 from matplotlib.patches import FancyArrowPatch
-from networkx.classes import edges
 
 from .graph import SpatioTemporalGraph, RC5
 
@@ -89,7 +86,7 @@ def __readable_angled_annotation(angle: float) -> dict[str, float | str]:
         return dict(rotation=angle+180, ha='right')
 
 
-def __con_style(angle1: float, angle2: float, bending: float = 5) -> str:
+def __edge_con_style(angle1: float, angle2: float, bending: float = 5) -> str:
     """Get the connection style property for edges.
 
     Parameters
@@ -117,8 +114,65 @@ def __con_style(angle1: float, angle2: float, bending: float = 5) -> str:
     return f'arc3, rad={sign * (1 - dist) ** bending}'
 
 
-@profile
+def __annot_con_style(angle1: float, angle2: float) -> str:
+    """Get the connection style property for annotations.
+
+    Parameters
+    ----------
+    angle1: float
+        The angle of the line on the side of the annotation text in degrees.
+    angle2: float
+        The angle of the line on the network side in degrees.
+
+    Returns
+    -------
+    str
+        The appropriate connection style property.
+    """
+    abs_diff = abs(angle1 - angle2)
+    diff = min(abs_diff, 360 - abs_diff)
+    if isclose(angle1, angle2) or isclose(diff, 180) or diff > 180:
+        return 'arc3'
+    else:
+        return f'angle, angleA={angle1}, angleB={angle2}, rad=0'
+
+
+def __angle_between(vec1: tuple[float, float], vec2: tuple[float, float]) -> float:
+    """Calculate the angle between two vectors.
+
+    Parameters
+    ----------
+    vec1: tuple[float, float]
+        The first vector.
+    vec2: tuple[float, float]
+        The second vector.
+
+    Returns
+    -------
+    float
+        The angle in degrees.
+    """
+    angle = np.arctan2(vec2[1] - vec1[1], vec2[0] - vec1[0])
+    if angle < 0:
+        angle += 2 * np.pi
+    return np.rad2deg(angle)
+
+
 def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None, edges_bending: float = 5) -> None:
+    """Draw a spatial plot for spatio-temporal graph.
+
+    Parameters
+    ----------
+    graph: SpatioTemporalGraph
+        The graph to plot.
+    t: float
+        The instant to plot in the graph.
+    ax: matplotlib.axes.Axes, optional
+        The axes on which to plot.
+    edges_bending: float, optional
+        Controls the bending of the edges. Close to 0 means full bending, close to
+        infinity means no bending (default is 5).
+    """
     if ax is None:
         ax = plt.gca()
     ax.axis('off')
@@ -146,6 +200,7 @@ def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None, edges_be
     # plot networks
     cmap = cm.get_cmap('coolwarm')
     nodes_angles = {}
+    nodes_angles_map = {}
     nodes_coords = {}
     areas_network_map = {}
     for node, data in sub_g.nodes.items():
@@ -157,6 +212,7 @@ def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None, edges_be
         if isclose(closest_node[1], 0):
             angle += 2*np.pi/n/2
         nodes_angles[node] = angle
+        nodes_angles_map |= {i: angle for i in indices}
 
         x, y = __polar2cart(angle, 1)
         corr = data['internal_strength']
@@ -166,19 +222,21 @@ def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None, edges_be
         areas_network_map |= {i: (x, y) for i in indices}
 
     # plot areas' labels
-    # TODO make broken lines instead of direct lines
-    for i, (x_area, y_area, area) in enumerate(zip(x_areas, y_areas,
-                                                   rels['Name_Area'])):
+    for i, (x_area, y_area, area) in enumerate(zip(x_areas, y_areas, rels['Name_Area'])):
+        to_node_angle = __angle_between(areas_network_map[i], __polar2cart(angles[i], 1.2))
+        angle = np.rad2deg(angles[i])
         ax.annotate(text=area, xy=areas_network_map[i], xytext=(x_area, y_area),
                     va='center', fontsize='x-small', rotation_mode='anchor',
-                    **__readable_angled_annotation(np.rad2deg(angles[i])),
-                    arrowprops=dict(arrowstyle='-', linestyle='--'))
+                    **__readable_angled_annotation(angle),
+                    arrowprops=dict(arrowstyle='-',
+                                    connectionstyle=__annot_con_style(angle, to_node_angle),
+                                    linestyle=':'))
 
     # plot edges between networks
     for (n1, n2), d in sub_g.edges.items():
         edge_patch = FancyArrowPatch(
             posA=nodes_coords[n1], posB=nodes_coords[n2],arrowstyle='-',
-            connectionstyle=__con_style(nodes_angles[n1], nodes_angles[n2], bending=edges_bending),
+            connectionstyle=__edge_con_style(nodes_angles[n1], nodes_angles[n2], bending=edges_bending),
             linewidth=np.abs(d['correlation'])*4, color=cmap(d['correlation']/2+0.5), alpha=np.abs(d['correlation']))
         ax.add_artist(edge_patch)
 
