@@ -1,8 +1,10 @@
 """Plotting the spatio-temporal graphs."""
 from cmath import isclose
+from functools import cache
 
 import networkx as nx
 import numpy as np
+from line_profiler_pycharm import profile
 from matplotlib import colormaps as cm
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
@@ -240,81 +242,79 @@ def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None, edges_be
             linewidth=np.abs(d['correlation'])*4, color=cmap(d['correlation']/2+0.5), alpha=np.abs(d['correlation']))
         ax.add_artist(edge_patch)
 
-
-def __node_to_plot(t, r, n, cum_max_nodes):
-    return t, cum_max_nodes[r] + r + n
-
-
-def __next_temp_trans(stG, n):
-    return [(m, stG[n][m]['transition']) for m in stG[n]
-            if stG[n][m]['type'] == 'temporal']
+@profile
+def __next_temp_trans(g: SpatioTemporalGraph, node: int) -> list[tuple[int, RC5]]:
+    return [(m, g[node][m]['transition']) for m in g[node]
+            if g[node][m]['type'] == 'temporal']
 
 
-def _walk_through(G, n):
-    next_trans = __next_temp_trans(G, n)
-    print(G.nodes[n]['t'], next_trans)
-    inp = input()
+class __CoordinatesGenerator:
+    def __init__(self, graph: SpatioTemporalGraph) -> None:
+        self.g = graph
+        self.__max_heights = None
+        self.__coords = None
 
-    while inp != 'q':
-        k = min(len(next_trans), int(inp)) if inp.isdigit() else 0
-        n, _ = next_trans[k]
-        next_trans = __next_temp_trans(G, n)
-        print(G.nodes[n]['t'], next_trans)
-        inp = input()
+    @cache
+    def __next_temp_trans(self, node: int) -> list[int]:
+        return [m for m in self.g[node]
+                if self.g[node][m]['type'] == 'temporal']
+
+    @cache
+    def __time_from_node(self, node: int) -> int:
+        return self.g.nodes[node]['t']
+
+    def __find_height_for_path(self, node: int, y: int) -> int:
+        current_max_y = y
+        trans = self.__next_temp_trans(node)
+
+        while trans != [] and (m := trans[0]) not in self.__coords:
+            t = self.__time_from_node(m)
+
+            if t in self.__max_heights:
+                current_max_y = max(current_max_y, self.__max_heights[t] + 1)
+
+            trans = self.__next_temp_trans(m)
+
+        return current_max_y
+
+    def __generate_coords_for_node(self, node: int, base_y: int) -> tuple[int, int]:
+        return self.__time_from_node(node), self.__find_height_for_path(node, base_y)
+
+    def __generate_coords_for_path_rec(self, trans_list: list[int], base: int) -> None:
+        base_y = base
+
+        for i, m in enumerate(trans_list):
+            if m not in self.__coords:
+                t, y = self.__generate_coords_for_node(m, base_y)
+                base_y += 1
+                self.__coords[m] = (t, y)
+                self.__max_heights[t] = y
+                next_trans = self.__next_temp_trans(m)
+                self.__generate_coords_for_path_rec(next_trans, y)
+
+    def generate(self, nodes: list[int], base_y: int) -> dict[int, tuple[int, int]]:
+        self.__max_heights = dict()
+        self.__coords = {n: (self.g.nodes[n]['t'], base_y + i) for i, n in enumerate(nodes)}
+
+        for i, node in enumerate(nodes):
+            trans_list = self.__next_temp_trans(node)
+            self.__generate_coords_for_path_rec(trans_list, base_y + i)
+
+        return self.__coords
 
 
-def __trans_color(trans):
-    if trans == RC5.PP:
+@profile
+def __trans_color(transition: RC5) -> str:
+    if transition == RC5.PP:
         return 'red'
-    elif trans == RC5.PPi:
+    elif transition == RC5.PPi:
         return 'blue'
-    elif trans == RC5.PO:
+    elif transition == RC5.PO:
         return 'limegreen'
     else:
         return 'black'
 
-
-def __find_height_for_path(G, coords, n, y):
-    current_max_y = y
-    trans = __next_temp_trans(G, n)
-
-    while trans != [] and trans[0][0] not in coords:
-        m, _ = trans[0]
-        t = G.nodes[m]['t']
-
-        heights = [e[1] for e in coords.values() if e[0] == t]
-        if len(heights) > 0:
-            current_max_y = max(current_max_y, max(heights) + 1)
-
-        trans = __next_temp_trans(G, m)
-
-    return current_max_y
-
-
-def __generate_coords_for_node(G, coords, n, base_y):
-    return G.nodes[n]['t'], __find_height_for_path(G, coords, n, base_y)
-
-
-def __generate_coords_for_path(G, nodes, base_y):
-    def __generate_coords_for_path_rec(G, coords, trans_list, base):
-        base_y = base
-
-        for i, (m, _) in enumerate(trans_list):
-            if m not in coords:
-                t, y = __generate_coords_for_node(G, coords, m, base_y)
-                base_y += 1
-                coords[m] = (t, y)
-                next_trans = __next_temp_trans(G, m)
-                __generate_coords_for_path_rec(G, coords, next_trans, y)
-
-    coords = {n: (G.nodes[n]['t'], base_y + i) for i, n in enumerate(nodes)}
-    for i, n in enumerate(nodes):
-        trans_list = __next_temp_trans(G, n)
-        __generate_coords_for_path_rec(G, coords, trans_list, base_y + i)
-
-    return coords
-
-
+@profile
 def __draw_paths(axe, G, coords, nodes, base_y):
     done = set()
 
@@ -338,6 +338,7 @@ def __draw_paths(axe, G, coords, nodes, base_y):
 
 
 # TODO add time scale at the bottom
+@profile
 def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None):
     if ax is None:
         ax = plt.gca()
@@ -353,9 +354,10 @@ def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None):
     sub_g = graph.conditional_subgraph(t=0)
     heights = []
     y = 0
+    gen = __CoordinatesGenerator(graph)
     for r, region in enumerate(regions):
         nodes = [n for n, d in sub_g.nodes.items() if d['region'] == region]
-        coords = __generate_coords_for_path(graph, nodes, y)
+        coords = gen.generate(nodes, y)
 
         __draw_paths(ax, graph, coords, nodes, y)
 
