@@ -52,30 +52,73 @@ def multipartite_plot(g: SpatioTemporalGraph):
 
 
 def __polar2cart(angles: np.array, distance: float) -> tuple[np.array, np.array]:
+    """Calculate the cartesian coordinates from polar ones.
+
+    Parameters
+    ----------
+    angles: np.array
+        The angles in radian.
+    distance: float
+        The distance in matplotlib's unit.
+
+    Returns
+    -------
+    tuple[np.array, np.array]
+        The cartesian coordinates.
+    """
     pts = distance * np.exp(1j * angles)
     return np.real(pts), np.imag(pts)
 
 
 def __readable_angled_annotation(angle: float) -> dict[str, float | str]:
+    """Get annotation's properties depending on the display angle.
+
+    Parameters
+    ----------
+    angle: float
+        The angle in degrees.
+
+    Returns
+    -------
+    dict[str, float | str]
+        The properties for areas annotation.
+    """
     if angle <= 90 or angle >= 270:
         return dict(rotation=angle, ha='left')
     else:
         return dict(rotation=angle+180, ha='right')
 
 
-def __con_style(angle1: float, angle2: float, c: float = 5) -> str:
+def __con_style(angle1: float, angle2: float, bending: float = 5) -> str:
+    """Get the connection style property for edges.
+
+    Parameters
+    ----------
+    angle1: float
+        The angle of the first node in radians.
+    angle2: float
+        The angle of the second node in radians.
+    bending: float
+        The bending coefficient (close to 0 means fully bend and close to
+        infinity means straight).
+
+    Returns
+    -------
+    str
+        The appropriate connection style property.
+    """
     diff = angle1 - angle2
-    if diff > 180 or diff < -180:
+    if diff > np.pi or diff < -np.pi:
         sign = -np.sign(diff)
-        dist = (360 - abs(diff)) / 180
+        dist = (2*np.pi - abs(diff)) / np.pi
     else:
         sign = np.sign(diff)
-        dist = abs(diff) / 180
-    return f'arc3, rad={sign * (1 - dist) ** c}'
+        dist = abs(diff) / np.pi
+    return f'arc3, rad={sign * (1 - dist) ** bending}'
 
 
 @profile
-def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None) -> None:
+def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None, edges_bending: float = 5) -> None:
     if ax is None:
         ax = plt.gca()
     ax.axis('off')
@@ -135,7 +178,7 @@ def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None) -> None:
     for (n1, n2), d in sub_g.edges.items():
         edge_patch = FancyArrowPatch(
             posA=nodes_coords[n1], posB=nodes_coords[n2],arrowstyle='-',
-            connectionstyle=__con_style(np.rad2deg(nodes_angles[n1]), np.rad2deg(nodes_angles[n2])),
+            connectionstyle=__con_style(nodes_angles[n1], nodes_angles[n2], bending=edges_bending),
             linewidth=np.abs(d['correlation'])*4, color=cmap(d['correlation']/2+0.5), alpha=np.abs(d['correlation']))
         ax.add_artist(edge_patch)
 
