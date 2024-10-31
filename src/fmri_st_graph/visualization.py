@@ -170,7 +170,7 @@ def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None, edges_be
     t: float
         The instant to plot in the graph.
     ax: matplotlib.axes.Axes, optional
-        The axes on which to plot.
+        The axes on which to plot. If not set, the current axes will be used.
     edges_bending: float, optional
         Controls the bending of the edges. Close to 0 means full bending, close to
         infinity means no bending (default is 5).
@@ -244,6 +244,8 @@ def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None, edges_be
 
 
 class __CoordinatesGenerator:
+    """Utility to generate temporal paths from a spatio-temporal graph."""
+
     def __init__(self, graph: SpatioTemporalGraph) -> None:
         self.g = graph
         self.__max_heights = None
@@ -288,6 +290,20 @@ class __CoordinatesGenerator:
                 self.__generate_coords_for_path_rec(next_trans, y)
 
     def generate(self, nodes: list[int], base_y: int) -> dict[int, tuple[int, int]]:
+        """Generate the coordinates of the temporal paths.
+
+        Parameters
+        ----------
+        nodes: list[int]
+            The nodes starting the paths.
+        base_y: int
+            The initial height location of the path.
+
+        Returns
+        -------
+        dict[int, tuple[int, int]]
+            A dictionary mapping a node to its time/height coordinates.
+        """
         self.__max_heights = dict()
         self.__coords = {n: (self.g.nodes[n]['t'], base_y + i) for i, n in enumerate(nodes)}
 
@@ -300,6 +316,18 @@ class __CoordinatesGenerator:
 
 @cache
 def _trans_color(transition: RC5) -> str:
+    """Defines the color to use for a given RC5 transition.
+
+    Parameters
+    ----------
+    transition: RC5
+        The transition between two nodes.
+
+    Returns
+    -------
+    str
+        The transition's color name.
+    """
     if transition == RC5.PP:
         return 'red'
     elif transition == RC5.PPi:
@@ -311,6 +339,8 @@ def _trans_color(transition: RC5) -> str:
 
 
 class __PathDrawer:
+    """Utility to draw temporal paths of a spatio-temporal graph on an axis."""
+
     def __init__(self, g: SpatioTemporalGraph, axe: Axes) -> None:
         self.g = g
         self.axe = axe
@@ -336,6 +366,17 @@ class __PathDrawer:
                 self.__draw_rec(coords, next_trans, m, t, y)
 
     def draw(self, coords: dict[int, tuple[int, int]], nodes: list[int], base_y: int) -> None:
+        """Draw the temporal paths.
+
+        Parameters
+        ----------
+        coords: dict[int, tuple[int, int]]
+            The coordinates of the nodes in the temporal paths.
+        nodes: list[int]
+            The nodes starting the paths.
+        base_y: int
+            The initial height location of the path.
+        """
         self.__done = set()
         self.__lines = list()
         self.__colors = list()
@@ -349,7 +390,16 @@ class __PathDrawer:
                            linewidths=1.5, linestyles='-'))
 
 
-def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None):
+def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None) -> None:
+    """Draw a temporal plot for a spatio-temporal graph.
+
+    Parameters
+    ----------
+    graph: SpatioTemporalGraph
+        The spatio-temporal graph.
+    ax: matplotlib.axes.Axes, optional
+        The axes on which to plot.  If not set, the current axes will be used.
+    """
     if ax is None:
         ax = plt.gca()
 
