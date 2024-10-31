@@ -349,11 +349,9 @@ class __PathDrawer:
                            linewidths=1.5, linestyles='-'))
 
 
-# TODO add time scale at the bottom
 def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None):
     if ax is None:
         ax = plt.gca()
-    ax.axis('off')
 
     rels = graph.areas.sort_values('Name_Region')
     regions = rels['Name_Region'].unique().tolist()
@@ -383,11 +381,23 @@ def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None):
     # draw limits of regions
     o = 0
     regions_cmap = cm.get_cmap('tab20')
-    for r, region in enumerate(regions):
+    ticks = []
+    for r, _ in enumerate(regions):
         m = heights[r]
         o += m
         ax.fill_between([times.min() - 0.5, times.max() + 0.5], o - m - 1, o,
                         fc=regions_cmap(r), alpha=0.2)
-        ax.annotate(text=region, xy=(-1, (o - m - 1 + o) / 2),
-                    va='center', fontsize='small', ha='right')
+        ticks.append((o - m - 1 + o) / 2)
         o += 1
+
+    # set up the axes
+    ax.spines[['left', 'top', 'right']].set_visible(False)
+
+    ax.get_xaxis().tick_bottom()
+    ax.set_xlabel("Time")
+    ax.set_xlim(times.min()-1, times.max())
+
+    ax.set_yticks(ticks, regions)
+    for tick in ax.get_yaxis().get_major_ticks():
+        tick.tick1line.set_visible(False)
+    ax.set_ylim(-1, sum(heights) + len(heights) - 1)
