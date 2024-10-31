@@ -4,10 +4,10 @@ from functools import cache
 
 import networkx as nx
 import numpy as np
-from line_profiler_pycharm import profile
 from matplotlib import colormaps as cm
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
+from matplotlib.collections import LineCollection
 from matplotlib.patches import FancyArrowPatch
 
 from .graph import SpatioTemporalGraph, RC5
@@ -242,11 +242,6 @@ def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None, edges_be
             linewidth=np.abs(d['correlation'])*4, color=cmap(d['correlation']/2+0.5), alpha=np.abs(d['correlation']))
         ax.add_artist(edge_patch)
 
-@profile
-def __next_temp_trans(g: SpatioTemporalGraph, node: int) -> list[tuple[int, RC5]]:
-    return [(m, g[node][m]['transition']) for m in g[node]
-            if g[node][m]['type'] == 'temporal']
-
 
 class __CoordinatesGenerator:
     def __init__(self, graph: SpatioTemporalGraph) -> None:
@@ -303,8 +298,8 @@ class __CoordinatesGenerator:
         return self.__coords
 
 
-@profile
-def __trans_color(transition: RC5) -> str:
+@cache
+def _trans_color(transition: RC5) -> str:
     if transition == RC5.PP:
         return 'red'
     elif transition == RC5.PPi:
@@ -314,31 +309,47 @@ def __trans_color(transition: RC5) -> str:
     else:
         return 'black'
 
-@profile
-def __draw_paths(axe, G, coords, nodes, base_y):
-    done = set()
 
-    def __draw_paths_rec(trans_list, n, prev_t, prev_y):
+class __PathDrawer:
+    def __init__(self, g: SpatioTemporalGraph, axe: Axes) -> None:
+        self.g = g
+        self.axe = axe
+        self.__done = None
+        self.__lines = None
+        self.__colors = None
+
+    @cache
+    def __next_temp_trans(self, node: int) -> list[tuple[int, RC5]]:
+        return [(m, self.g[node][m]['transition'])
+                for m in self.g[node]
+                if self.g[node][m]['type'] == 'temporal']
+
+    def __draw_rec(self, coords: dict[int, tuple[int, int]], trans_list: list[tuple[int, RC5]],
+                   node: int, prev_t: int, prev_y: int) -> None:
         for m, rc5 in trans_list:
-            if m in coords and (n, m) not in done:
+            if m in coords and (node, m) not in self.__done:
                 t, y = coords[m]
-                axe.plot([prev_t, t], [prev_y, y],
-                         '-', color=__trans_color(rc5), lw=1.5)
-                # plt.show()
-                # plt.pause(0.1)
-                done.add((n, m))
-                next_trans = __next_temp_trans(G, m)
-                __draw_paths_rec(next_trans, m, t, y)
+                self.__lines.append([(prev_t, prev_y), (t, y)])
+                self.__colors.append(_trans_color(rc5))
+                self.__done.add((node, m))
+                next_trans = self.__next_temp_trans(m)
+                self.__draw_rec(coords, next_trans, m, t, y)
 
-    for i, n in enumerate(nodes):
-        trans_list = __next_temp_trans(G, n)
-        __draw_paths_rec(trans_list, n, G.nodes[n]['t'], base_y + i)
+    def draw(self, coords: dict[int, tuple[int, int]], nodes: list[int], base_y: int) -> None:
+        self.__done = set()
+        self.__lines = list()
+        self.__colors = list()
 
-    return coords
+        for i, node in enumerate(nodes):
+            trans_list = self.__next_temp_trans(node)
+            self.__draw_rec(coords, trans_list, node, self.g.nodes[node]['t'], base_y + i)
+
+        self.axe.add_collection(
+            LineCollection(self.__lines, colors=self.__colors,
+                           linewidths=1.5, linestyles='-'))
 
 
 # TODO add time scale at the bottom
-@profile
 def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None):
     if ax is None:
         ax = plt.gca()
@@ -355,11 +366,11 @@ def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None):
     heights = []
     y = 0
     gen = __CoordinatesGenerator(graph)
+    drawer = __PathDrawer(graph, ax)
     for r, region in enumerate(regions):
         nodes = [n for n, d in sub_g.nodes.items() if d['region'] == region]
         coords = gen.generate(nodes, y)
-
-        __draw_paths(ax, graph, coords, nodes, y)
+        drawer.draw(coords, nodes, y)
 
         colors = [graph.nodes[n]['internal_strength'] / 2 + 0.5
                   for n in coords.keys()]
