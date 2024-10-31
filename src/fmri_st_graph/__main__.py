@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 
 from .factory import spatio_temporal_graph_from_corr_matrices
 from .io import load_spatio_temporal_graph, save_spatio_temporal_graph
-from .visualization import spatial_plot, temporal_plot, multipartite_plot
+from .visualization import spatial_plot, temporal_plot, multipartite_plot, dynamic_plot
 
 
 @click.group()
@@ -53,6 +53,7 @@ def build(correlation_matrices_path: str, areas_description_path: str, output_gr
 def plot(ctx: click.core.Context, graph_path: str):
     ctx.obj = load_spatio_temporal_graph(graph_path)
 
+
 @plot.command()
 @click.pass_context
 def multipartite(ctx: click.core.Context):
@@ -73,6 +74,15 @@ def spatial(ctx: click.core.Context, time: int):
 @click.pass_context
 def temporal(ctx: click.core.Context):
     temporal_plot(ctx.obj)
+    plt.show()
+
+
+@plot.command()
+@click.option('-s', '--size', type=click.FloatRange(0), default=60,
+              help="The size of the plotting window (in centimeter).")
+@click.pass_context
+def dynamic(ctx: click.core.Context, size: float):
+    dynamic_plot(ctx.obj, size)
     plt.show()
 
 

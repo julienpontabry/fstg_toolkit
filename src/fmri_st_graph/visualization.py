@@ -8,7 +8,9 @@ from matplotlib import colormaps as cm
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.collections import LineCollection
+from matplotlib.gridspec import GridSpec
 from matplotlib.patches import FancyArrowPatch
+from matplotlib.widgets import Slider
 
 from .graph import SpatioTemporalGraph, RC5
 
@@ -451,3 +453,81 @@ def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None) -> None:
     for tick in ax.get_yaxis().get_major_ticks():
         tick.tick1line.set_visible(False)
     ax.set_ylim(-1, sum(heights) + len(heights) - 1)
+
+
+class __BlittedCursor:
+    """A vertical cursor using the blitting technique for faster redrawing."""
+
+    def __init__(self, ax: Axes):
+        self.ax = ax
+        self.__background = None
+        self.__vertical_line = ax.axvline(color='k', lw=0.8, ls='--')
+        self.__creating_background = False
+        ax.figure.canvas.mpl_connect('draw_event', self.__on_draw)
+
+    def set_location(self, value: int) -> None:
+        self.__vertical_line.set_xdata([value])
+
+    def __on_draw(self, event):
+        self.__create_new_background()
+
+    def __set_visible(self, visible):
+        need_redraw = self.__vertical_line.get_visible() != visible
+        self.__vertical_line.set_visible(visible)
+        return need_redraw
+
+    def __create_new_background(self):
+        if self.__creating_background:
+            # discard calls triggered from within this function
+            return
+        self.__creating_background = True
+        self.__set_visible(False)
+        self.ax.figure.canvas.draw()
+        self.__background = self.ax.figure.canvas.copy_from_bbox(self.ax.bbox)
+        self.__set_visible(True)
+        self.__creating_background = False
+        # inspired from https://matplotlib.org/stable/gallery/event_handling/cursor_demo.html#sphx-glr-gallery-event-handling-cursor-demo-py
+
+
+def __inch2cm(inch: float) -> float:
+    return inch / 2.54
+
+
+def dynamic_plot(graph: SpatioTemporalGraph, size: float) -> None:
+    fig = plt.figure(figsize=(__inch2cm(size), __inch2cm(size / 3)), layout='constrained')
+
+    gs1 = GridSpec(nrows=1, ncols=2, figure=fig, width_ratios=[2, 1])
+    axe1 = fig.add_subplot(gs1[0])
+
+    gs12 = gs1[1].subgridspec(nrows=2, ncols=1, height_ratios=[40, 1])
+    axe2 = fig.add_subplot(gs12[0])
+    axe3 = fig.add_subplot(gs12[1])
+
+    init_t = 0
+    temporal_plot(graph, ax=axe1)
+    # spatial_plot(graph, t=init_t, ax=axe2)  # TODO use blitting and cache to accelerate the display of spatial plots
+
+    # NOTE TEST CACHED BLIT
+    cache = dict()
+    for t in range(graph.graph['min_time'], 50):#graph.graph['max_time']):
+        axe2.clear()
+        spatial_plot(graph, t=t, ax=axe2)
+        cache[t] = axe2.figure.canvas.copy_from_bbox(axe2.bbox)
+        print(cache[t])
+    # fig.canvas.blit(axe2.bbox)
+    # NOTE TEST CACHED BLIT
+
+    cursor = __BlittedCursor(axe1)
+    fig.t_slider = Slider(ax=axe3, label="$t$",
+                          valmin=graph.graph['min_time'], valmax=graph.graph['max_time'], valinit=init_t, valstep=1)
+
+    def __update_time(t: int) -> None:
+        cursor.set_location(t)  # FIXME does not work when keeping a reference of slider in the figure for some reason
+        # spatial_plot(graph, t=t, ax=axe2)
+        # axe2.clear()
+        axe2.figure.canvas.restore_region(cache[t])
+        # fig.canvas.blit(axe2.bbox)
+        # fig.canvas.flush_events()
+
+    fig.t_slider.on_changed(__update_time)
+    # fig.t_slider.set_val(20)
