@@ -460,7 +460,18 @@ def __inch2cm(inch: float) -> float:
     return inch / 2.54
 
 
-def dynamic_plot(graph: SpatioTemporalGraph, size: float) -> None:
+def __calc_limits(t: int, w: int, limits: tuple[int, int]) -> tuple[float, float]:
+    half_w = w // 2
+    left, right = t - half_w,  t + half_w
+    if left < limits[0]:
+        return limits[0] - 1, limits[0] + w + 0.5
+    elif limits[1] < right:
+        return limits[1] - w - 0.5, limits[1] + 0.5
+    else:
+        return left - 0.5, right + 0.5
+
+
+def dynamic_plot(graph: SpatioTemporalGraph, size: float, time_window: int = 150) -> None:
     fig = plt.figure(figsize=(__inch2cm(size), __inch2cm(size / 3)), layout='constrained')
 
     gs1 = GridSpec(nrows=1, ncols=2, figure=fig, width_ratios=[2, 1])
@@ -471,15 +482,19 @@ def dynamic_plot(graph: SpatioTemporalGraph, size: float) -> None:
     axe3 = fig.add_subplot(gs12[1])
 
     init_t = 0
+    limits_t = graph.graph['min_time'], graph.graph['max_time']
     temporal_plot(graph, ax=axe1)
     spatial_plot(graph, t=init_t, ax=axe2)
+    axe1.set_xlim(*__calc_limits(init_t, time_window, limits_t))
 
     cursor = axe1.axvline(x=init_t, color='k', lw=0.8, ls='--')
     fig.t_slider = Slider(ax=axe3, label="$t$",
-                          valmin=graph.graph['min_time'], valmax=graph.graph['max_time'], valinit=init_t, valstep=1)
+                          valmin=limits_t[0], valmax=limits_t[1], valinit=init_t, valstep=1)
 
     def __update_time(t: int) -> None:
         cursor.set_xdata([t])
+        axe1.set_xlim(__calc_limits(t, time_window, limits_t))
+
         axe2.clear()
         spatial_plot(graph, t=t, ax=axe2)
 
