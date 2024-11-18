@@ -78,7 +78,7 @@ def temporal(ctx: click.core.Context):
 
 
 @plot.command()
-@click.option('-s', '--size', type=click.FloatRange(0), default=60,
+@click.option('-s', '--size', type=click.FloatRange(0), default=70,
               help="The size of the plotting window (in centimeter).")
 @click.pass_context
 def dynamic(ctx: click.core.Context, size: float):
