@@ -464,14 +464,14 @@ def __calc_limits(t: int, w: int, limits: tuple[int, int]) -> tuple[float, float
     half_w = w // 2
     left, right = t - half_w,  t + half_w
     if left < limits[0]:
-        return limits[0] - 1, limits[0] + w + 0.5
+        return limits[0] - 1, min(limits[0] + w, limits[1]) + 0.5
     elif limits[1] < right:
-        return limits[1] - w - 0.5, limits[1] + 0.5
+        return max(limits[1] - w, limits[0]) - 0.5, limits[1] + 0.5
     else:
         return left - 0.5, right + 0.5
 
 
-def dynamic_plot(graph: SpatioTemporalGraph, size: float, time_window: int = 150) -> None:
+def dynamic_plot(graph: SpatioTemporalGraph, size: float, time_window: int = None) -> None:
     fig = plt.figure(figsize=(__inch2cm(size), __inch2cm(size / 3)), layout='constrained')
 
     gs1 = GridSpec(nrows=1, ncols=2, figure=fig, width_ratios=[2, 1])
@@ -483,6 +483,9 @@ def dynamic_plot(graph: SpatioTemporalGraph, size: float, time_window: int = 150
 
     init_t = 0
     limits_t = graph.graph['min_time'], graph.graph['max_time']
+    if time_window is None:
+        time_window = limits_t[1]
+
     temporal_plot(graph, ax=axe1)
     spatial_plot(graph, t=init_t, ax=axe2)
     axe1.set_xlim(*__calc_limits(init_t, time_window, limits_t))

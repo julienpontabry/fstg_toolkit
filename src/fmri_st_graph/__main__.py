@@ -82,9 +82,12 @@ def temporal(ctx: click.core.Context):
 @plot.command()
 @click.option('-s', '--size', type=click.FloatRange(0), default=70,
               help="The size of the plotting window (in centimeter).")
+@click.option('-w', '--window', type=click.IntRange(min=50), default=None,
+              help="The size of the sliding temporal window to display (if not set, "
+                   "show the full temporal plot by default).")
 @click.pass_context
-def dynamic(ctx: click.core.Context, size: float):
-    dynamic_plot(ctx.obj, size)
+def dynamic(ctx: click.core.Context, size: float, window: int):
+    dynamic_plot(ctx.obj, size, time_window=window)
     plt.show()
 
 
