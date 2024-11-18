@@ -447,7 +447,7 @@ def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None) -> None:
 
     ax.get_xaxis().tick_bottom()
     ax.set_xlabel("Time")
-    ax.set_xlim(times.min()-1, times.max())
+    ax.set_xlim(times.min()-1, times.max()+1)
 
     ax.set_yticks(ticks, regions)
     for tick in ax.get_yaxis().get_major_ticks():

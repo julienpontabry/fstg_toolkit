@@ -73,7 +73,8 @@ def spatial(ctx: click.core.Context, time: int):
 @plot.command()
 @click.pass_context
 def temporal(ctx: click.core.Context):
-    temporal_plot(ctx.obj)
+    fig, axe = plt.subplots(layout='constrained')
+    temporal_plot(ctx.obj, ax=axe)
     plt.show()
 
 
