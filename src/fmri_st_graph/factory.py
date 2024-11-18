@@ -308,7 +308,7 @@ def spatio_temporal_graph_from_networks_graphs(networks_graphs: tuple[nx.Graph, 
                      (4, 3, {'t': 1, 'type': 'spatial', 'correlation': 0.41})])
     """
     nb_networks_graphs = len(networks_graphs)
-    st_graph = nx.DiGraph(min_time=0, max_time=nb_networks_graphs)
+    st_graph = nx.DiGraph(min_time=0, max_time=nb_networks_graphs-1)
     __add_networks_graph(st_graph, networks_graphs[0], 0)
     prev_node = 0
 
