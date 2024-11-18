@@ -66,7 +66,8 @@ def multipartite(ctx: click.core.Context):
               help="The time index of the spatial subgraph to show.")
 @click.pass_context
 def spatial(ctx: click.core.Context, time: int):
-    spatial_plot(ctx.obj, time)
+    fig, axe = plt.subplots(layout='constrained')
+    spatial_plot(ctx.obj, time, ax=axe)
     plt.show()
 
 

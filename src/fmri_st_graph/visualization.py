@@ -162,7 +162,7 @@ def __angle_between(vec1: tuple[float, float], vec2: tuple[float, float]) -> flo
     return np.rad2deg(angle)
 
 
-def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None, edges_bending: float = 5) -> None:
+def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None, edges_bending: float = 3) -> None:
     """Draw a spatial plot for spatio-temporal graph.
 
     Parameters
@@ -175,7 +175,7 @@ def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None, edges_be
         The axes on which to plot. If not set, the current axes will be used.
     edges_bending: float, optional
         Controls the bending of the edges. Close to 0 means full bending, close to
-        infinity means no bending (default is 5).
+        infinity means no bending (default is 3).
     """
     if ax is None:
         ax = plt.gca()
@@ -195,7 +195,8 @@ def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None, edges_be
     regions_cmap = cm.get_cmap('tab20')
     ax.pie([len(rels[rels['Name_Region'] == region]) / n
             for region in regions],
-           labels=regions, radius=2.25, startangle=-360 / n / 2,
+           radius=2.25, startangle=-360 / n / 2,
+           labels=regions, labeldistance=1.1, rotatelabels=False,
            colors=[regions_cmap(i) for i in range(len(regions))],
            wedgeprops=dict(width=1, edgecolor='w', alpha=0.3))
     ax.set_xlim(-3, 3)
