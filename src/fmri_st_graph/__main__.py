@@ -12,8 +12,11 @@ from .visualization import spatial_plot, temporal_plot, multipartite_plot, dynam
 
 @click.group()
 def cli():
+    """Build, plot and simulate spatio-temporal graphs for fMRI data."""
     pass
 
+
+# building
 
 @cli.command()
 @click.argument('correlation_matrices_path', type=click.Path(exists=True))
@@ -21,6 +24,10 @@ def cli():
 @click.option('-o', '--output_graph', type=click.Path(writable=True), default="st_graph.zip",
               help="Path where to write the built graph.")
 def build(correlation_matrices_path: str, areas_description_path: str, output_graph: str):
+    """Build a spatio-temporal graph.
+
+    The spatio-temporal graph is built from correlation matrices and areas description.
+    """
     matrices = np.load(correlation_matrices_path)
 
     if isinstance(matrices, np.lib.npyio.NpzFile):
@@ -47,16 +54,24 @@ def build(correlation_matrices_path: str, areas_description_path: str, output_gr
             save_spatio_temporal_graph(graph, output)
 
 
+# plotting
+
 @click.group()
 @click.argument('graph_path', type=click.Path(exists=True))
 @click.pass_context
 def plot(ctx: click.core.Context, graph_path: str):
+    """Plot a spatio-temporal graph."""
     ctx.obj = load_spatio_temporal_graph(graph_path)
 
 
 @plot.command()
 @click.pass_context
 def multipartite(ctx: click.core.Context):
+    """Plot as multipartite graph.
+
+    The x-axis corresponds to the time evolution and nodes
+    at a given time are lined up vertically.
+    """
     go_on = True
     n = len(ctx.obj)
     if n >= 100:
@@ -73,10 +88,14 @@ def multipartite(ctx: click.core.Context):
 
 
 @plot.command()
-@click.option('-t', '--time', type=int, default=0,
+@click.option('-t', '--time', type=click.IntRange(0), default=0,
               help="The time index of the spatial subgraph to show.")
 @click.pass_context
 def spatial(ctx: click.core.Context, time: int):
+    """Plot as a spatial connectivity graph.
+
+    The temporal edges are not displayed."""
+    time = min(time, ctx.obj.graph['max_time'])
     fig, axe = plt.subplots(layout='constrained')
     spatial_plot(ctx.obj, time, ax=axe)
     plt.show()
@@ -85,6 +104,9 @@ def spatial(ctx: click.core.Context, time: int):
 @plot.command()
 @click.pass_context
 def temporal(ctx: click.core.Context):
+    """Plot as a temporal connectivity graph.
+
+    The spatial edges are not displayed."""
     fig, axe = plt.subplots(layout='constrained')
     temporal_plot(ctx.obj, ax=axe)
     plt.show()
@@ -98,10 +120,22 @@ def temporal(ctx: click.core.Context):
                    "show the full temporal plot by default).")
 @click.pass_context
 def dynamic(ctx: click.core.Context, size: float, window: int):
+    """Plot a dynamic graph.
+
+    Both the spatial and temporal graphs are drawn, with some interactivity."""
     dynamic_plot(ctx.obj, size, time_window=window)
     plt.show()
 
 
+# simulating
+
+@click.group()
+def simulate():
+    """Simulate a spatio-temporal graph."""
+    pass
+
+
 if __name__ == '__main__':
     cli.add_command(plot)
+    cli.add_command(simulate)
     cli()
