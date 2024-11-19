@@ -15,7 +15,23 @@ from matplotlib.widgets import Slider
 from .graph import SpatioTemporalGraph, RC5
 
 
-def __time_multipartite_layout(g: SpatioTemporalGraph, dist=1.0):
+def __time_multipartite_layout(g: SpatioTemporalGraph, dist: float = 1.0) -> dict[int, tuple[int, float]]:
+    """Create coordinates for all the nodes of the spatio-temporal graph.
+
+    The nodes are placed vertical by time point.
+
+    Parameters
+    ----------
+    g: SpatioTemporalGraph
+        The spatio-temporal graph.
+    dist: float, optional
+        The distance factor for vertical space occupied by the nodes. Default is 1.
+
+    Returns
+    -------
+    dict[int, tuple[int, float]]
+        A dictionary of coordinates associated with nodes.
+    """
     pos = {}
 
     for t in range(g.graph['min_time'],
@@ -33,6 +49,15 @@ def __time_multipartite_layout(g: SpatioTemporalGraph, dist=1.0):
 
 # TODO add time scale at the bottom
 def multipartite_plot(g: SpatioTemporalGraph, ax: Axes = None) -> None:
+    """Draw a multipartite plot for the spatio-temporal graph.
+
+    Parameters
+    ----------
+    g: SpatioTemporalGraph
+        The spatio-temporal graph.
+    ax: matplotlib.axes.Axes, optional
+        The axes on which to plot. If not set, the current axes will be used.
+    """
     if ax is None:
         ax = plt.gca()
 
