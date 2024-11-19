@@ -57,14 +57,19 @@ def plot(ctx: click.core.Context, graph_path: str):
 @plot.command()
 @click.pass_context
 def multipartite(ctx: click.core.Context):
+    go_on = True
     n = len(ctx.obj)
     if n >= 100:
         click.echo(f"There are {n} nodes in this graph; the multipartite plot has "
                    "not been optimized for big graphs!", err=True)
+        answer = click.prompt("Do you really want to continue?",
+                              type=click.Choice(["yes", "no"]), default="no")
+        go_on = answer == 'yes'
 
-    fig, axe = plt.subplots(layout='constrained')
-    multipartite_plot(ctx.obj, ax=axe)
-    plt.show()
+    if go_on:
+        fig, axe = plt.subplots(layout='constrained')
+        multipartite_plot(ctx.obj, ax=axe)
+        plt.show()
 
 
 @plot.command()
