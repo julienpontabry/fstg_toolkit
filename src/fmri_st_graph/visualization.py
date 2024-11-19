@@ -77,12 +77,23 @@ def multipartite_plot(g: SpatioTemporalGraph, ax: Axes = None) -> None:
             edge_widths.append(np.abs(d['correlation']) * 4)
             edge_labels[e] = d['correlation']
 
-
+    # draw the graph
     nx.draw_networkx(g, ax=ax, pos=pos, with_labels=True, node_color=node_color,
                      cmap='coolwarm', vmin=-1, vmax=1, edge_color=edge_color,
-                     connectionstyle='arc3', width=edge_widths)
+                     connectionstyle='arc3', width=edge_widths, hide_ticks=False)
     nx.draw_networkx_edge_labels(g, ax=ax, pos=pos, edge_labels=edge_labels,
-                                 connectionstyle='arc3')
+                                 connectionstyle='arc3', hide_ticks=False)
+
+    # set up the axes
+    ax.spines[['left', 'top', 'right']].set_visible(False)
+
+    min_time, max_time = g.graph['min_time'], g.graph['max_time']
+    ax.get_xaxis().tick_bottom()
+    ax.set_xticks(range(min_time, max_time + 1))
+    ax.set_xlabel("Time")
+    ax.set_xlim(min_time - 0.125, max_time + 0.125)
+
+    ax.set_yticks([])
 
 
 def __polar2cart(angles: np.array, distance: float) -> tuple[np.array, np.array]:
