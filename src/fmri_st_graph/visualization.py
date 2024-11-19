@@ -15,7 +15,6 @@ from matplotlib.widgets import Slider
 from .graph import SpatioTemporalGraph, RC5
 
 
-# FIXME do we need a dist parameter?
 def __time_multipartite_layout(g: SpatioTemporalGraph, dist=1.0):
     pos = {}
 
@@ -33,23 +32,32 @@ def __time_multipartite_layout(g: SpatioTemporalGraph, dist=1.0):
 
 
 # TODO add time scale at the bottom
-def multipartite_plot(g: SpatioTemporalGraph):
-    plt.figure()
+def multipartite_plot(g: SpatioTemporalGraph, ax: Axes = None) -> None:
+    if ax is None:
+        ax = plt.gca()
+
     pos = __time_multipartite_layout(g)
     node_color = [d['internal_strength']
                   for _, d in g.nodes.items()]
-    edge_color = ['red' if d['type'] == 'temporal' else 'limegreen'
-                  for _, d in g.edges.items()]
-    edge_labels = {e: d['correlation'] if d['type'] == 'spatial' else d['transition']
-                   for e, d in g.edges.items()}
-    edge_widths = [np.abs(d['correlation']) * 4 if d['type'] == 'spatial' else 2
-                   for _, d in g.edges.items()]
-    connectionstyle = 'arc3'
-    nx.draw_networkx(g, pos=pos, with_labels=True, node_color=node_color,
+    edge_color = []
+    edge_labels = dict()
+    edge_widths = []
+    for e, d in g.edges.items():
+        if d['type'] == 'temporal':
+            edge_color.append('red')
+            edge_widths.append(2)
+            edge_labels[e] = d['transition']
+        else:
+            edge_color.append('limegreen')
+            edge_widths.append(np.abs(d['correlation']) * 4)
+            edge_labels[e] = d['correlation']
+
+
+    nx.draw_networkx(g, ax=ax, pos=pos, with_labels=True, node_color=node_color,
                      cmap='coolwarm', vmin=-1, vmax=1, edge_color=edge_color,
-                     connectionstyle=connectionstyle, width=edge_widths)
-    nx.draw_networkx_edge_labels(g, pos=pos, edge_labels=edge_labels,
-                                 connectionstyle=connectionstyle)
+                     connectionstyle='arc3', width=edge_widths)
+    nx.draw_networkx_edge_labels(g, ax=ax, pos=pos, edge_labels=edge_labels,
+                                 connectionstyle='arc3')
 
 
 def __polar2cart(angles: np.array, distance: float) -> tuple[np.array, np.array]:
