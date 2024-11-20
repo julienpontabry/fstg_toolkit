@@ -163,38 +163,25 @@ class GraphElementsDescription(click.ParamType):
         return elements
 
 
+class _NetworkDescription(GraphElementsDescription):
+    elem_desc = r'\s*(?P<range>\d+:\d+),(?P<id>\d+),(?P<strength>-?\d*.\d+)'
+
+    def _convert_from_match(self, match: re.Match[str]) -> tuple[any, ...]:
+        tmp = match.group('range').split(':')
+        areas = int(tmp[0]), int(tmp[1])
+        region = int(match.group('id'))
+        internal_strength = float(match.group('strength'))
+        return areas, region, internal_strength
+
+
 class NetworksDescription(click.ParamType):
-    net_desc = re.compile(r'[-,:.\d]+')
-    reg_desc = re.compile(r'\s*(?P<range>\d+:\d+),(?P<id>\d+),(?P<strength>-?\d*.\d+)')
-
-    def __convert_network(self, value: str) -> list[tuple[tuple[int, int], int, float]]:
-        network = []
-
-        try:
-            for net_match in self.net_desc.finditer(value):
-                if not net_match:
-                    self.fail(f"{value!r} is not a valid network description!")
-
-                reg_match = self.reg_desc.match(net_match.group(0))
-
-                if not reg_match:
-                    self.fail(f"{value!r} is not a valid network description!")
-
-                tmp = reg_match.group('range').split(':')
-                areas = int(tmp[0]), int(tmp[1])
-                region = int(reg_match.group('id'))
-                internal_strength = float(reg_match.group('strength'))
-                network.append((areas, region, internal_strength))
-
-            return network
-        except ValueError:
-            self.fail(f"{value!r} is not a valid network description!")
+    _delegate = _NetworkDescription()
 
     def convert(self, value: any, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> any:
         if not isinstance(value, str):
             self.fail(f"{value!r} is not a valid networks description!")
-
-        return [self.__convert_network(network_desc) for network_desc in value.split('/')]
+        return [self._delegate.convert(network_desc, param, ctx)
+                for network_desc in value.split('/')]
 
 NETWORKS_DESCRIPTION = NetworksDescription()
 
@@ -238,6 +225,8 @@ class TemporalEdgesDescription(GraphElementsDescription):
 TEMPORAL_EDGES_DESCRIPTION = TemporalEdgesDescription()
 
 
+
+
 @click.group()
 def simulate():
     """Simulate a spatio-temporal graph."""
@@ -253,6 +242,7 @@ def pattern(networks: list[list[tuple[tuple[int, int], int, float]]],
             spatial_edges: list[tuple[int, int, float]] | None,
             temporal_edges: list[tuple[int, int, str]] | None,
             output_path: Path):
+    """Generate a spatio-temporal graph pattern from description."""
     pat = generate_pattern(networks_list=networks,
                            spatial_edges=spatial_edges,
                            temporal_edges=temporal_edges)
@@ -260,7 +250,9 @@ def pattern(networks: list[list[tuple[tuple[int, int], int, float]]],
 
 
 @simulate.command()
+# @click.argument('sequence', type=)
 def graph():
+    """Generate a spatio-temporal graph from a combination of patterns."""
     # TODO input patterns + sequence
     pass
 
