@@ -219,8 +219,7 @@ SPATIAL_EDGES_DESCRIPTION = SpatialEdgesDescription()
 
 class TemporalEdgesDescription(GraphElementsDescription):
     main_desc = r'[-,.\w]+'
-    elem_desc = r'(?P<n1>\d+(-\d+)?),(?P<n2>\d+(-\d+)?),(?P<transition>\bsplit\b|\bmerge\b|\beq\b)'
-    # TODO simplify patterns to: 1) n,m for eq, n,m-q for split and n-m,q for merge
+    elem_desc = r'(?P<n1>\d+(-\d+)?),(?P<n2>\d+(-\d+)?)'
 
     @staticmethod
     def __build_range(s: str) -> tuple[int, int] | int:
@@ -231,14 +230,20 @@ class TemporalEdgesDescription(GraphElementsDescription):
             return int(s)
 
     def _convert_from_match(self, match: re.Match[str]) -> tuple[any,...]:
-        transition = match.group('transition')
+        node1 = TemporalEdgesDescription.__build_range(match.group('n1'))
+        node2 = TemporalEdgesDescription.__build_range(match.group('n2'))
 
-        if transition == 'eq':
-            node1 = int(match.group('n1'))
-            node2 = int(match.group('n2'))
+        node1_is_int = isinstance(node1, int)
+        node2_is_int = isinstance(node2, int)
+
+        if node1_is_int and node2_is_int:
+            transition = 'eq'
+        elif node1_is_int:
+            transition = 'split'
+        elif node2_is_int:
+            transition = 'merge'
         else:
-            node1 = TemporalEdgesDescription.__build_range(match.group('n1'))
-            node2 = TemporalEdgesDescription.__build_range(match.group('n2'))
+            self.fail(f"Unsupported transition between nodes {match.group('n1')} and {match.group('n2')}!")
 
         return node1, node2, transition
 
