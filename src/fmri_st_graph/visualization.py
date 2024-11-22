@@ -506,9 +506,9 @@ def __inch2cm(inch: float) -> float:
 def __calc_limits(t: int, w: int, limits: tuple[int, int]) -> tuple[float, float]:
     half_w = w // 2
     left, right = t - half_w,  t + half_w
-    if left < limits[0]:
-        return limits[0] - 1, min(limits[0] + w, limits[1]) + 0.5
-    elif limits[1] < right:
+    if left <= limits[0]:
+        return limits[0] - 0.5, min(limits[0] + w, limits[1]) + 0.5
+    elif limits[1] <= right:
         return max(limits[1] - w, limits[0]) - 0.5, limits[1] + 0.5
     else:
         return left - 0.5, right + 0.5
@@ -539,6 +539,7 @@ def dynamic_plot(graph: SpatioTemporalGraph, size: float, time_window: int = Non
 
     def __update_time(t: int) -> None:
         cursor.set_xdata([t])
+        print(*__calc_limits(t, time_window, limits_t))
         axe1.set_xlim(__calc_limits(t, time_window, limits_t))
 
         axe2.clear()
