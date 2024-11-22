@@ -24,12 +24,17 @@ def cli():
 @cli.command()
 @click.argument('correlation_matrices_path', type=click.Path(exists=True))
 @click.argument('areas_description_path', type=click.Path(exists=True))
-@click.option('-o', '--output_graph', type=click.Path(writable=True), default="st_graph.zip",
-              help="Path where to write the built graph.")
+@click.option('-o', '--output_graph', type=click.Path(writable=True),
+              default="output", show_default="a graph archive named 'output.zip' in the current directory",
+              help="Path where to write the built graph. If there is no '.zip' extension, it will be added.")
 def build(correlation_matrices_path: str, areas_description_path: str, output_graph: str):
-    """Build a spatio-temporal graph.
+    """Build a spatio-temporal graph from correlations matrices.
 
-    The spatio-temporal graph is built from correlation matrices and areas description.
+    The spatio-temporal graph written at OUTPUT will be built from correlations matrices in
+    CORRELATION_MATRICES_PATH and areas description in AREAS_DESCRIPTION_PATH.
+
+    If the file CORRELATION_MATRICES_PATH contains more than one set of matrices, the list of available
+    names will be displayed and which one to use will be prompted.
     """
     matrices = np.load(correlation_matrices_path)
 
@@ -63,7 +68,10 @@ def build(correlation_matrices_path: str, areas_description_path: str, output_gr
 @click.argument('graph_path', type=click.Path(exists=True))
 @click.pass_context
 def plot(ctx: click.core.Context, graph_path: str):
-    """Plot a spatio-temporal graph."""
+    """Plot a spatio-temporal graph.
+
+    The file GRAPH_PATH must be an archive containing a spatio-temporal graph.
+    """
     ctx.obj = load_spatio_temporal_graph(graph_path)
 
 
@@ -72,7 +80,7 @@ def plot(ctx: click.core.Context, graph_path: str):
 def multipartite(ctx: click.core.Context):
     """Plot as multipartite graph.
 
-    The x-axis corresponds to the time evolution and nodes
+    The x-axis corresponds to the time evolution, and nodes
     at a given time are lined up vertically.
     """
     go_on = True
@@ -91,17 +99,24 @@ def multipartite(ctx: click.core.Context):
 
 
 @plot.command()
-@click.option('-t', '--time', type=click.IntRange(0), default=0,
-              help="The time index of the spatial subgraph to show. Default is 0.")
+@click.option('-t', '--time', type=click.IntRange(0),
+              default=0, show_default=True,
+              help="The time index of the spatial subgraph to show.")
 @click.pass_context
 def spatial(ctx: click.core.Context, time: int):
     """Plot as a spatial connectivity graph.
 
-    The temporal edges are not displayed."""
-    time = min(time, ctx.obj.graph['max_time'])
-    fig, axe = plt.subplots(layout='constrained')
-    spatial_plot(ctx.obj, time, ax=axe)
-    plt.show()
+    Only the nodes and spatial edges at a given time will be displayed.
+    """
+    max_time = ctx.obj.graph['max_time']
+    if time > max_time:
+        click.echo(f"The graph as a maximum time of {max_time} and "
+                   f"requested time is greater ({time}>{max_time})!")
+    else:
+        time = min(time, max_time)
+        fig, axe = plt.subplots(layout='constrained')
+        spatial_plot(ctx.obj, time, ax=axe)
+        plt.show()
 
 
 @plot.command()
@@ -109,23 +124,27 @@ def spatial(ctx: click.core.Context, time: int):
 def temporal(ctx: click.core.Context):
     """Plot as a temporal connectivity graph.
 
-    The spatial edges are not displayed."""
+    All the nodes and only the temporal edges will be displayed.
+    """
     fig, axe = plt.subplots(layout='constrained')
     temporal_plot(ctx.obj, ax=axe)
     plt.show()
 
 
 @plot.command()
-@click.option('-s', '--size', type=click.FloatRange(0), default=70,
+@click.option('-s', '--size', type=click.FloatRange(0),
+              default=70, show_default=True,
               help="The size of the plotting window (in centimeter).")
-@click.option('-w', '--window', type=click.IntRange(min=50), default=None,
-              help="The size of the sliding temporal window to display (if not set, "
-                   "show the full temporal plot by default).")
+@click.option('-w', '--window', type=click.IntRange(min=50),
+              default=None, show_default="full range of the temporal plot",
+              help="The size of the sliding temporal window to display.")
 @click.pass_context
 def dynamic(ctx: click.core.Context, size: float, window: int):
-    """Plot a dynamic graph.
+    """Plot in a dynamic graph.
 
-    Both the spatial and temporal graphs are drawn, with some interactivity."""
+    Both the spatial and temporal graphs will be displayed,
+    with some interactivity.
+    """
     dynamic_plot(ctx.obj, size, time_window=window)
     plt.show()
 
@@ -248,7 +267,8 @@ GRAPH_SEQUENCE_DESCRIPTION = GraphSequenceDescription()
 
 
 @click.group()
-@click.option('-o', '--output_path', type=click.Path(writable=True), default="output.zip",
+@click.option('-o', '--output_path', type=click.Path(writable=True),
+              default="output", show_default="a file named 'output' in the current directory",
               help="Path where to write the simulated output.")
 @click.pass_context
 def simulate(ctx: click.core.Context, output_path: Path):
@@ -275,7 +295,7 @@ def pattern(ctx: click.core.Context, networks: list[list[tuple[tuple[int, int], 
 @click.argument('sequence_description', type=GRAPH_SEQUENCE_DESCRIPTION)
 @click.pass_context
 def sequence(ctx: click.core.Context, patterns: tuple[Path], sequence_description: list[str | int]):
-    """Generate a spatio-temporal graph from a sequence of patterns."""
+    """Generate a spatio-temporal graph from a patterns sequence."""
     pattern_graphs = {f'p{i+1}': load_spatio_temporal_graph(filepath)
                       for i, filepath in enumerate(patterns)}
     simulator = SpatioTemporalGraphSimulator(**pattern_graphs)
@@ -286,13 +306,15 @@ def sequence(ctx: click.core.Context, patterns: tuple[Path], sequence_descriptio
 @simulate.command()
 @click.argument('graph_path', type=click.Path(exists=True))
 @click.option('-t', '--threshold', type=click.FloatRange(0, 1, min_open=True, max_open=True),
-              default=0.4, help="The threshold of the correlation matrices. Default is 0.4.")
+              default=0.4, show_default=True,
+              help="The correlation threshold when building graph from matrices.")
 @click.pass_context
 def correlations(ctx: click.core.Context, graph_path: Path, threshold: float):
+    """Simulate correlations matrices from a spatio-temporal graph."""
     graph = load_spatio_temporal_graph(graph_path)
     simulator = CorrelationMatrixSequenceSimulator(graph, threshold=threshold)
     matrices = simulator.simulate()
-    np.savez_compressed(ctx.obj, matrices)
+    np.savez_compressed(ctx.obj, simulated=matrices)
 
 
 if __name__ == '__main__':
