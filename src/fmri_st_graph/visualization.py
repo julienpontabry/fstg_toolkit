@@ -1,6 +1,7 @@
 """Plotting the spatio-temporal graphs."""
 from cmath import isclose
 from functools import cache
+from typing import Callable
 
 import networkx as nx
 import numpy as np
@@ -601,16 +602,39 @@ def __calc_limits(t: int, w: int, limits: tuple[int, int]) -> tuple[float, float
         return left - 0.5, right + 0.5
 
 
+class DynamicTimeCursor(Cursor):
+    """A dynamic cursor for time points."""
+
+    def __init__(self, axe: Axes, func: Callable[[int], None], **lineprops):
+        super().__init__(ax=axe, horizOn=False, useblit=True, **lineprops)
+        self.__callback = func
+        self.__last_t = None
+
+    def onmove(self, event):
+        if self.ignore(event):
+            return
+        if not self.canvas.widgetlock.available(self):
+            return
+
+        if event.inaxes == self.ax:
+            t = int(round(event.xdata))
+
+            if self.__last_t != t:
+                self.__callback(t)
+                self.__last_t = t
+            event.xdata = t
+
+        super().onmove(event)
+
+
 def dynamic_plot(graph: SpatioTemporalGraph, size: float, time_window: int = None) -> None:
+    # create figure and layout
     fig = plt.figure(figsize=(__inch2cm(size), __inch2cm(size / 3)), layout='constrained')
+    gs = GridSpec(nrows=1, ncols=2, figure=fig, width_ratios=[2, 1])
+    axe1 = fig.add_subplot(gs[0])
+    axe2 = fig.add_subplot(gs[1])
 
-    gs1 = GridSpec(nrows=1, ncols=2, figure=fig, width_ratios=[2, 1])
-    axe1 = fig.add_subplot(gs1[0])
-
-    gs12 = gs1[1].subgridspec(nrows=2, ncols=1, height_ratios=[40, 1])
-    axe2 = fig.add_subplot(gs12[0])
-    axe3 = fig.add_subplot(gs12[1])
-
+    # initialize
     init_t = 0
     limits_t = graph.graph['min_time'], graph.graph['max_time']
     if time_window is None:
@@ -620,28 +644,64 @@ def dynamic_plot(graph: SpatioTemporalGraph, size: float, time_window: int = Non
     spatial_plot(graph, t=init_t, ax=axe2)
     axe1.set_xlim(*__calc_limits(init_t, time_window, limits_t))
 
-    cursor = axe1.axvline(x=init_t, color='k', lw=0.8, ls='--')
-    fig.t_slider = Slider(ax=axe3, label="$t$",
-                          valmin=limits_t[0], valmax=limits_t[1], valinit=init_t, valstep=1)
+    # test removing non-background stuff
+    # TODO make background plot to avoid having to do this below
+    for line in axe2.lines:
+        line.remove()
+    for text in axe2.texts:
+        if isinstance(text, Annotation):
+            text.remove()
+    for patch in axe2.patches:
+        if isinstance(patch, FancyArrowPatch):
+            patch.remove()
 
+    # prepare for blitting of spatial plot
+    fig.canvas.draw()
+    fig.spatial_bkd = fig.canvas.copy_from_bbox(axe2.bbox)
+
+    # define widgets for interactions
     def __update_time(t: int) -> None:
-        cursor.set_xdata([t])
-        print(*__calc_limits(t, time_window, limits_t))
-        axe1.set_xlim(__calc_limits(t, time_window, limits_t))
+        print(f"t={t}")
 
-        axe2.clear()
-        spatial_plot(graph, t=t, ax=axe2)
+        old_networks_lines = list(axe2.lines)
+        old_areas_annotations = [t for t in axe2.texts if isinstance(t, Annotation)]
+        old_edges_patches = [p for p in axe2.patches if isinstance(p, FancyArrowPatch)]
 
-    fig.t_slider.on_changed(__update_time)
+        new_networks_lines, new_areas_annotations, new_edges_patches = spatial_plot_artists(graph, t=t)
 
-    def __on_press(event):
-        inc = 0
-        if event.key == 'right':
-            inc = 1
-        elif event.key == 'left':
-            inc = -1
+        # TODO generalize it for other artists
+        no = len(old_networks_lines)
+        nn = len(new_networks_lines)
+        print(f"{no}/{nn}")
 
-        new_val = max(min(fig.t_slider.val + inc, fig.t_slider.valmax), fig.t_slider.valmin)
-        fig.t_slider.set_val(new_val)
+        for lo in old_networks_lines[nn:]:
+            lo.remove()
 
-    fig.canvas.mpl_connect('key_press_event', __on_press)
+        fig.canvas.restore_region(fig.spatial_bkd)
+
+        for ln, lo in zip(new_networks_lines, old_networks_lines):
+            lo.set_xdata(ln.get_xdata())
+            lo.set_ydata(ln.get_ydata())
+            lo.set_markerfacecolor(ln.get_markerfacecolor())
+            lo.set_markersize(ln.get_markersize())
+            axe2.draw_artist(lo)
+
+        for ln in new_networks_lines[no:]:
+            axe2.add_line(ln)
+            axe2.draw_artist(ln)
+
+        fig.canvas.blit(axe2.bbox)
+
+    fig.t_cursor = DynamicTimeCursor(axe1, __update_time, color='k', lw=0.8, ls='--')
+
+    # def __on_press(event):
+    #     inc = 0
+    #     if event.key == 'right':
+    #         inc = 1
+    #     elif event.key == 'left':
+    #         inc = -1
+    #
+    #     new_val = max(min(fig.t_slider.val + inc, fig.t_slider.valmax), fig.t_slider.valmin)
+    #     fig.t_slider.set_val(new_val)
+    #
+    # fig.canvas.mpl_connect('key_press_event', __on_press)
