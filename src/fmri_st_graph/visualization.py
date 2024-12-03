@@ -9,8 +9,10 @@ from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.collections import LineCollection
 from matplotlib.gridspec import GridSpec
+from matplotlib.lines import Line2D
 from matplotlib.patches import FancyArrowPatch
-from matplotlib.widgets import Slider
+from matplotlib.text import Annotation
+from matplotlib.widgets import Cursor
 
 from .graph import SpatioTemporalGraph, RC5
 
@@ -206,6 +208,90 @@ def __angle_between(vec1: tuple[float, float], vec2: tuple[float, float]) -> flo
     return np.rad2deg(angle)
 
 
+def spatial_plot_artists(graph: SpatioTemporalGraph, t: float,
+                         edges_bending: float = 3) -> tuple[list[Line2D], list[Annotation], list[FancyArrowPatch]]:
+    """Generate artists for a spatial plotting of a spatio-temporal graph.
+
+    Parameters
+    ----------
+    graph: SpatioTemporalGraph
+        The graph to plot.
+    t: float
+        The instant to plot in the graph.
+    edges_bending: float, optional
+        Controls the bending of the edges. Close to 0 means full bending, close to
+        infinity means no bending (default is 3).
+
+    Returns
+    -------
+    networks_markers: list[Line2D]
+        The artists for the nodes representing the networks.
+    areas_annotations: list[Annotation]
+        The annotations for the areas.
+    edges_patches: list[FancyArrowPatch]
+        The patches representing the edges between the networks.
+    """
+    sub_g = graph.conditional_subgraph(t=t)
+
+    rels = graph.areas.sort_values('Name_Region')
+
+    # calculate positions for areas
+    n = len(rels)
+    angles = 2 * np.pi / n * np.arange(n)
+    x_areas, y_areas = __polar2cart(angles, 1.5)
+
+    # plot networks
+    cmap = cm.get_cmap('coolwarm')
+    nodes_angles = {}
+    nodes_angles_map = {}
+    nodes_coords = {}
+    areas_network_map = {}
+    networks_markers = []
+    for node, data in sub_g.nodes.items():
+        network = list(data['areas'])
+        indices = np.argwhere(np.isin(rels.index, network)).flatten().tolist()
+
+        angle = angles[indices].mean()
+        closest_node = min([(on, abs(a-angle)) for on, a in nodes_angles.items()],
+                           default=(None, -1), key=lambda e: e[1])
+        if isclose(closest_node[1], 0):
+            angle += 2*np.pi/n/2
+        nodes_angles[node] = angle
+        nodes_angles_map |= {i: angle for i in indices}
+
+        x, y = __polar2cart(angle, 1)
+        corr = data['internal_strength']
+        l = Line2D([x], [y], marker='o', mfc=cmap(corr / 2 + 0.5),
+                   mec='k', ms=(15 * np.abs(corr)), zorder=4)
+        networks_markers.append(l)
+        nodes_coords[node] = (x, y)
+        areas_network_map |= {i: (x, y) for i in indices}
+
+    # plot areas' labels
+    areas_annotations = []
+    for i, (x_area, y_area, area) in enumerate(zip(x_areas, y_areas, rels['Name_Area'])):
+        to_node_angle = __angle_between(areas_network_map[i], __polar2cart(angles[i], 1.2))
+        angle = np.rad2deg(angles[i])
+        a = Annotation(area, areas_network_map[i], xytext=(x_area, y_area),
+                       va='center', fontsize='x-small', rotation_mode='anchor',
+                       **__readable_angled_annotation(angle),
+                       arrowprops=dict(arrowstyle='-',
+                                       connectionstyle=__annot_con_style(angle, to_node_angle),
+                                       linestyle=':'))
+        areas_annotations.append(a)
+
+    # plot edges between networks
+    edges_patches = []
+    for (n1, n2), d in sub_g.edges.items():
+        e = FancyArrowPatch(posA=nodes_coords[n1], posB=nodes_coords[n2],arrowstyle='-',
+                            connectionstyle=__edge_con_style(nodes_angles[n1], nodes_angles[n2], bending=edges_bending),
+                            linewidth=np.abs(d['correlation'])*4, color=cmap(d['correlation']/2+0.5),
+                            alpha=np.abs(d['correlation']))
+        edges_patches.append(e)
+
+    return networks_markers, areas_annotations, edges_patches
+
+
 def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None, edges_bending: float = 3) -> None:
     """Draw a spatial plot for spatio-temporal graph.
 
@@ -257,7 +343,8 @@ def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None, edges_be
         indices = np.argwhere(np.isin(rels.index, network)).flatten().tolist()
 
         angle = angles[indices].mean()
-        closest_node = min([(on, abs(a-angle)) for on, a in nodes_angles.items()], default=(None, -1), key=lambda e: e[1])
+        closest_node = min([(on, abs(a-angle)) for on, a in nodes_angles.items()],
+                           default=(None, -1), key=lambda e: e[1])
         if isclose(closest_node[1], 0):
             angle += 2*np.pi/n/2
         nodes_angles[node] = angle
