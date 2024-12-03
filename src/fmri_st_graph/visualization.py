@@ -1,5 +1,6 @@
 """Plotting the spatio-temporal graphs."""
 from cmath import isclose
+from dataclasses import dataclass
 from functools import cache
 from typing import Callable
 
@@ -7,6 +8,7 @@ import networkx as nx
 import numpy as np
 from matplotlib import colormaps as cm
 from matplotlib import pyplot as plt
+from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.collections import LineCollection
 from matplotlib.gridspec import GridSpec
@@ -269,6 +271,7 @@ def spatial_plot_artists(graph: SpatioTemporalGraph, t: float,
         areas_network_map |= {i: (x, y) for i in indices}
 
     # plot areas' labels
+    # TODO split annotations into text (always static) and connections (edges) so that only the latter will be blit
     areas_annotations = []
     for i, (x_area, y_area, area) in enumerate(zip(x_areas, y_areas, rels['Name_Area'])):
         to_node_angle = __angle_between(areas_network_map[i], __polar2cart(angles[i], 1.2))
@@ -587,11 +590,11 @@ def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None) -> None:
     ax.set_ylim(-1, sum(heights) + len(heights) - 1)
 
 
-def __inch2cm(inch: float) -> float:
+def _inch2cm(inch: float) -> float:
     return inch / 2.54
 
 
-def __calc_limits(t: int, w: int, limits: tuple[int, int]) -> tuple[float, float]:
+def _calc_limits(t: int, w: int, limits: tuple[int, int]) -> tuple[float, float]:
     half_w = w // 2
     left, right = t - half_w,  t + half_w
     if left <= limits[0]:
@@ -627,81 +630,114 @@ class DynamicTimeCursor(Cursor):
         super().onmove(event)
 
 
-def dynamic_plot(graph: SpatioTemporalGraph, size: float, time_window: int = None) -> None:
-    # create figure and layout
-    fig = plt.figure(figsize=(__inch2cm(size), __inch2cm(size / 3)), layout='constrained')
-    gs = GridSpec(nrows=1, ncols=2, figure=fig, width_ratios=[2, 1])
-    axe1 = fig.add_subplot(gs[0])
-    axe2 = fig.add_subplot(gs[1])
+@dataclass
+class DynamicPlot:
+    graph: SpatioTemporalGraph
+    size: float
+    time_window: int = None
 
-    # initialize
-    init_t = 0
-    limits_t = graph.graph['min_time'], graph.graph['max_time']
-    if time_window is None:
-        time_window = limits_t[1]
+    def __create_figure(self) -> None:
+        self.fig = plt.figure(figsize=(_inch2cm(self.size), _inch2cm(self.size / 3)), layout='constrained')
+        gs = GridSpec(nrows=1, ncols=2, figure=self.fig, width_ratios=[2, 1])
+        self.tpl_axe = self.fig.add_subplot(gs[0])
+        self.spl_axe = self.fig.add_subplot(gs[1])
 
-    temporal_plot(graph, ax=axe1)
-    spatial_plot(graph, t=init_t, ax=axe2)
-    axe1.set_xlim(*__calc_limits(init_t, time_window, limits_t))
+    def __initialize_figure(self) -> None:
+        # define initial time to show and limits of temporal plot
+        init_t = 0
+        limits_t = self.graph.graph['min_time'], self.graph.graph['max_time']
+        if self.time_window is None:
+            self.time_window = limits_t[1]
 
-    # test removing non-background stuff
-    # TODO make background plot to avoid having to do this below
-    for line in axe2.lines:
-        line.remove()
-    for text in axe2.texts:
-        if isinstance(text, Annotation):
-            text.remove()
-    for patch in axe2.patches:
-        if isinstance(patch, FancyArrowPatch):
-            patch.remove()
+        # plot both temporal and spatial plots
+        temporal_plot(self.graph, ax=self.tpl_axe)
+        spatial_plot(self.graph, t=init_t, ax=self.spl_axe)
+        self.tpl_axe.set_xlim(*_calc_limits(init_t, self.time_window, limits_t))
 
-    # prepare for blitting of spatial plot
-    fig.canvas.draw()
-    fig.spatial_bkd = fig.canvas.copy_from_bbox(axe2.bbox)
+        # remove non-background artists from spatial plot
+        # TODO make background plot to avoid having to do this below
+        for line in self.spl_axe.lines:
+            line.remove()
+        for text in self.spl_axe.texts:
+            if isinstance(text, Annotation):
+                text.remove()
+        for patch in self.spl_axe.patches:
+            if isinstance(patch, FancyArrowPatch):
+                patch.remove()
 
-    # define widgets for interactions
-    def __update_time(t: int) -> None:
+        # draw the canvas and save the background for spatial axe (to be used to blit)
+        self.fig.canvas.draw()
+        self.fig.spl_bkd = self.fig.canvas.copy_from_bbox(self.spl_axe.bbox)
+
+    @staticmethod
+    def __remove_excess_old_artists(old_artists_excess: list[Artist]) -> None:
+        for a in old_artists_excess:
+            a.remove()
+
+    def __add_excess_new_artists(self, new_artists_excess: list[Artist],
+                                 adding_func: Callable[[Artist], None]) -> None:
+        for a in new_artists_excess:
+            adding_func(a)
+            self.spl_axe.draw_artist(a)
+
+    def __modify_old_artists(self, old_artists: list[Artist], new_artists: list[Artist],
+                             modify_func: Callable[[Artist, Artist], None]) -> None:
+        for ao, an in zip(old_artists, new_artists):
+            modify_func(ao, an)
+            self.spl_axe.draw_artist(ao)
+
+    @staticmethod
+    def __modify_old_networks_markers(ol: Line2D, nl: Line2D) -> None:
+        ol.set(data=nl.get_data(), mfc=nl.get_markerfacecolor(), ms=nl.get_markersize())
+
+    @staticmethod
+    def __modify_old_edges_patches(olp: FancyArrowPatch, nwp: FancyArrowPatch) -> None:
+        vx = nwp.get_path().vertices
+        olp.set_positions(posA=(float(vx[0][0]), float(vx[0][1])), posB=(float(vx[-1][0]), float(vx[-1][1])))
+        olp.set(fc=nwp.get_facecolor(), alpha=nwp.get_alpha(), lw=nwp.get_linewidth(),
+                connectionstyle=nwp.get_connectionstyle())
+
+    def __update_artists(self, old_artists_lists: list[list[Artist]], new_artists_lists: list[list[Artist]],
+                         modifiers: list[Callable[[Artist, Artist], None]], adders: list[Callable[[Artist], None]]):
+        # remove excess of old artists (and remember the initial count)
+        no = []
+        for oal, nal in zip(old_artists_lists, new_artists_lists):
+            no.append(len(oal))
+            DynamicPlot.__remove_excess_old_artists(oal[len(nal):])
+
+        # restore the background
+        self.fig.canvas.restore_region(self.fig.spl_bkd)
+
+        # modify reusable artists
+        for oal, nal, mod in zip(old_artists_lists, new_artists_lists, modifiers):
+            self.__modify_old_artists(oal, nal, mod)
+
+        # add excess of new artists
+        for nal, n, add in zip(new_artists_lists, no, adders):
+            self.__add_excess_new_artists(nal[n:], add)
+
+        # blit the spatial axes
+        self.fig.canvas.blit(self.spl_axe.bbox)
+
+    def __on_cursor_changed(self, t: int) -> None:
         print(f"t={t}")
 
-        old_networks_lines = list(axe2.lines)
-        old_areas_annotations = [t for t in axe2.texts if isinstance(t, Annotation)]
-        old_edges_patches = [p for p in axe2.patches if isinstance(p, FancyArrowPatch)]
+        old_networks_markers = list(self.spl_axe.lines)
+        old_areas_annotations = [t for t in self.spl_axe.texts if isinstance(t, Annotation)]
+        old_edges_patches = [p for p in self.spl_axe.patches if isinstance(p, FancyArrowPatch)]
 
-        new_networks_lines, new_areas_annotations, new_edges_patches = spatial_plot_artists(graph, t=t)
+        new_networks_markers, new_areas_annotations, new_edges_patches = spatial_plot_artists(self.graph, t=t)
 
-        # TODO generalize it for other artists
-        no = len(old_networks_lines)
-        nn = len(new_networks_lines)
-        print(f"{no}/{nn}")
+        self.__update_artists(
+            [old_edges_patches, old_networks_markers], [new_edges_patches, new_networks_markers],
+            [DynamicPlot.__modify_old_edges_patches, DynamicPlot.__modify_old_networks_markers],
+            [self.spl_axe.add_patch, self.spl_axe.add_line])
 
-        for lo in old_networks_lines[nn:]:
-            lo.remove()
+    def __initialize_widgets(self) -> None:
+        self.fig.t_cursor = DynamicTimeCursor(self.tpl_axe, self.__on_cursor_changed,
+                                              color='k', lw=0.8, ls='--')
 
-        fig.canvas.restore_region(fig.spatial_bkd)
-
-        for ln, lo in zip(new_networks_lines, old_networks_lines):
-            lo.set_xdata(ln.get_xdata())
-            lo.set_ydata(ln.get_ydata())
-            lo.set_markerfacecolor(ln.get_markerfacecolor())
-            lo.set_markersize(ln.get_markersize())
-            axe2.draw_artist(lo)
-
-        for ln in new_networks_lines[no:]:
-            axe2.add_line(ln)
-            axe2.draw_artist(ln)
-
-        fig.canvas.blit(axe2.bbox)
-
-    fig.t_cursor = DynamicTimeCursor(axe1, __update_time, color='k', lw=0.8, ls='--')
-
-    # def __on_press(event):
-    #     inc = 0
-    #     if event.key == 'right':
-    #         inc = 1
-    #     elif event.key == 'left':
-    #         inc = -1
-    #
-    #     new_val = max(min(fig.t_slider.val + inc, fig.t_slider.valmax), fig.t_slider.valmin)
-    #     fig.t_slider.set_val(new_val)
-    #
-    # fig.canvas.mpl_connect('key_press_event', __on_press)
+    def plot(self):
+        self.__create_figure()
+        self.__initialize_figure()
+        self.__initialize_widgets()

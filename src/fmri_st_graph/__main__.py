@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 from fmri_st_graph import generate_pattern, SpatioTemporalGraphSimulator, CorrelationMatrixSequenceSimulator
 from .factory import spatio_temporal_graph_from_corr_matrices
 from .io import load_spatio_temporal_graph, save_spatio_temporal_graph
-from .visualization import spatial_plot, temporal_plot, multipartite_plot, dynamic_plot
+from .visualization import spatial_plot, temporal_plot, multipartite_plot, DynamicPlot
 
 
 @click.group()
@@ -145,7 +145,7 @@ def dynamic(ctx: click.core.Context, size: float, window: int):
     Both the spatial and temporal graphs will be displayed,
     with some interactivity.
     """
-    dynamic_plot(ctx.obj, size, time_window=window)
+    DynamicPlot(ctx.obj, size, time_window=window).plot()
     plt.show()
 
 
