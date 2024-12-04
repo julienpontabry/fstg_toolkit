@@ -631,6 +631,7 @@ class DynamicTimeCursor(Cursor):
 
 @dataclass
 class DynamicPlot:
+    """A dynamic plot that contains both temporal and spatial plot with interactivity."""
     graph: SpatioTemporalGraph
     size: float
     time_window: int = None
