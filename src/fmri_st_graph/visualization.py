@@ -603,11 +603,27 @@ class DynamicPlot:
     size: float
     time_window: int = None
 
+    @property
+    def __networks_markers(self) -> list[Line2D]:
+        return list(self.spl_axe.lines)
+
+    @property
+    def __areas_annotations(self) -> list[Annotation]:
+        return [t for t in self.spl_axe.texts if isinstance(t, Annotation)]
+
+    @property
+    def __edges_patches(self) -> list[FancyArrowPatch]:
+        return [p for p in self.spl_axe.patches if isinstance(p, FancyArrowPatch)]
+
     def __create_figure(self) -> None:
         self.fig = plt.figure(figsize=(_inch2cm(self.size), _inch2cm(self.size / 3)), layout='constrained')
         gs = GridSpec(nrows=1, ncols=2, figure=self.fig, width_ratios=[2, 1])
         self.tpl_axe = self.fig.add_subplot(gs[0])
         self.spl_axe = self.fig.add_subplot(gs[1])
+        self.fig.spl_bkd = None
+
+    def __on_window_resized(self) -> None:
+        self.fig.spl_bkd = None
 
     def __initialize_figure(self) -> None:
         # define initial time to show and limits of temporal plot
@@ -621,37 +637,34 @@ class DynamicPlot:
         _spatial_plot_background(self.graph, ax=self.spl_axe)
         self.tpl_axe.set_xlim(*_calc_limits(init_t, self.time_window, limits_t))
 
-        # draw the canvas and save the background for spatial axe (to be used to blit)
-        self.fig.canvas.draw()
-        self.fig.spl_bkd = self.fig.canvas.copy_from_bbox(self.spl_axe.bbox)
-
         # set the initial spatial plot display
         self.__on_cursor_changed(init_t)
 
-    @staticmethod
-    def __remove_excess_old_artists(old_artists_excess: list[Artist]) -> None:
-        for a in old_artists_excess:
+        # capture resize events (update background of spatial plot)
+        # triggers the reset of the spatial axe background
+        self.fig.canvas.mpl_connect('resize_event', lambda e: self.__on_window_resized())
+
+    def __remove_artists(self, artists: list[Artist]) -> None:
+        for a in artists:
             a.remove()
 
-    def __add_excess_new_artists(self, new_artists_excess: list[Artist],
-                                 adding_func: Callable[[Artist], None]) -> None:
-        for a in new_artists_excess:
+    def __add_artists(self, artists: list[Artist], adding_func: Callable[[Artist], None]) -> None:
+        for a in artists:
             adding_func(a)
             self.spl_axe.draw_artist(a)
 
-    def __modify_old_artists(self, old_artists: list[Artist], new_artists: list[Artist],
-                             modify_func: Callable[[Artist, Artist], None]) -> None:
+    def __modify_artists(self, old_artists: list[Artist], new_artists: list[Artist],
+                         modify_func: Callable[[Artist, Artist], None]) -> None:
         for ao, an in zip(old_artists, new_artists):
             modify_func(ao, an)
             self.spl_axe.draw_artist(ao)
 
     @staticmethod
-    def __modify_old_networks_markers(ol: Line2D, nl: Line2D) -> None:
+    def __modify_networks_markers(ol: Line2D, nl: Line2D) -> None:
         ol.set(data=nl.get_data(), mfc=nl.get_markerfacecolor(), ms=nl.get_markersize())
 
     @staticmethod
-    def __modify_old_edges_patches(olp: FancyArrowPatch, nwp: FancyArrowPatch) -> None:
-        # posA, posB, connectionstyle, linewidth, color, alpha
+    def __modify_edges_patches(olp: FancyArrowPatch, nwp: FancyArrowPatch) -> None:
         vx = nwp.get_path().vertices
         olp.set_positions(posA=(float(vx[0][0]), float(vx[0][1])), posB=(float(vx[-1][0]), float(vx[-1][1])))
         olp.set(fc=nwp.get_fc(), ec=nwp.get_ec(), alpha=nwp.get_alpha(), lw=nwp.get_linewidth(),
@@ -663,33 +676,54 @@ class DynamicPlot:
         no = []
         for oal, nal in zip(old_artists_lists, new_artists_lists):
             no.append(len(oal))
-            DynamicPlot.__remove_excess_old_artists(oal[len(nal):])
+            self.__remove_artists(oal[len(nal):])
 
         # restore the background
         self.fig.canvas.restore_region(self.fig.spl_bkd)
 
         # modify reusable artists
         for oal, nal, mod in zip(old_artists_lists, new_artists_lists, modifiers):
-            self.__modify_old_artists(oal, nal, mod)
+            self.__modify_artists(oal, nal, mod)
 
         # add excess of new artists
         for nal, n, add in zip(new_artists_lists, no, adders):
-            self.__add_excess_new_artists(nal[n:], add)
+            self.__add_artists(nal[n:], add)
 
-        # blit the spatial axes
-        self.fig.canvas.blit(self.spl_axe.bbox)
+    def __recreate_artists(self, old_artists_lists: list[list[Artist]], new_artists_lists: list[list[Artist]],
+                           adders: list[Callable[[Artist], None]]):
+        # remove all old artists
+        for oal in old_artists_lists:
+            self.__remove_artists(oal)
+
+        # save a new background for spatial axe
+        self.fig.canvas.draw()
+        self.fig.spl_bkd = self.fig.canvas.copy_from_bbox(self.spl_axe.bbox)
+
+        # add all new artists
+        for nal, add in zip(new_artists_lists, adders):
+            self.__add_artists(nal, add)
 
     def __on_cursor_changed(self, t: int) -> None:
-        old_networks_markers = list(self.spl_axe.lines)
-        old_areas_annotations = [t for t in self.spl_axe.texts if isinstance(t, Annotation)]
-        old_edges_patches = [p for p in self.spl_axe.patches if isinstance(p, FancyArrowPatch)]
+        # get old/new artists
+        old_networks_markers = self.__networks_markers
+        old_areas_annotations = self.__areas_annotations
+        old_edges_patches = self.__edges_patches
 
         new_networks_markers, new_areas_annotations, new_edges_patches = _spatial_plot_artists(self.graph, t=t)
 
-        self.__update_artists(
-            [old_edges_patches, old_networks_markers], [new_edges_patches, new_networks_markers],
-            [DynamicPlot.__modify_old_edges_patches, DynamicPlot.__modify_old_networks_markers],
-            [self.spl_axe.add_patch, self.spl_axe.add_line])
+        # update or recreate artists (if the background has been invalidated)
+        old_artists = [old_edges_patches, old_networks_markers]
+        new_artists = [new_edges_patches, new_networks_markers]
+        adders = [self.spl_axe.add_patch, self.spl_axe.add_line]
+
+        if self.fig.spl_bkd is None:
+            self.__recreate_artists(old_artists, new_artists, adders)
+        else:
+            modifiers = [DynamicPlot.__modify_edges_patches, DynamicPlot.__modify_networks_markers]
+            self.__update_artists(old_artists, new_artists, modifiers, adders)
+
+        # blit the spatial axes to draw only changed artists
+        self.fig.canvas.blit(self.spl_axe.bbox)
 
     def __initialize_widgets(self) -> None:
         self.fig.t_cursor = DynamicTimeCursor(self.tpl_axe, self.__on_cursor_changed,
