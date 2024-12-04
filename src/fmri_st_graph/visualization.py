@@ -625,6 +625,9 @@ class DynamicPlot:
         self.fig.canvas.draw()
         self.fig.spl_bkd = self.fig.canvas.copy_from_bbox(self.spl_axe.bbox)
 
+        # set the initial spatial plot display
+        self.__on_cursor_changed(init_t)
+
     @staticmethod
     def __remove_excess_old_artists(old_artists_excess: list[Artist]) -> None:
         for a in old_artists_excess:
