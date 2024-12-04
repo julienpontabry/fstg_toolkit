@@ -648,9 +648,10 @@ class DynamicPlot:
 
     @staticmethod
     def __modify_old_edges_patches(olp: FancyArrowPatch, nwp: FancyArrowPatch) -> None:
+        # posA, posB, connectionstyle, linewidth, color, alpha
         vx = nwp.get_path().vertices
         olp.set_positions(posA=(float(vx[0][0]), float(vx[0][1])), posB=(float(vx[-1][0]), float(vx[-1][1])))
-        olp.set(fc=nwp.get_facecolor(), alpha=nwp.get_alpha(), lw=nwp.get_linewidth(),
+        olp.set(fc=nwp.get_fc(), ec=nwp.get_ec(), alpha=nwp.get_alpha(), lw=nwp.get_linewidth(),
                 connectionstyle=nwp.get_connectionstyle())
 
     def __update_artists(self, old_artists_lists: list[list[Artist]], new_artists_lists: list[list[Artist]],
