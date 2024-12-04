@@ -14,7 +14,7 @@ from matplotlib.collections import LineCollection
 from matplotlib.gridspec import GridSpec
 from matplotlib.lines import Line2D
 from matplotlib.patches import FancyArrowPatch
-from matplotlib.text import Annotation
+from matplotlib.text import Annotation, Text
 from matplotlib.widgets import Cursor
 
 from .graph import SpatioTemporalGraph, RC5
@@ -211,7 +211,8 @@ def __angle_between(vec1: tuple[float, float], vec2: tuple[float, float]) -> flo
 
 
 def _spatial_plot_artists(graph: SpatioTemporalGraph, t: float,
-                          edges_bending: float = 3) -> tuple[list[Line2D], list[Annotation], list[FancyArrowPatch]]:
+                          edges_bending: float = 3) -> tuple[list[Line2D], list[Text], \
+                                                        list[FancyArrowPatch], list[FancyArrowPatch]]:
     """Generate artists for a spatial plotting of a spatio-temporal graph.
 
     Parameters
@@ -228,8 +229,10 @@ def _spatial_plot_artists(graph: SpatioTemporalGraph, t: float,
     -------
     networks_markers: list[Line2D]
         The artists for the nodes representing the networks.
-    areas_annotations: list[Annotation]
-        The annotations for the areas.
+    areas_labels: list[Text]
+        The labels of the areas.
+    areas_patches: list[FancyArrowPatch]
+        The arrows from areas to networks nodes.
     edges_patches: list[FancyArrowPatch]
         The patches representing the edges between the networks.
     """
@@ -242,7 +245,7 @@ def _spatial_plot_artists(graph: SpatioTemporalGraph, t: float,
     angles = 2 * np.pi / n * np.arange(n)
     x_areas, y_areas = __polar2cart(angles, 1.5)
 
-    # plot networks
+    # networks node
     cmap = cm.get_cmap('coolwarm')
     nodes_angles = {}
     nodes_angles_map = {}
@@ -269,21 +272,23 @@ def _spatial_plot_artists(graph: SpatioTemporalGraph, t: float,
         nodes_coords[node] = (x, y)
         areas_network_map |= {i: (x, y) for i in indices}
 
-    # plot areas' labels
-    # TODO split annotations into text (always static) and connections (edges) so that only the latter will be blit
-    areas_annotations = []
+    # areas' links
+    areas_labels = []
+    areas_patches = []
     for i, (x_area, y_area, area) in enumerate(zip(x_areas, y_areas, rels['Name_Area'])):
         to_node_angle = __angle_between(areas_network_map[i], __polar2cart(angles[i], 1.2))
         angle = np.rad2deg(angles[i])
-        a = Annotation(area, areas_network_map[i], xytext=(x_area, y_area),
-                       va='center', fontsize='x-small', rotation_mode='anchor',
-                       **__readable_angled_annotation(angle),
-                       arrowprops=dict(arrowstyle='-',
-                                       connectionstyle=__annot_con_style(angle, to_node_angle),
-                                       linestyle=':'))
-        areas_annotations.append(a)
+        a = FancyArrowPatch(posA=(x_area, y_area), posB=areas_network_map[i],
+                            arrowstyle='-', connectionstyle=__annot_con_style(angle, to_node_angle),
+                            linestyle=':')
+        areas_patches.append(a)
 
-    # plot edges between networks
+        t = Text(x=x_area, y=y_area, text=area,
+                 va='center', fontsize='x-small', rotation_mode='anchor',
+                 **__readable_angled_annotation(angle))
+        areas_labels.append(t)
+
+    # edges between networks
     edges_patches = []
     for (n1, n2), d in sub_g.edges.items():
         e = FancyArrowPatch(posA=nodes_coords[n1], posB=nodes_coords[n2],arrowstyle='-',
@@ -292,7 +297,7 @@ def _spatial_plot_artists(graph: SpatioTemporalGraph, t: float,
                             alpha=np.abs(d['correlation']))
         edges_patches.append(e)
 
-    return networks_markers, areas_annotations, edges_patches
+    return networks_markers, areas_labels, areas_patches, edges_patches
 
 
 def _spatial_plot_background(graph: SpatioTemporalGraph, ax: Axes = None):
@@ -335,13 +340,17 @@ def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None, edges_be
     """
     _spatial_plot_background(graph, ax)
 
-    networks_markers, areas_annotations, edges_patches = _spatial_plot_artists(graph, t=t, edges_bending=edges_bending)
+    networks_markers, areas_labels, areas_arrows, edges_patches = _spatial_plot_artists(
+        graph, t=t, edges_bending=edges_bending)
 
     for network_marker in networks_markers:
         ax.add_line(network_marker)
 
-    for area_annotation in areas_annotations:
-        ax.add_artist(area_annotation)
+    for area_label in areas_labels:
+        ax.add_artist(area_label)
+
+    for area_arrow in areas_arrows:
+        ax.add_patch(area_arrow)
 
     for edge_patch in edges_patches:
         ax.add_patch(edge_patch)
@@ -709,7 +718,8 @@ class DynamicPlot:
         old_areas_annotations = self.__areas_annotations
         old_edges_patches = self.__edges_patches
 
-        new_networks_markers, new_areas_annotations, new_edges_patches = _spatial_plot_artists(self.graph, t=t)
+        new_networks_markers, new_areas_labels, new_areas_patches, new_edges_patches = _spatial_plot_artists(
+            self.graph, t=t)
 
         # update or recreate artists (if the background has been invalidated)
         old_artists = [old_edges_patches, old_networks_markers]
