@@ -52,7 +52,6 @@ def __time_multipartite_layout(g: SpatioTemporalGraph, dist: float = 1.0) -> dic
     return pos
 
 
-# TODO add time scale at the bottom
 def multipartite_plot(g: SpatioTemporalGraph, ax: Axes = None) -> None:
     """Draw a multipartite plot for the spatio-temporal graph.
 
