@@ -15,7 +15,6 @@ from matplotlib.collections import LineCollection
 from matplotlib.gridspec import GridSpec
 from matplotlib.lines import Line2D
 from matplotlib.patches import FancyArrowPatch
-from matplotlib.text import Annotation
 from matplotlib.widgets import Cursor
 
 from .graph import SpatioTemporalGraph, RC5
@@ -641,11 +640,7 @@ class DynamicPlot:
         return list(self.spl_axe.lines)
 
     @property
-    def __areas_annotations(self) -> list[Annotation]:
-        return [t for t in self.spl_axe.texts if isinstance(t, Annotation)]
-
-    @property
-    def __edges_patches(self) -> list[FancyArrowPatch]:
+    def __arrows_patches(self) -> list[FancyArrowPatch]:
         return [p for p in self.spl_axe.patches if isinstance(p, FancyArrowPatch)]
 
     def __create_figure(self) -> None:
@@ -697,11 +692,12 @@ class DynamicPlot:
         ol.set(data=nl.get_data(), mfc=nl.get_markerfacecolor(), ms=nl.get_markersize())
 
     @staticmethod
-    def __modify_edges_patches(olp: FancyArrowPatch, nwp: FancyArrowPatch) -> None:
+    def __modify_arrows_patches(olp: FancyArrowPatch, nwp: FancyArrowPatch) -> None:
         vx = nwp.get_path().vertices
         olp.set_positions(posA=(float(vx[0][0]), float(vx[0][1])), posB=(float(vx[-1][0]), float(vx[-1][1])))
         olp.set(fc=nwp.get_fc(), ec=nwp.get_ec(), alpha=nwp.get_alpha(), lw=nwp.get_linewidth(),
-                connectionstyle=nwp.get_connectionstyle())
+                connectionstyle=nwp.get_connectionstyle(), arrowstyle=nwp.get_arrowstyle(),
+                ls=nwp.get_linestyle())
 
     def __update_artists(self, old_artists_lists: list[list[Artist]], new_artists_lists: list[list[Artist]],
                          modifiers: list[Callable[[Artist, Artist], None]], adders: list[Callable[[Artist], None]]):
@@ -739,20 +735,19 @@ class DynamicPlot:
     def __on_cursor_changed(self, t: int) -> None:
         # get old/new artists
         old_networks_markers = self.__networks_markers
-        old_areas_annotations = self.__areas_annotations
-        old_edges_patches = self.__edges_patches
+        old_arrows_patches = self.__arrows_patches
 
         new_networks_markers, new_areas_patches, new_edges_patches = _spatial_plot_artists(self.graph, t=t)
 
         # update or recreate artists (if the background has been invalidated)
-        old_artists = [old_edges_patches, old_networks_markers]
-        new_artists = [new_edges_patches, new_networks_markers]
+        old_artists = [old_arrows_patches, old_networks_markers]
+        new_artists = [new_edges_patches + new_areas_patches, new_networks_markers]
         adders = [self.spl_axe.add_patch, self.spl_axe.add_line]
 
         if self.fig.spl_bkd is None:
             self.__recreate_artists(old_artists, new_artists, adders)
         else:
-            modifiers = [DynamicPlot.__modify_edges_patches, DynamicPlot.__modify_networks_markers]
+            modifiers = [DynamicPlot.__modify_arrows_patches, DynamicPlot.__modify_networks_markers]
             self.__update_artists(old_artists, new_artists, modifiers, adders)
 
         # blit the spatial axes to draw only changed artists
