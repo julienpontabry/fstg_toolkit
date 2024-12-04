@@ -210,8 +210,8 @@ def __angle_between(vec1: tuple[float, float], vec2: tuple[float, float]) -> flo
     return np.rad2deg(angle)
 
 
-def spatial_plot_artists(graph: SpatioTemporalGraph, t: float,
-                         edges_bending: float = 3) -> tuple[list[Line2D], list[Annotation], list[FancyArrowPatch]]:
+def _spatial_plot_artists(graph: SpatioTemporalGraph, t: float,
+                          edges_bending: float = 3) -> tuple[list[Line2D], list[Annotation], list[FancyArrowPatch]]:
     """Generate artists for a spatial plotting of a spatio-temporal graph.
 
     Parameters
@@ -295,6 +295,29 @@ def spatial_plot_artists(graph: SpatioTemporalGraph, t: float,
     return networks_markers, areas_annotations, edges_patches
 
 
+def _spatial_plot_background(graph: SpatioTemporalGraph, ax: Axes = None):
+    if ax is None:
+        ax = plt.gca()
+    ax.axis('off')
+
+    rels = graph.areas.sort_values('Name_Region')
+    regions = rels['Name_Region'].unique()
+
+    # calculate positions for areas
+    n = len(rels)
+
+    # plot regions in a pie
+    regions_cmap = cm.get_cmap('tab20')
+    ax.pie([len(rels[rels['Name_Region'] == region]) / n
+            for region in regions],
+           radius=2.25, startangle=-360 / n / 2,
+           labels=regions, labeldistance=1.1, rotatelabels=False,
+           colors=[regions_cmap(i) for i in range(len(regions))],
+           wedgeprops=dict(width=1, edgecolor='w', alpha=0.3))
+    ax.set_xlim(-3, 3)
+    ax.set_ylim(-3, 3)
+
+
 def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None, edges_bending: float = 3) -> None:
     """Draw a spatial plot for spatio-temporal graph.
 
@@ -310,74 +333,18 @@ def spatial_plot(graph: SpatioTemporalGraph, t: float, ax: Axes = None, edges_be
         Controls the bending of the edges. Close to 0 means full bending, close to
         infinity means no bending (default is 3).
     """
-    if ax is None:
-        ax = plt.gca()
-    ax.axis('off')
+    _spatial_plot_background(graph, ax)
 
-    sub_g = graph.conditional_subgraph(t=t)
+    networks_markers, areas_annotations, edges_patches = _spatial_plot_artists(graph, t=t, edges_bending=edges_bending)
 
-    rels = graph.areas.sort_values('Name_Region')
-    regions = rels['Name_Region'].unique()
+    for network_marker in networks_markers:
+        ax.add_line(network_marker)
 
-    # calculate positions for areas
-    n = len(rels)
-    angles = 2 * np.pi / n * np.arange(n)
-    x_areas, y_areas = __polar2cart(angles, 1.5)
+    for area_annotation in areas_annotations:
+        ax.add_artist(area_annotation)
 
-    # plot regions in a pie
-    regions_cmap = cm.get_cmap('tab20')
-    ax.pie([len(rels[rels['Name_Region'] == region]) / n
-            for region in regions],
-           radius=2.25, startangle=-360 / n / 2,
-           labels=regions, labeldistance=1.1, rotatelabels=False,
-           colors=[regions_cmap(i) for i in range(len(regions))],
-           wedgeprops=dict(width=1, edgecolor='w', alpha=0.3))
-    ax.set_xlim(-3, 3)
-    ax.set_ylim(-3, 3)
-
-    # plot networks
-    cmap = cm.get_cmap('coolwarm')
-    nodes_angles = {}
-    nodes_angles_map = {}
-    nodes_coords = {}
-    areas_network_map = {}
-    for node, data in sub_g.nodes.items():
-        network = list(data['areas'])
-        indices = np.argwhere(np.isin(rels.index, network)).flatten().tolist()
-
-        angle = angles[indices].mean()
-        closest_node = min([(on, abs(a-angle)) for on, a in nodes_angles.items()],
-                           default=(None, -1), key=lambda e: e[1])
-        if isclose(closest_node[1], 0):
-            angle += 2*np.pi/n/2
-        nodes_angles[node] = angle
-        nodes_angles_map |= {i: angle for i in indices}
-
-        x, y = __polar2cart(angle, 1)
-        corr = data['internal_strength']
-        ax.plot(x, y, 'o', mfc=cmap(corr / 2 + 0.5),
-                mec='k', ms=(15 * np.abs(corr)), zorder=4)
-        nodes_coords[node] = (x, y)
-        areas_network_map |= {i: (x, y) for i in indices}
-
-    # plot areas' labels
-    for i, (x_area, y_area, area) in enumerate(zip(x_areas, y_areas, rels['Name_Area'])):
-        to_node_angle = __angle_between(areas_network_map[i], __polar2cart(angles[i], 1.2))
-        angle = np.rad2deg(angles[i])
-        ax.annotate(text=area, xy=areas_network_map[i], xytext=(x_area, y_area),
-                    va='center', fontsize='x-small', rotation_mode='anchor',
-                    **__readable_angled_annotation(angle),
-                    arrowprops=dict(arrowstyle='-',
-                                    connectionstyle=__annot_con_style(angle, to_node_angle),
-                                    linestyle=':'))
-
-    # plot edges between networks
-    for (n1, n2), d in sub_g.edges.items():
-        edge_patch = FancyArrowPatch(
-            posA=nodes_coords[n1], posB=nodes_coords[n2],arrowstyle='-',
-            connectionstyle=__edge_con_style(nodes_angles[n1], nodes_angles[n2], bending=edges_bending),
-            linewidth=np.abs(d['correlation'])*4, color=cmap(d['correlation']/2+0.5), alpha=np.abs(d['correlation']))
-        ax.add_artist(edge_patch)
+    for edge_patch in edges_patches:
+        ax.add_patch(edge_patch)
 
 
 class __CoordinatesGenerator:
@@ -651,19 +618,8 @@ class DynamicPlot:
 
         # plot both temporal and spatial plots
         temporal_plot(self.graph, ax=self.tpl_axe)
-        spatial_plot(self.graph, t=init_t, ax=self.spl_axe)
+        _spatial_plot_background(self.graph, ax=self.spl_axe)
         self.tpl_axe.set_xlim(*_calc_limits(init_t, self.time_window, limits_t))
-
-        # remove non-background artists from spatial plot
-        # TODO make background plot to avoid having to do this below
-        for line in self.spl_axe.lines:
-            line.remove()
-        for text in self.spl_axe.texts:
-            if isinstance(text, Annotation):
-                text.remove()
-        for patch in self.spl_axe.patches:
-            if isinstance(patch, FancyArrowPatch):
-                patch.remove()
 
         # draw the canvas and save the background for spatial axe (to be used to blit)
         self.fig.canvas.draw()
@@ -720,13 +676,11 @@ class DynamicPlot:
         self.fig.canvas.blit(self.spl_axe.bbox)
 
     def __on_cursor_changed(self, t: int) -> None:
-        print(f"t={t}")
-
         old_networks_markers = list(self.spl_axe.lines)
         old_areas_annotations = [t for t in self.spl_axe.texts if isinstance(t, Annotation)]
         old_edges_patches = [p for p in self.spl_axe.patches if isinstance(p, FancyArrowPatch)]
 
-        new_networks_markers, new_areas_annotations, new_edges_patches = spatial_plot_artists(self.graph, t=t)
+        new_networks_markers, new_areas_annotations, new_edges_patches = _spatial_plot_artists(self.graph, t=t)
 
         self.__update_artists(
             [old_edges_patches, old_networks_markers], [new_edges_patches, new_networks_markers],
