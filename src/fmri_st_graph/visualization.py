@@ -15,6 +15,7 @@ from matplotlib.collections import LineCollection
 from matplotlib.gridspec import GridSpec
 from matplotlib.lines import Line2D
 from matplotlib.patches import FancyArrowPatch
+from matplotlib.text import Text
 from matplotlib.widgets import Cursor
 
 from .graph import SpatioTemporalGraph, RC5
@@ -643,12 +644,17 @@ class DynamicPlot:
     def __arrows_patches(self) -> list[FancyArrowPatch]:
         return [p for p in self.spl_axe.patches if isinstance(p, FancyArrowPatch)]
 
+    @property
+    def __time_text(self) -> list[Text]:
+        return [] if self.time_text is None else [self.time_text]
+
     def __create_figure(self) -> None:
         self.fig = plt.figure(figsize=(_inch2cm(self.size), _inch2cm(self.size / 3)), layout='constrained')
         gs = GridSpec(nrows=1, ncols=2, figure=self.fig, width_ratios=[2, 1])
         self.tpl_axe = self.fig.add_subplot(gs[0])
         self.spl_axe = self.fig.add_subplot(gs[1])
         self.fig.spl_bkd = None
+        self.time_text = None
 
     def __on_window_resized(self) -> None:
         self.fig.spl_bkd = None
@@ -700,7 +706,7 @@ class DynamicPlot:
                 ls=nwp.get_linestyle())
 
     def __update_artists(self, old_artists_lists: list[list[Artist]], new_artists_lists: list[list[Artist]],
-                         modifiers: list[Callable[[Artist, Artist], None]], adders: list[Callable[[Artist], None]]):
+                         modifiers: list[Callable[[Artist, Artist], None]], adders: list[Callable[[Artist], None]]) -> None:
         # remove excess of old artists (and remember the initial count)
         no = []
         for oal, nal in zip(old_artists_lists, new_artists_lists):
@@ -719,7 +725,7 @@ class DynamicPlot:
             self.__add_artists(nal[n:], add)
 
     def __recreate_artists(self, old_artists_lists: list[list[Artist]], new_artists_lists: list[list[Artist]],
-                           adders: list[Callable[[Artist], None]]):
+                           adders: list[Callable[[Artist], None]]) -> None:
         # remove all old artists
         for oal in old_artists_lists:
             self.__remove_artists(oal)
@@ -732,22 +738,33 @@ class DynamicPlot:
         for nal, add in zip(new_artists_lists, adders):
             self.__add_artists(nal, add)
 
+    def __update_time_text(self, t: int) -> Text:
+        text = f"$t={t}$"
+        if self.time_text is None:
+            self.time_text = Text(x=0, y=0, text=text)
+        else:
+            self.time_text.set_text(text)
+        return self.time_text
+
     def __on_cursor_changed(self, t: int) -> None:
         # get old/new artists
         old_networks_markers = self.__networks_markers
         old_arrows_patches = self.__arrows_patches
+        old_time_text = self.__time_text
 
         new_networks_markers, new_areas_patches, new_edges_patches = _spatial_plot_artists(self.graph, t=t)
+        new_time_text = [self.__update_time_text(t)]
 
         # update or recreate artists (if the background has been invalidated)
-        old_artists = [old_arrows_patches, old_networks_markers]
-        new_artists = [new_edges_patches + new_areas_patches, new_networks_markers]
-        adders = [self.spl_axe.add_patch, self.spl_axe.add_line]
+        old_artists = [old_arrows_patches, old_networks_markers, old_time_text]
+        new_artists = [new_edges_patches + new_areas_patches, new_networks_markers, new_time_text]
+        adders = [self.spl_axe.add_patch, self.spl_axe.add_line, self.spl_axe.add_artist]
 
         if self.fig.spl_bkd is None:
             self.__recreate_artists(old_artists, new_artists, adders)
         else:
-            modifiers = [DynamicPlot.__modify_arrows_patches, DynamicPlot.__modify_networks_markers]
+            modifiers = [self.__modify_arrows_patches, self.__modify_networks_markers,
+                         lambda o, n: None]  # time text is already updated by __update_time_text
             self.__update_artists(old_artists, new_artists, modifiers, adders)
 
         # blit the spatial axes to draw only changed artists
