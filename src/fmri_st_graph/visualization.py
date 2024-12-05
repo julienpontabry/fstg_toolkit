@@ -16,7 +16,7 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.lines import Line2D
 from matplotlib.patches import FancyArrowPatch
 from matplotlib.text import Text
-from matplotlib.widgets import Cursor
+from matplotlib.widgets import Cursor, RangeSlider
 
 from .graph import SpatioTemporalGraph, RC5
 
@@ -593,17 +593,6 @@ def _inch2cm(inch: float) -> float:
     return inch / 2.54
 
 
-def _calc_limits(t: int, w: int, limits: tuple[int, int]) -> tuple[float, float]:
-    half_w = w // 2
-    left, right = t - half_w,  t + half_w
-    if left <= limits[0]:
-        return limits[0] - 0.5, min(limits[0] + w, limits[1]) + 0.5
-    elif limits[1] <= right:
-        return max(limits[1] - w, limits[0]) - 0.5, limits[1] + 0.5
-    else:
-        return left - 0.5, right + 0.5
-
-
 class DynamicTimeCursor(Cursor):
     """A dynamic cursor for time points."""
 
@@ -652,7 +641,11 @@ class DynamicPlot:
         self.fig = plt.figure(figsize=(_inch2cm(self.size), _inch2cm(self.size / 3)), layout='constrained')
         gs = GridSpec(nrows=1, ncols=2, figure=self.fig, width_ratios=[2, 1])
         self.tpl_axe = self.fig.add_subplot(gs[0])
-        self.spl_axe = self.fig.add_subplot(gs[1])
+
+        gs_side = gs[1].subgridspec(nrows=2, ncols=1, height_ratios=[40, 1])
+        self.spl_axe = self.fig.add_subplot(gs_side[0])
+        self.win_axe = self.fig.add_subplot(gs_side[1])
+
         self.spl_bkd = None
         self.time_text = None
 
@@ -669,7 +662,7 @@ class DynamicPlot:
         # plot both temporal and spatial plots
         temporal_plot(self.graph, ax=self.tpl_axe)
         _spatial_plot_background(self.graph, ax=self.spl_axe)
-        self.tpl_axe.set_xlim(*_calc_limits(init_t, self.time_window, limits_t))
+        # self.tpl_axe.set_xlim(*_calc_limits(init_t, self.time_window, limits_t))
 
         # set the initial spatial plot display
         self.__on_cursor_changed(init_t)
@@ -773,9 +766,26 @@ class DynamicPlot:
         # blit the spatial axes to draw only changed artists
         self.fig.canvas.blit(self.spl_axe.bbox)
 
+    def __on_range_changed(self, vals: tuple[float, float]) -> None:
+        low, high = vals
+        self.tpl_axe.set_xlim(low-0.5, high+0.5)
+
+    def __on_tpl_limits_changed(self):
+        limits = self.tpl_axe.get_xlim()
+        l_min, l_max = round(limits[0]+0.5), round(limits[1])
+        r_min, r_max = self.fig.w_slider.val
+
+        if r_min != l_min or r_max != l_max:
+            self.fig.w_slider.set_val((l_min, l_max))
+
     def __initialize_widgets(self) -> None:
         self.fig.t_cursor = DynamicTimeCursor(self.tpl_axe, self.__on_cursor_changed,
                                               color='k', lw=0.8, ls='--')
+        time_range = self.graph.graph['min_time'], self.graph.graph['max_time']
+        self.fig.w_slider = RangeSlider(ax=self.win_axe, label="Window", valstep=1,
+                                        valinit=time_range, valmin=time_range[0], valmax=time_range[1])
+        self.fig.w_slider.on_changed(self.__on_range_changed)
+        self.tpl_axe.callbacks.connect('xlim_changed', lambda _: self.__on_tpl_limits_changed())
 
     def plot(self):
         self.__create_figure()
