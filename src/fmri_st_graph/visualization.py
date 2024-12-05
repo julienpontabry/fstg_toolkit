@@ -638,6 +638,9 @@ class DynamicPlot:
         return [] if self.time_text is None else [self.time_text]
 
     def __create_figure(self) -> None:
+        # use the recent toolbar
+        plt.rcParams['toolbar'] = 'toolmanager'
+
         self.fig = plt.figure(figsize=(_inch2cm(self.size), _inch2cm(self.size / 3)), layout='constrained')
         gs = GridSpec(nrows=1, ncols=2, figure=self.fig, width_ratios=[2, 1])
         self.tpl_axe = self.fig.add_subplot(gs[0])
@@ -666,10 +669,6 @@ class DynamicPlot:
 
         # set the initial spatial plot display
         self.__on_cursor_changed(init_t)
-
-        # capture resize events (update background of spatial plot)
-        # triggers the reset of the spatial axe background
-        self.fig.canvas.mpl_connect('resize_event', lambda e: self.__on_window_resized())
 
     @staticmethod
     def __remove_artists(artists: list[Artist]) -> None:
@@ -787,7 +786,21 @@ class DynamicPlot:
         self.fig.w_slider.on_changed(self.__on_range_changed)
         self.tpl_axe.callbacks.connect('xlim_changed', lambda _: self.__on_tpl_limits_changed())
 
+    def __initialize_events(self) -> None:
+        # capture resize events (update background of spatial plot)
+        # triggers the reset of the spatial axe background
+        self.fig.canvas.mpl_connect('resize_event', lambda e: self.__on_window_resized())
+
+        # Keep only the home, zoom and help elements in the toolbar
+        tool_mgr = self.fig.canvas.manager.toolmanager
+        tool_mgr.remove_tool('back')
+        tool_mgr.remove_tool('forward')
+        tool_mgr.remove_tool('pan')
+        tool_mgr.remove_tool('subplots')
+        tool_mgr.remove_tool('help')
+
     def plot(self):
         self.__create_figure()
         self.__initialize_figure()
         self.__initialize_widgets()
+        self.__initialize_events()
