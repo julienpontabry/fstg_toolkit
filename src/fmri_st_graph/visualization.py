@@ -741,7 +741,9 @@ class DynamicPlot:
     def __update_time_text(self, t: int) -> Text:
         text = f"$t={t}$"
         if self.time_text is None:
-            self.time_text = Text(x=0, y=0, text=text)
+            self.time_text = Text(x=0.5, y=0.99, text=text, fontsize='xx-large',
+                                  horizontalalignment='center', verticalalignment='top',
+                                  transform=self.spl_axe.transAxes)
         else:
             self.time_text.set_text(text)
         return self.time_text
