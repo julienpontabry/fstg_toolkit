@@ -339,7 +339,7 @@ def _spatial_plot_background(graph: SpatioTemporalGraph, ax: Axes = None) -> Non
            radius=2.25, startangle=-360 / n / 2,
            labels=regions, labeldistance=1.1, rotatelabels=False,
            colors=[regions_cmap(i) for i in range(len(regions))],
-           wedgeprops=dict(width=1, edgecolor='w', alpha=0.3))
+           wedgeprops=dict(width=1, edgecolor='w', alpha=0.2))
     ax.set_xlim(-3, 3)
     ax.set_ylim(-3, 3)
 
