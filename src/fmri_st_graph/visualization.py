@@ -653,11 +653,11 @@ class DynamicPlot:
         gs = GridSpec(nrows=1, ncols=2, figure=self.fig, width_ratios=[2, 1])
         self.tpl_axe = self.fig.add_subplot(gs[0])
         self.spl_axe = self.fig.add_subplot(gs[1])
-        self.fig.spl_bkd = None
+        self.spl_bkd = None
         self.time_text = None
 
     def __on_window_resized(self) -> None:
-        self.fig.spl_bkd = None
+        self.spl_bkd = None
 
     def __initialize_figure(self) -> None:
         # define initial time to show and limits of temporal plot
@@ -714,7 +714,7 @@ class DynamicPlot:
             self.__remove_artists(oal[len(nal):])
 
         # restore the background
-        self.fig.canvas.restore_region(self.fig.spl_bkd)
+        self.fig.canvas.restore_region(self.spl_bkd)
 
         # modify reusable artists
         for oal, nal, mod in zip(old_artists_lists, new_artists_lists, modifiers):
@@ -732,7 +732,7 @@ class DynamicPlot:
 
         # save a new background for spatial axe
         self.fig.canvas.draw()
-        self.fig.spl_bkd = self.fig.canvas.copy_from_bbox(self.spl_axe.bbox)
+        self.spl_bkd = self.fig.canvas.copy_from_bbox(self.spl_axe.bbox)
 
         # add all new artists
         for nal, add in zip(new_artists_lists, adders):
@@ -762,7 +762,7 @@ class DynamicPlot:
         new_artists = [new_edges_patches + new_areas_patches, new_networks_markers, new_time_text]
         adders = [self.spl_axe.add_patch, self.spl_axe.add_line, self.spl_axe.add_artist]
 
-        if self.fig.spl_bkd is None:
+        if self.spl_bkd is None:
             self.__recreate_artists(old_artists, new_artists, adders)
         else:
             modifiers = [self.__modify_arrows_patches, self.__modify_networks_markers,
