@@ -678,7 +678,8 @@ class DynamicPlot:
         # triggers the reset of the spatial axe background
         self.fig.canvas.mpl_connect('resize_event', lambda e: self.__on_window_resized())
 
-    def __remove_artists(self, artists: list[Artist]) -> None:
+    @staticmethod
+    def __remove_artists(artists: list[Artist]) -> None:
         for a in artists:
             a.remove()
 
