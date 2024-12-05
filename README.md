@@ -1,3 +1,5 @@
+[![pipeline status](https://git.unistra.fr/jpontabry/mos-t_fmri/badges/main/pipeline.svg)](https://git.unistra.fr/jpontabry/mos-t_fmri/-/commits/main) 
+
 # MoS-T_fMRI
 
 
