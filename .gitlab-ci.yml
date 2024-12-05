@@ -1,0 +1,14 @@
+stages:
+  - test
+
+docstring:
+  stage: test
+  image: mambaorg/micromamba:bookworm-slim
+  before_script:
+    - micromamba install --yes --name base --file environment.yml
+    - micromamba clean --all --yes
+    - micromamba run uv pip install --requirement requirements.txt
+    - export PYTHONPATH="$PYTHONPATH:src"
+  script:
+    - micromamba run python tests/tests_runner.py
+    - micromamba run python tests/doctests_runner.py
