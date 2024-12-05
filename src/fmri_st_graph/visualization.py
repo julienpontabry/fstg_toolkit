@@ -623,7 +623,6 @@ class DynamicPlot:
     """A dynamic plot that contains both temporal and spatial plot with interactivity."""
     graph: SpatioTemporalGraph
     size: float
-    time_window: int = None
 
     @property
     def __networks_markers(self) -> list[Line2D]:
@@ -656,16 +655,12 @@ class DynamicPlot:
         self.spl_bkd = None
 
     def __initialize_figure(self) -> None:
-        # define initial time to show and limits of temporal plot
+        # define initial time to show
         init_t = 0
-        limits_t = self.graph.graph['min_time'], self.graph.graph['max_time']
-        if self.time_window is None:
-            self.time_window = limits_t[1]
 
         # plot both temporal and spatial plots
         temporal_plot(self.graph, ax=self.tpl_axe)
         _spatial_plot_background(self.graph, ax=self.spl_axe)
-        # self.tpl_axe.set_xlim(*_calc_limits(init_t, self.time_window, limits_t))
 
         # set the initial spatial plot display
         self.__on_cursor_changed(init_t)

@@ -135,17 +135,14 @@ def temporal(ctx: click.core.Context):
 @click.option('-s', '--size', type=click.FloatRange(0),
               default=70, show_default=True,
               help="The size of the plotting window (in centimeter).")
-@click.option('-w', '--window', type=click.IntRange(min=50),
-              default=None, show_default="full range of the temporal plot",
-              help="The size of the sliding temporal window to display.")
 @click.pass_context
-def dynamic(ctx: click.core.Context, size: float, window: int):
+def dynamic(ctx: click.core.Context, size: float):
     """Plot in a dynamic graph.
 
     Both the spatial and temporal graphs will be displayed,
     with some interactivity.
     """
-    DynamicPlot(ctx.obj, size, time_window=window).plot()
+    DynamicPlot(ctx.obj, size).plot()
     plt.show()
 
 
