@@ -9,6 +9,7 @@ from fmri_st_graph import SpatioTemporalGraph, load_spatio_temporal_graph, gener
     SpatioTemporalGraphSimulator
 from fmri_st_graph.graph import RC5
 from fmri_st_graph.simulation import CorrelationMatrixSequenceSimulator
+from test_common import matrices_path, graph_path, patterns_path
 
 
 class CorrelationMatrixSimulationTestCase(unittest.TestCase):
@@ -52,8 +53,8 @@ class CorrelationMatrixSimulationTestCase(unittest.TestCase):
 
     @staticmethod
     def test_corr_matrix_sequence_simulation():
-        target = np.array([matrix for _, matrix in np.load('data/toy-example_matrices.npz').items()])
-        graph_structure = load_spatio_temporal_graph('data/toy-example_graph.zip')
+        target = np.array([matrix for _, matrix in np.load(matrices_path).items()])
+        graph_structure = load_spatio_temporal_graph(graph_path)
         simulator = CorrelationMatrixSequenceSimulator(
             graph=graph_structure, threshold=0.4, rng=np.random.default_rng(100))
         matrices = simulator.simulate()
@@ -207,5 +208,5 @@ class SpatioTemporalGraphSimulationTestCase(unittest.TestCase):
         simulator = SpatioTemporalGraphSimulator(p1=pattern1, p2=pattern2)
         graph_struct = simulator.simulate('p1', 5, 'p2', 'p1', 10, 'p2', 'p1', 2, 'p2')
 
-        expected_graph_struct = load_spatio_temporal_graph('data/patterns-example.zip')
+        expected_graph_struct = load_spatio_temporal_graph(patterns_path)
         self.assertEqual(expected_graph_struct, graph_struct)
