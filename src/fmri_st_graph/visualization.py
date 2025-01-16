@@ -314,7 +314,7 @@ def _spatial_plot_artists(graph: SpatioTemporalGraph, t: float,
     return networks_markers, areas_patches, edges_patches
 
 
-def _spatial_plot_background(graph: SpatioTemporalGraph, ax: Axes = None) -> None:
+def _spatial_plot_background(graph: SpatioTemporalGraph, ax: Axes = None, show_regions: bool = True) -> None:
     """Plot the background of a spatial plot.
 
     Parameters
@@ -323,6 +323,8 @@ def _spatial_plot_background(graph: SpatioTemporalGraph, ax: Axes = None) -> Non
         The graph to plot.
     ax: matplotlib.axes.Axes, optional
         The axes on which to plot. If not set, the current axes will be used.
+    show_regions: bool, optional
+        Flag to show (or not) the region labels.
     """
     if ax is None:
         ax = plt.gca()
@@ -334,14 +336,17 @@ def _spatial_plot_background(graph: SpatioTemporalGraph, ax: Axes = None) -> Non
 
     # plot regions in a pie
     regions_cmap = cm.get_cmap('tab20')
+    reg_labels = dict(labels=regions) if show_regions else dict()
     ax.pie([len(rels[rels['Name_Region'] == region]) / n
             for region in regions],
            radius=2.25, startangle=-360 / n / 2,
-           labels=regions, labeldistance=1.1, rotatelabels=False,
+           labels=regions if show_regions else None,
+           labeldistance=1.1, rotatelabels=False,
            colors=[regions_cmap(i) for i in range(len(regions))],
            wedgeprops=dict(width=1, edgecolor='w', alpha=0.2))
-    ax.set_xlim(-3, 3)
-    ax.set_ylim(-3, 3)
+    limit_val = 3 if show_regions else 2.5
+    ax.set_xlim(-limit_val, limit_val)
+    ax.set_ylim(-limit_val, limit_val)
 
     # plot areas' labels
     for i, (x_area, y_area, area) in enumerate(zip(x_areas, y_areas, rels['Name_Area'])):
@@ -660,7 +665,7 @@ class DynamicPlot:
 
         # plot both temporal and spatial plots
         temporal_plot(self.graph, ax=self.tpl_axe)
-        _spatial_plot_background(self.graph, ax=self.spl_axe)
+        _spatial_plot_background(self.graph, ax=self.spl_axe, show_regions=False)
 
         # set the initial spatial plot display
         self.__on_cursor_changed(init_t)
