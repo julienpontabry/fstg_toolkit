@@ -97,6 +97,6 @@ python -m fmri_st_graph simulate -o correlations.npz correlations my_graph.zip -
 
 The output timeseries matrices will be saved in a numpy-compatible format. Use the `-o` option to set the output path.
 
-## License
-
-TODO
+[//]: # (## License)
+[//]: # ()
+[//]: # (TODO)
