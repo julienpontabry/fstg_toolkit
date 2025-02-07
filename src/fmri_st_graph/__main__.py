@@ -286,6 +286,12 @@ def pattern(ctx: click.core.Context, networks: list[list[tuple[tuple[int, int], 
             spatial_edges: list[tuple[int, int, float]] | None,
             temporal_edges: list[tuple[int, int, str]] | None):
     """Generate a spatio-temporal graph pattern from description."""
+    if spatial_edges is None:
+        spatial_edges = []
+
+    if temporal_edges is None:
+        temporal_edges = []
+
     pat = generate_pattern(networks_list=networks,
                            spatial_edges=spatial_edges,
                            temporal_edges=temporal_edges)
