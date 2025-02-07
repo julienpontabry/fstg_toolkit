@@ -1,8 +1,8 @@
-[![pipeline status](https://git.unistra.fr/jpontabry/mos-t_fmri/badges/main/pipeline.svg)](https://git.unistra.fr/jpontabry/mos-t_fmri/-/commits/main) 
+[![pipeline status](https://git.unistra.fr/jpontabry/mos-t_fmri/badges/main/pipeline.svg)](https://git.unistra.fr/jpontabry/mos-t_fmri/-/commits/main)
 
 # MoS-T_fMRI
 
-This package allows you to build, plot, and simulate spatio-temporal graphs for fMRI data. This readme describes briefly the usage of the CLI tool. In the following sections, the installation, the usage and an example are detailed.
+This package allows you to build, plot, and simulate spatio-temporal graphs for fMRI data. This README provides a brief overview of the CLI tool usage, including installation instructions, usage examples, and detailed examples.
 
 ## Installation
 
@@ -16,15 +16,15 @@ pip install -r requirements.txt
 
 ## Usage
 
-The CLI tool provides several commands grouped under `build`, `plot`, and `simulate`. The help for each command is available through the command line using the `--help` option. Some examples and explanations are given in the next section.
+The CLI tool provides several commands grouped under `build`, `plot`, and `simulate`. Use the `--help` option to get help for each command. Examples and explanations are provided in the next section.
 
 ## Examples
 
 ### Build a Graph
 
-Let be the timeseries of correlations matrices be stored a numpy pickle file `matrices.npz` or `matrices.npy` and the definitions of the areas and regions csv file `areas.csv`.
+Assume the timeseries of correlation matrices are stored in a numpy pickle file (`matrices.npz` or `matrices.npy`) and the definitions of the areas and regions are in a CSV file (`areas.csv`).
 
-The areas/regions definition must give the information as in the following table.
+The areas/regions definition must be formatted as follows:
 
 | Id_Area | Name_Area | Name_Region |
 |---------|-----------|-------------|
@@ -33,7 +33,7 @@ The areas/regions definition must give the information as in the following table
 | 3       | Area3     | Region2     |
 | 4       | Area4     | Region3     |
 
-The csv file is then formatted accordingly as follows.
+Accordingly, the CSV file should look like this:
 
 ```csv
 Id_Area,Name_Area,Name_Region
@@ -57,29 +57,31 @@ To plot a graph stored in the file `my_graph.zip` to a dynamic plot, use the com
 python -m fmri_st_graph plot my_graph.zip dynamic
 ```
 
-Other available plot types can be accessed through the command `spatial`, `command` and `multipartite` (avoid this last one for large graphs, because of memory issues).
+Other available plot types include `spatial`, `command`, and `multipartite` (avoid this last one for large graphs due to memory issues).
 
 ### Simulate a Pattern
 
-To simulate a pattern, give the description of networks across time, spatial and temporal edges. The string syntax for a single network is `area_range,region,internal_strength`, where the area range is defined either by a single area id or by a range between two ids separated by a colon. The description of multiple networks at a given time are concatenated with spaces as separation. A `/` symbol separates networks of two different time instants. The whole description must be surrounded by quotes.
+To simulate a pattern, provide the description of networks across time, spatial, and temporal edges. The string syntax for a single network is `area_range,region,internal_strength`, where the area range is defined either by a single area ID or by a range between two IDs separated by a colon. Descriptions of multiple networks at a given time are concatenated with spaces. A `/` symbol separates networks of two different time instants. The whole description must be surrounded by quotes.
 
 The syntax for a single spatial edge is `network1_id,network2_id,correlation`. Multiple descriptions are concatenated between quotes and separated by spaces.
 
-The syntax for a single temporal edge is `network_id_range,network_id_range`, where the range can be either a single network id, or multiple ids. In the latter, separate the ids with a `-` character. The kind of edges is automatically inferred. For instance, `id,id` means an equal edge while `id-id,id` means a merge and `id,id-id` means a split. Multiple descriptions are concatenated between quotes and separated by spaces.
+The syntax for a single temporal edge is `network_id_range,network_id_range`, where the range can be either a single network ID or multiple IDs separated by a `-` character. The kind of edges is automatically inferred. For instance, `id,id` means an equal edge, `id-id,id` means a merge, and `id,id-id` means a split. Multiple descriptions are concatenated between quotes and separated by spaces.
 
-As an example, the command
+Example command:
+
 ```sh
 python -m fmri_st_graph simulate -o pattern.zip pattern "1:3,1,0.8 4:5,2,-0.8 / 1:2,1,0.7 3,1,1 4:5,2,-0.8" "1,2,0.6 3,5,0.5" "1,3-4 2,5"
 ```
-create the pattern depicted in the following multipartite plot.
 
-![Example a generated pattern](doc/simulation_pattern_example.png "Example a generated pattern")
+This creates the pattern depicted in the following multipartite plot:
+
+![Example of a generated pattern](doc/simulation_pattern_example.png "Example of a generated pattern")
 
 ### Simulate a Sequence
 
-A graph can be simulated from a sequence of pre-generated patterns. The description of the sequence is made of space-separated element, which can be either a pattern, designated as `p<n>` where `n` is the order of the pattern passed to the command, or a number `d`, to create `d` steady states.  
+A graph can be simulated from a sequence of pre-generated patterns. The sequence description consists of space-separated elements, which can be either a pattern (`p<n>`, where `n` is the order of the pattern passed to the command) or a number (`d`) to create `d` steady states.
 
-For instance, to create a graph from three distinct patterns and with some steady state in-between patterns, use the command: 
+Example command:
 
 ```sh
 python -m fmri_st_graph simulate -o sequence.zip sequence pattern1.zip pattern2.zip pattern3.zip "p2 10 p3 5 p1"
@@ -87,13 +89,13 @@ python -m fmri_st_graph simulate -o sequence.zip sequence pattern1.zip pattern2.
 
 ### Simulate Correlations
 
-To simulate a timeseries of correlation matrices from a spatio-temporal graph, stored in the file `my_graph.zip`, and with a correlation threshold of 0.5, use the command:
+To simulate a timeseries of correlation matrices from a spatio-temporal graph stored in `my_graph.zip` with a correlation threshold of 0.5, use the command:
 
 ```sh
 python -m fmri_st_graph simulate -o correlations.npz correlations my_graph.zip -t 0.5
 ```
 
-The output timeseries matrices will be saved in numpy-compatible format. To set the output path, use the option `-o` of the simulation command. 
+The output timeseries matrices will be saved in a numpy-compatible format. Use the `-o` option to set the output path.
 
 ## License
 
