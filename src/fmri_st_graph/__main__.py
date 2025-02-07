@@ -6,6 +6,7 @@ import click
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from screeninfo import get_monitors
 
 from fmri_st_graph import generate_pattern, SpatioTemporalGraphSimulator, CorrelationMatrixSequenceSimulator
 from .factory import spatio_temporal_graph_from_corr_matrices
@@ -66,6 +67,30 @@ def build(correlation_matrices_path: str, areas_description_path: str, output_gr
 
 ## plotting ###################################################################
 
+def __figure_screen_setup(res_factor: float = 0.75, size_factor: float = 0.75):
+    """Set up the figure dimensions and resolution based on the screen size.
+
+    This function calculates the figure size and DPI (dots per inch) based on the screen dimensions
+    and a resolution factor. It uses the first monitor detected by the `screeninfo` library.
+
+    Parameters
+    ----------
+        res_factor: A (float) factor to adjust the resolution. Default is 0.65.
+        size_factor: A (float) factor to adjust the size on the screen. Default is 0.75.
+
+    Returns
+    -------
+    dict: A dictionary containing the figure size (`figsize`) and DPI (`dpi`).
+    """
+    monitor = next(iter(get_monitors()))
+    screen_width = monitor.width_mm / 25.4
+    screen_height = monitor.height_mm / 25.4
+    dpi = max(monitor.width / screen_width, monitor.height / screen_height) * res_factor
+    width = screen_width * size_factor / res_factor
+    height = screen_height * size_factor / res_factor
+    return dict(figsize=(width, height), dpi=dpi)
+
+
 @click.group()
 @click.argument('graph_path', type=click.Path(exists=True))
 @click.pass_context
@@ -96,7 +121,7 @@ def multipartite(ctx: click.core.Context):
         go_on = answer == 'yes'
 
     if go_on:
-        fig, axe = plt.subplots(layout='constrained')
+        fig, axe = plt.subplots(layout='constrained', **__figure_screen_setup())
         multipartite_plot(ctx.obj, ax=axe)
         plt.show()
 
@@ -117,7 +142,7 @@ def spatial(ctx: click.core.Context, time: int):
                    f"requested time is greater ({time}>{max_time})!")
     else:
         time = min(time, max_time)
-        fig, axe = plt.subplots(layout='constrained')
+        fig, axe = plt.subplots(layout='constrained', **__figure_screen_setup())
         spatial_plot(ctx.obj, time, ax=axe)
         plt.show()
 
@@ -129,22 +154,19 @@ def temporal(ctx: click.core.Context):
 
     Displays all nodes and only the temporal edges.
     """
-    fig, axe = plt.subplots(layout='constrained')
+    fig, axe = plt.subplots(layout='constrained', **__figure_screen_setup())
     temporal_plot(ctx.obj, ax=axe)
     plt.show()
 
 
 @plot.command()
-@click.option('-s', '--size', type=click.FloatRange(0),
-              default=70, show_default=True,
-              help="The size of the plotting window (in centimeter).")
 @click.pass_context
-def dynamic(ctx: click.core.Context, size: float):
+def dynamic(ctx: click.core.Context):
     """Display an interactive dynamic graph.
 
     Shows both spatial and temporal graphs with interactivity.
     """
-    DynamicPlot(ctx.obj, size).plot()
+    DynamicPlot(ctx.obj).plot(__figure_screen_setup(size_factor=1))
     plt.show()
 
 

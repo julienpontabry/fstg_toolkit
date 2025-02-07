@@ -627,7 +627,6 @@ class DynamicTimeCursor(Cursor):
 class DynamicPlot:
     """A dynamic plot that contains both temporal and spatial plot with interactivity."""
     graph: SpatioTemporalGraph
-    size: float
 
     @property
     def __networks_markers(self) -> list[Line2D]:
@@ -641,11 +640,11 @@ class DynamicPlot:
     def __time_text(self) -> list[Text]:
         return [] if self.time_text is None else [self.time_text]
 
-    def __create_figure(self) -> None:
+    def __create_figure(self, figure_setup: dict) -> None:
         # use the recent toolbar
         plt.rcParams['toolbar'] = 'toolmanager'
 
-        self.fig = plt.figure(figsize=(_inch2cm(self.size), _inch2cm(self.size / 3)), layout='constrained')
+        self.fig = plt.figure(layout='constrained', **figure_setup)
         gs = GridSpec(nrows=1, ncols=2, figure=self.fig, width_ratios=[2, 1])
         self.tpl_axe = self.fig.add_subplot(gs[0])
 
@@ -799,8 +798,8 @@ class DynamicPlot:
         tool_mgr.remove_tool('subplots')
         tool_mgr.remove_tool('help')
 
-    def plot(self):
-        self.__create_figure()
+    def plot(self, figure_setup: dict):
+        self.__create_figure(figure_setup)
         self.__initialize_figure()
         self.__initialize_widgets()
         self.__initialize_events()
