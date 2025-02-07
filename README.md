@@ -2,94 +2,168 @@
 
 # MoS-T_fMRI
 
-
-
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://forge.icube.unistra.fr/jpontabry/mos-t_fmri.git
-git branch -M main
-git push -uf origin main
-```
-
-## Integrate with your tools
-
-- [ ] [Set up project integrations](https://forge.icube.unistra.fr/jpontabry/mos-t_fmri/-/settings/integrations)
-
-## Collaborate with your team
-
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+This package allows you to build, plot, and simulate spatio-temporal graphs for fMRI data. This readme describes briefly the usage of the CLI tool. In the following sections, the installation, the usage and an example are detailed.
 
 ## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+
+To install the required dependencies, run:
+
+```sh
+conda env create -n <env_name> -f environment.yml
+conda activate <env_name>
+pip install -r requirements.txt
+```
 
 ## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+The CLI tool provides several commands grouped under `build`, `plot`, and `simulate`. In the following sections is detailed the help for the CLI commands. This help is also available through the command line using the `--help` option.
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+### Build
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+Build a spatio-temporal graph from correlation matrices and areas description.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+```sh
+python -m fmri_st_graph build <correlation_matrices_path> <areas_description_path> [options]
+```
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+**Arguments:**
+- `correlation_matrices_path`: Path to the correlation matrices file.
+- `areas_description_path`: Path to the areas description file.
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+**Options:**
+- `-o`, `--output_graph`: Path where to write the built graph. Default is `output.zip`.
+
+### Plot
+
+Plot a spatio-temporal graph from an archive.
+
+```sh
+python -m fmri_st_graph plot <graph_path> <subcommand> [options]
+```
+
+**Arguments:**
+- `graph_path`: Path to the graph archive.
+
+**Subcommands:**
+- `multipartite`: Plot as a multipartite graph.
+- `spatial`: Plot as a spatial connectivity graph.
+- `temporal`: Plot as a temporal connectivity graph.
+- `dynamic`: Plot in a dynamic graph with interactivity.
+
+**Options for `spatial`:**
+- `-t`, `--time`: The time index of the spatial subgraph to show. Default is `0`.
+
+**Options for `dynamic`:**
+- `-s`, `--size`: The size of the plotting window (in centimeters). Default is `70`.
+
+### Simulate
+
+Simulate a spatio-temporal graph.
+
+```sh
+python -m fmri_st_graph simulate <subcommand> [options]
+```
+
+**Options:**
+- `-o`, `--output_path`: Path where to write the simulated output. Default is `output`.
+
+**Subcommands:**
+- `pattern`: Generate a spatio-temporal graph pattern from description.
+- `sequence`: Generate a spatio-temporal graph from a patterns sequence.
+- `correlations`: Simulate correlation matrices from a spatio-temporal graph.
+
+**Arguments for `pattern`:**
+- `networks`: Description of networks.
+- `spatial_edges`: Description of spatial edges (optional).
+- `temporal_edges`: Description of temporal edges (optional).
+
+**Arguments for `sequence`:**
+- `patterns`: Paths to pattern files.
+- `sequence_description`: Description of the sequence.
+
+**Arguments for `correlations`:**
+- `graph_path`: Path to the graph archive.
+
+**Options for `correlations`:**
+- `-t`, `--threshold`: The correlation threshold when building graph from matrices. Default is `0.4`.
+
+## Examples
+
+### Build a Graph
+
+Let be the timeseries of correlations matrices be stored a numpy pickle file `matrices.npz` or `matrices.npy` and the definitions of the areas and regions csv file `areas.csv`.
+
+The areas/regions definition must give the information as in the following table.
+
+| Id_Area | Name_Area | Name_Region |
+|---------|-----------|-------------|
+| 1       | Area1     | Region1     |
+| 2       | Area2     | Region1     |
+| 3       | Area3     | Region2     |
+| 4       | Area4     | Region3     |
+
+The csv file is then formatted accordingly as follows.
+
+```csv
+Id_Area,Name_Area,Name_Region
+1,Area1,Region1
+2,Area2,Region1
+3,Area3,Region2
+4,Area4,Region3
+```
+
+To build a spatio-temporal graph from the inputs and save the graph to the archive file `my_graph.zip`, use the command:
+
+```sh
+python -m fmri_st_graph build matrices.npz areas.csv -o my_graph.zip
+```
+
+### Plot a Graph
+
+To plot a graph stored in the file `my_graph.zip` to a dynamic plot, use the command:
+
+```sh
+python -m fmri_st_graph plot my_graph.zip dynamic
+```
+
+Other available plot types can be accessed through the command `spatial`, `command` and `multipartite` (avoid this last one for large graphs, because of memory issues).
+
+### Simulate a Pattern
+
+To simulate a pattern, give the description of networks across time, spatial and temporal edges. The string syntax for a single network is `area_range,region,internal_strength`, where the area range is defined either by a single area id or by a range between two ids separated by a colon. The description of multiple networks at a given time are concatenated with spaces as separation. A `/` symbol separates networks of two different time instants. The whole description must be surrounded by quotes.
+
+The syntax for a single spatial edge is `network1_id,network2_id,correlation`. Multiple descriptions are concatenated between quotes and separated by spaces.
+
+The syntax for a single temporal edge is `network_id_range,network_id_range`, where the range can be either a single network id, or multiple ids. In the latter, separate the ids with a `-` character. The kind of edges is automatically inferred. For instance, `id,id` means an equal edge while `id-id,id` means a merge and `id,id-id` means a split. Multiple descriptions are concatenated between quotes and separated by spaces.
+
+As an example, the command
+```sh
+python -m fmri_st_graph simulate -o pattern.zip pattern "1:3,1,0.8 4:5,2,-0.8 / 1:2,1,0.7 3,1,1 4:5,2,-0.8" "1,2,0.6 3,5,0.5" "1,3-4 2,5"
+```
+create the pattern depicted in the following multipartite plot.
+
+![Example a generated pattern](doc/simulation_pattern_example.pdf "Example a generated pattern")
+
+### Simulate a Sequence
+
+A graph can be simulated from a sequence of pre-generated patterns. The description of the sequence is made of space-separated element, which can be either a pattern, designated as `p<n>` where `n` is the order of the pattern passed to the command, or a number `d`, to create `d` steady states.  
+
+For instance, to create a graph from three distinct patterns and with some steady state in-between patterns, use the command: 
+
+```sh
+python -m fmri_st_graph simulate -o sequence.zip sequence pattern1.zip pattern2.zip pattern3.zip "p2 10 p3 5 p1"
+```
+
+### Simulate Correlations
+
+To simulate a timeseries of correlation matrices from a spatio-temporal graph, stored in the file `my_graph.zip`, and with a correlation threshold of 0.5, use the command:
+
+```sh
+python -m fmri_st_graph simulate -o correlations.npz correlations my_graph.zip -t 0.5
+```
+
+The output timeseries matrices will be saved in numpy-compatible format. To set the output path, use the option `-o` of the simulation command. 
 
 ## License
-For open source projects, say how it is licensed.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+TODO
