@@ -16,76 +16,7 @@ pip install -r requirements.txt
 
 ## Usage
 
-The CLI tool provides several commands grouped under `build`, `plot`, and `simulate`. In the following sections is detailed the help for the CLI commands. This help is also available through the command line using the `--help` option.
-
-### Build
-
-Build a spatio-temporal graph from correlation matrices and areas description.
-
-```sh
-python -m fmri_st_graph build <correlation_matrices_path> <areas_description_path> [options]
-```
-
-**Arguments:**
-- `correlation_matrices_path`: Path to the correlation matrices file.
-- `areas_description_path`: Path to the areas description file.
-
-**Options:**
-- `-o`, `--output_graph`: Path where to write the built graph. Default is `output.zip`.
-
-### Plot
-
-Plot a spatio-temporal graph from an archive.
-
-```sh
-python -m fmri_st_graph plot <graph_path> <subcommand> [options]
-```
-
-**Arguments:**
-- `graph_path`: Path to the graph archive.
-
-**Subcommands:**
-- `multipartite`: Plot as a multipartite graph.
-- `spatial`: Plot as a spatial connectivity graph.
-- `temporal`: Plot as a temporal connectivity graph.
-- `dynamic`: Plot in a dynamic graph with interactivity.
-
-**Options for `spatial`:**
-- `-t`, `--time`: The time index of the spatial subgraph to show. Default is `0`.
-
-**Options for `dynamic`:**
-- `-s`, `--size`: The size of the plotting window (in centimeters). Default is `70`.
-
-### Simulate
-
-Simulate a spatio-temporal graph.
-
-```sh
-python -m fmri_st_graph simulate <subcommand> [options]
-```
-
-**Options:**
-- `-o`, `--output_path`: Path where to write the simulated output. Default is `output`.
-
-**Subcommands:**
-- `pattern`: Generate a spatio-temporal graph pattern from description.
-- `sequence`: Generate a spatio-temporal graph from a patterns sequence.
-- `correlations`: Simulate correlation matrices from a spatio-temporal graph.
-
-**Arguments for `pattern`:**
-- `networks`: Description of networks.
-- `spatial_edges`: Description of spatial edges (optional).
-- `temporal_edges`: Description of temporal edges (optional).
-
-**Arguments for `sequence`:**
-- `patterns`: Paths to pattern files.
-- `sequence_description`: Description of the sequence.
-
-**Arguments for `correlations`:**
-- `graph_path`: Path to the graph archive.
-
-**Options for `correlations`:**
-- `-t`, `--threshold`: The correlation threshold when building graph from matrices. Default is `0.4`.
+The CLI tool provides several commands grouped under `build`, `plot`, and `simulate`. The help for each command is available through the command line using the `--help` option. Some examples and explanations are given in the next section.
 
 ## Examples
 
