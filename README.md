@@ -59,9 +59,10 @@ python -m fmri_st_graph plot my_graph.zip dynamic
 
 Other available plot types include `spatial`, `command`, and `multipartite` (avoid this last one for large graphs due to memory issues).
 
-Below are examples of plotting spatial and temporal types.
-
+Below is an examples of spatial plot.
 ![Example of spatial plot](doc/plot_spatial_example.png "Example of spatial plot")
+
+Below is an example of temporal plot.
 ![Example of temporal plot](doc/plot_temporal_example.png "Example of temporal plot")
 
 ### Simulate a Pattern
