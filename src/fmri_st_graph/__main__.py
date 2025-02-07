@@ -28,15 +28,15 @@ def cli():
               default="output", show_default="a graph archive named 'output.zip' in the current directory",
               help="Path where to write the built graph. If there is no '.zip' extension, it will be added.")
 def build(correlation_matrices_path: str, areas_description_path: str, output_graph: str):
-    """Build a spatio-temporal graph from correlations matrices.
+    """Build a spatio-temporal graph from correlation matrices.
 
-    The spatio-temporal graph written at OUTPUT will be built from correlations matrices in CORRELATION_MATRICES_PATH and areas description in AREAS_DESCRIPTION_PATH.
+    The spatio-temporal graph will be saved to OUTPUT, built from the correlation matrices in CORRELATION_MATRICES_PATH and the area descriptions in AREAS_DESCRIPTION_PATH.
 
-    Accepted file formats for correlation matrices are numpy pickles files with extensions `.npz` or `.npy`.
+    Accepted file formats for correlation matrices are numpy pickle files with extensions `.npz` or `.npy`.
 
-    The CSV file for the description of areas and regions should have the following columns: `Id_Area`, `Name_Area`, and `Name_Region`.
+    The CSV file for the description of areas and regions should have the columns: `Id_Area`, `Name_Area`, and `Name_Region`.
 
-    If the file CORRELATION_MATRICES_PATH contains more than one set of matrices, the list of available names will be displayed and which one to use will be prompted.
+    If CORRELATION_MATRICES_PATH contains multiple sets of matrices, a list of available names will be displayed, and you will be prompted to choose one.
     """
     matrices = np.load(correlation_matrices_path)
 
@@ -70,9 +70,9 @@ def build(correlation_matrices_path: str, areas_description_path: str, output_gr
 @click.argument('graph_path', type=click.Path(exists=True))
 @click.pass_context
 def plot(ctx: click.core.Context, graph_path: str):
-    """Plot a spatio-temporal graph.
+    """Plot a spatio-temporal graph from an archive graph file.
 
-    The file GRAPH_PATH must be an archive containing a spatio-temporal graph.
+    The file GRAPH_PATH must be an archive containing the spatio-temporal graph.
     """
     ctx.obj = load_spatio_temporal_graph(graph_path)
 
@@ -80,11 +80,11 @@ def plot(ctx: click.core.Context, graph_path: str):
 @plot.command()
 @click.pass_context
 def multipartite(ctx: click.core.Context):
-    """Plot as multipartite graph.
+    """Plot as a multipartite graph.
 
-    The x-axis corresponds to the time evolution, and nodes at a given time are lined up vertically.
+    The x-axis represents time, with nodes at each time point aligned vertically.
 
-    Beware that this plot requires a large amount of memory and may not bet suited for large graphs.
+    Note: This plot requires significant memory and may not be suitable for large graphs.
     """
     go_on = True
     n = len(ctx.obj)
@@ -109,7 +109,7 @@ def multipartite(ctx: click.core.Context):
 def spatial(ctx: click.core.Context, time: int):
     """Plot as a spatial connectivity graph.
 
-    Only the nodes and spatial edges at a given time will be displayed.
+    Displays only the nodes and spatial edges at a specified time.
     """
     max_time = ctx.obj.graph['max_time']
     if time > max_time:
@@ -127,7 +127,7 @@ def spatial(ctx: click.core.Context, time: int):
 def temporal(ctx: click.core.Context):
     """Plot as a temporal connectivity graph.
 
-    All the nodes and only the temporal edges will be displayed.
+    Displays all nodes and only the temporal edges.
     """
     fig, axe = plt.subplots(layout='constrained')
     temporal_plot(ctx.obj, ax=axe)
@@ -140,9 +140,9 @@ def temporal(ctx: click.core.Context):
               help="The size of the plotting window (in centimeter).")
 @click.pass_context
 def dynamic(ctx: click.core.Context, size: float):
-    """Plot in a dynamic graph.
+    """Display an interactive dynamic graph.
 
-    Both the spatial and temporal graphs will be displayed, with some interactivity.
+    Shows both spatial and temporal graphs with interactivity.
     """
     DynamicPlot(ctx.obj, size).plot()
     plt.show()
@@ -287,15 +287,21 @@ def simulate(ctx: click.core.Context, output_path: Path):
 def pattern(ctx: click.core.Context, networks: list[list[tuple[tuple[int, int], int, float]]],
             spatial_edges: list[tuple[int, int, float]] | None,
             temporal_edges: list[tuple[int, int, str]] | None):
-    """Generate a spatio-temporal graph pattern from description.
+    """Generate a spatio-temporal graph pattern from a description.
 
-    The input strings for networks, spatial edges, and temporal edges are expected to follow specific formats.
+    The input strings for networks, spatial edges, and temporal edges must follow specific formats.
 
-    The NETWORKS must be as follows. The syntax for a single network is: area_range,region,internal_strength, where area_range is either a single area ID or a range between IDs separated by a colon. Multiple networks at a given time are concatenated with spaces. Networks of different time instants are separated by a `/` symbol. The whole description must be surrounded by quotes.
+    NETWORKS:
 
-    The SPATIAL_EDGES must be as follows. The syntax for a single spatial edge is: network1_id,network2_id,correlation. Multiple descriptions are concatenated between quotes and separated by spaces.
+        The syntax for a single network is `area_range,region,internal_strength`, where `area_range` is either a single area ID or a range between IDs separated by a colon. Multiple networks at a given time are concatenated with spaces. Networks of different time instants are separated by a `/` symbol. The entire description must be surrounded by quotes.
 
-    The TEMPORAL_EDGES must be as follows. The syntax for a single temporal edge is: network_id_range,network_id_range, where network_id_range can be either a single network ID or multiple IDs separated by a `-` character. The kind of edges is automatically inferred. Multiple descriptions are concatenated between quotes and separated by spaces.
+    SPATIAL_EDGES:
+
+        The syntax for a single spatial edge is `network1_id,network2_id,correlation`. Multiple descriptions are concatenated between quotes and separated by spaces.
+
+    TEMPORAL_EDGES:
+
+        The syntax for a single temporal edge is `network_id_range,network_id_range`, where `network_id_range` can be either a single network ID or multiple IDs separated by a `-` character. The type of edge is automatically inferred. Multiple descriptions are concatenated between quotes and separated by spaces.
     """
     if spatial_edges is None:
         spatial_edges = []
@@ -314,11 +320,11 @@ def pattern(ctx: click.core.Context, networks: list[list[tuple[tuple[int, int], 
 @click.argument('sequence_description', type=GRAPH_SEQUENCE_DESCRIPTION)
 @click.pass_context
 def sequence(ctx: click.core.Context, patterns: tuple[Path], sequence_description: list[str | int]):
-    """Generate a spatio-temporal graph from a patterns sequence.
+    """Generate a spatio-temporal graph from a sequence of patterns.
 
-    The PATTERNS are path to the patterns to be used to generate a graph by a sequence.
+    PATTERNS are the paths to the pattern files used to generate the graph.
 
-    The SEQUENCE_DESCRIPTION consists of space-separated elements, which can be either a pattern (p<n>, where n is the order of the pattern passed to the command) or a number (d) to create d steady states.
+    SEQUENCE_DESCRIPTION is a space-separated list of elements, where each element is either a pattern (p<n>, where n is the order of the pattern) or a number (d) indicating d steady states.
     """
     pattern_graphs = {f'p{i+1}': load_spatio_temporal_graph(filepath)
                       for i, filepath in enumerate(patterns)}
