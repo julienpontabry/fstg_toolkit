@@ -73,7 +73,7 @@ python -m fmri_st_graph simulate -o pattern.zip pattern "1:3,1,0.8 4:5,2,-0.8 / 
 ```
 create the pattern depicted in the following multipartite plot.
 
-![Example a generated pattern](doc/simulation_pattern_example.pdf "Example a generated pattern")
+![Example a generated pattern](doc/simulation_pattern_example.png "Example a generated pattern")
 
 ### Simulate a Sequence
 
