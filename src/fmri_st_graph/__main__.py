@@ -180,11 +180,11 @@ class GraphElementsDescription(click.ParamType):
 
 
 class _NetworkDescription(GraphElementsDescription):
-    elem_desc = r'\s*(?P<range>\d+:\d+),(?P<id>\d+),(?P<strength>-?\d*.\d+)'
+    elem_desc = r'\s*(?P<range>\d+(:\d+)?),(?P<id>\d+),(?P<strength>-?\d*.?\d+)'
 
     def _convert_from_match(self, match: re.Match[str]) -> tuple[any, ...]:
         tmp = match.group('range').split(':')
-        areas = int(tmp[0]), int(tmp[1])
+        areas = int(tmp[0]) if len(tmp) == 1 else (int(tmp[0]), int(tmp[1]))
         region = int(match.group('id'))
         internal_strength = float(match.group('strength'))
         return areas, region, internal_strength
