@@ -59,6 +59,11 @@ python -m fmri_st_graph plot my_graph.zip dynamic
 
 Other available plot types include `spatial`, `command`, and `multipartite` (avoid this last one for large graphs due to memory issues).
 
+Below are examples of plotting spatial and temporal types.
+
+![Example of spatial plot](doc/plot_spatial_example.png "Example of spatial plot")
+![Example of temporal plot](doc/plot_temporal_example.png "Example of temporal plot")
+
 ### Simulate a Pattern
 
 To simulate a pattern, provide the description of networks across time, spatial, and temporal edges. The string syntax for a single network is `area_range,region,internal_strength`, where the area range is defined either by a single area ID or by a range between two IDs separated by a colon. Descriptions of multiple networks at a given time are concatenated with spaces. A `/` symbol separates networks of two different time instants. The whole description must be surrounded by quotes.
