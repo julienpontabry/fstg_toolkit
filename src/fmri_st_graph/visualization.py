@@ -564,7 +564,7 @@ def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None) -> None:
 
         colors = [graph.nodes[n]['internal_strength'] for n in coords.keys()]
         ax.scatter(*list(zip(*coords.values())), zorder=2.1,
-                s=30, c=colors, cmap=cmap, edgecolors='k', linewidths=1, vmin=-1, vmax=1)
+                s=20, c=colors, cmap=cmap, edgecolors='k', linewidths=0.1, vmin=-1, vmax=1)
 
         heights.append(max(coords.values(), key=lambda x: x[1])[1] + 1 - y)
         y += heights[-1] + 1
@@ -645,7 +645,7 @@ class DynamicPlot:
         plt.rcParams['toolbar'] = 'toolmanager'
 
         self.fig = plt.figure(layout='constrained', **figure_setup)
-        gs = GridSpec(nrows=1, ncols=2, figure=self.fig, width_ratios=[2, 1])
+        gs = GridSpec(nrows=1, ncols=2, figure=self.fig, width_ratios=[4, 3])
         self.tpl_axe = self.fig.add_subplot(gs[0])
 
         gs_side = gs[1].subgridspec(nrows=2, ncols=1, height_ratios=[40, 1])
