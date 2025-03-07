@@ -28,7 +28,16 @@ def cli():
 @click.option('-o', '--output_graph', type=click.Path(writable=True),
               default="output", show_default="a graph archive named 'output.zip' in the current directory",
               help="Path where to write the built graph. If there is no '.zip' extension, it will be added.")
-def build(correlation_matrices_path: str, areas_description_path: str, output_graph: str):
+@click.option('-t', '--corr-threshold', type=click.FloatRange(min=0, max=1), default=0.4,
+              show_default=True, help="The threshold of the correlations maps.")
+@click.option('--absolute-thresholding/--no-absolute-thresholding', default=True,
+              help="Flag to tell how to threshold the correlations (on absolute values or not).")
+@click.option('-acn', '--areas-column-name', type=str, default='Name_Area',
+              show_default=True, help="The name of the column of areas' names in the description file.")
+@click.option('-rcn', '--regions-column-name', type=str, default='Name_Region',
+              show_default=True, help="The name of the column of regions' names in the description file.")
+def build(correlation_matrices_path: str, areas_description_path: str, output_graph: str,
+          corr_threshold: float, absolute_thresholding: bool, areas_column_name: str, regions_column_name: str):
     """Build a spatio-temporal graph from correlation matrices.
 
     The spatio-temporal graph will be saved to OUTPUT, built from the correlation matrices in CORRELATION_MATRICES_PATH and the area descriptions in AREAS_DESCRIPTION_PATH.
@@ -61,7 +70,9 @@ def build(correlation_matrices_path: str, areas_description_path: str, output_gr
 
     with click.progressbar(matrices) as bar:
         for mat, output in bar:
-            graph = spatio_temporal_graph_from_corr_matrices(mat, areas)
+            graph = spatio_temporal_graph_from_corr_matrices(
+                mat, areas, corr_thr=corr_threshold, abs_thr=absolute_thresholding, area_col_name=areas_column_name,
+                region_col_name=regions_column_name)
             save_spatio_temporal_graph(graph, output)
 
 
