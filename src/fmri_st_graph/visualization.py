@@ -557,6 +557,8 @@ def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None) -> None:
     y = 0
     gen = __CoordinatesGenerator(graph)
     drawer = __PathDrawer(graph, ax)
+    all_coords: dict[int, tuple[int, int]] = {}
+    rev_coords: dict[tuple[int, int], int] = {}
     for r, region in enumerate(regions):
         nodes = [n for n, d in sub_g.nodes.items() if d['region'] == region]
         coords = gen.generate(nodes, y)
@@ -568,6 +570,11 @@ def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None) -> None:
 
         heights.append(max(coords.values(), key=lambda x: x[1])[1] + 1 - y)
         y += heights[-1] + 1
+
+        # save coordinates for later
+        all_coords.update(coords)
+        for n, c in coords.items():
+            rev_coords[c] = n
 
     # draw limits of regions
     o = 0
@@ -592,6 +599,20 @@ def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None) -> None:
     for tick in ax.get_yaxis().get_major_ticks():
         tick.tick1line.set_visible(False)
     ax.set_ylim(-1, sum(heights) + len(heights) - 1)
+
+    # add spatial display of connected nodes at click
+    def highlight_connected(event):
+        x, y = round(event.xdata), round(event.ydata)
+        n = rev_coords[x, y]
+        spatial_nodes = [sn for sn in graph.adj[n]
+                         if graph.adj[n][sn]['type'] == 'spatial']
+        n_coords = [all_coords[sn] for sn in spatial_nodes]
+        print((x, y), n, spatial_nodes, n_coords)
+        ax.plot(*list(zip(*n_coords)), 'sr')
+        # TODO refresh + make it dynamic (in dynamic plot)
+
+    fig = ax.get_figure()
+    fig.canvas.mpl_connect('button_press_event', highlight_connected)
 
 
 def _inch2cm(inch: float) -> float:
