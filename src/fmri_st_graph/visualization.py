@@ -625,40 +625,74 @@ class DynamicTimeCursor(Cursor):
         self.__all_coord = all_coord
         self.__rev_coord = rev_coord
         self.__graph = graph
+        self.__markers = []
 
-    def __get_connected_nodes_coord(self, t: int, y: int) -> list[tuple[int, int]] | None:
-        if n := self.__rev_coord.get((t, y)):
-            spatial_nodes = [sn for sn in self.__graph.adj[n]
-                             if self.__graph.adj[n][sn]["type"] == "spatial"]
-            return [self.__all_coord[sn] for sn in spatial_nodes]
-        else:
-            return None
+    def __get_connected_nodes_coord(self, n: int) -> list[tuple[int, int]] | None:
+        spatial_nodes = [sn for sn in self.__graph.adj[n]
+                         if self.__graph.adj[n][sn]["type"] == "spatial"]
+        return [self.__all_coord[sn] for sn in spatial_nodes]
 
     def onmove(self, event):
         if self.ignore(event):
             return
+
         if not self.canvas.widgetlock.available(self):
             return
+
+        # clean the markers (if any)
+        for marker1 in self.__markers:
+            marker1.remove()
+        self.__markers.clear()
+
         if not self.ax.contains(event)[0]:
-            # TODO clean connected nodes
+            self.linev.set_visible(False)
+            self.lineh.set_visible(False)
+
+            if self.needclear:
+                self.canvas.draw()
+                self.needclear = False
             return
 
+        # set up the time cursor
+        self.needclear = True
+        xdata, ydata = self._get_data_coords(event)
+        self.linev.set_xdata((xdata, xdata))
+        self.linev.set_visible(self.visible and self.vertOn)
+        self.lineh.set_ydata((ydata, ydata))
+        self.lineh.set_visible(self.visible and self.horizOn)
+        if not (self.visible and (self.vertOn or self.horizOn)):
+            return
+
+        # set up the connected nodes
+        t, y = int(round(xdata)), int(round(ydata))
+        if n := self.__rev_coord.get((t, y)):
+            coord = self.__get_connected_nodes_coord(n)
+            self.__markers += self.ax.plot(*list(zip(*coord)), 'sr')
+            self.__markers += self.ax.plot(t, y, 'sg')
+
+        # Redraw.
+        if self.useblit:
+            if self.background is not None:
+                self.canvas.restore_region(self.background)
+
+            # draw time cursor
+            self.ax.draw_artist(self.linev)
+            self.ax.draw_artist(self.lineh)
+
+            # draw connected nodes
+            for marker in self.__markers:
+                self.ax.draw_artist(marker)
+
+            self.canvas.blit(self.ax.bbox)
+        else:
+            self.canvas.draw_idle()
+
         # callback with the time position
-        t = int(round(event.xdata))
+
         if self.__last_t != t:
             self.__callback(t)
             self.__last_t = t
         event.xdata = t
-
-        # TODO draw connected nodes
-        y = round(event.ydata)
-        if coord := self.__get_connected_nodes_coord(t, y):
-            markers = self.ax.plot(*list(zip(*coord)), 'sr')
-            for marker in markers:
-                self.ax.draw_artist(marker)
-
-        # blitting is done in parent's method
-        super().onmove(event)
 
 
 @dataclass
