@@ -532,7 +532,7 @@ class __PathDrawer:
                            linewidths=1.5, linestyles='-'))
 
 
-def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None) -> None:
+def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None) -> tuple[dict[int, tuple[int, int]], dict[tuple[int, int], int]]:
     """Draw a temporal plot for a spatio-temporal graph.
 
     Parameters
@@ -541,6 +541,12 @@ def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None) -> None:
         The spatio-temporal graph.
     ax: matplotlib.axes.Axes, optional
         The axes on which to plot.  If not set, the current axes will be used.
+
+    Returns
+    -------
+    tuple[dict[int, tuple[int, int]], dict[tuple[int, int], int]]
+        The first dictionary maps node identifiers to their coordinates (time, height).
+        The second dictionary maps coordinates (time, height) to node identifiers.
     """
     if ax is None:
         ax = plt.gca()
@@ -557,8 +563,8 @@ def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None) -> None:
     y = 0
     gen = __CoordinatesGenerator(graph)
     drawer = __PathDrawer(graph, ax)
-    all_coords: dict[int, tuple[int, int]] = {}
-    rev_coords: dict[tuple[int, int], int] = {}
+    all_coord: dict[int, tuple[int, int]] = {}
+    rev_coord: dict[tuple[int, int], int] = {}
     for r, region in enumerate(regions):
         nodes = [n for n, d in sub_g.nodes.items() if d['region'] == region]
         coords = gen.generate(nodes, y)
@@ -572,9 +578,9 @@ def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None) -> None:
         y += heights[-1] + 1
 
         # save coordinates for later
-        all_coords.update(coords)
+        all_coord.update(coords)
         for n, c in coords.items():
-            rev_coords[c] = n
+            rev_coord[c] = n
 
     # draw limits of regions
     o = 0
@@ -600,19 +606,7 @@ def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None) -> None:
         tick.tick1line.set_visible(False)
     ax.set_ylim(-1, sum(heights) + len(heights) - 1)
 
-    # add spatial display of connected nodes at click
-    def highlight_connected(event):
-        x, y = round(event.xdata), round(event.ydata)
-        n = rev_coords[x, y]
-        spatial_nodes = [sn for sn in graph.adj[n]
-                         if graph.adj[n][sn]['type'] == 'spatial']
-        n_coords = [all_coords[sn] for sn in spatial_nodes]
-        print((x, y), n, spatial_nodes, n_coords)
-        ax.plot(*list(zip(*n_coords)), 'sr')
-        # TODO refresh + make it dynamic (in dynamic plot)
-
-    fig = ax.get_figure()
-    fig.canvas.mpl_connect('button_press_event', highlight_connected)
+    return all_coord, rev_coord
 
 
 def _inch2cm(inch: float) -> float:
@@ -622,25 +616,48 @@ def _inch2cm(inch: float) -> float:
 class DynamicTimeCursor(Cursor):
     """A dynamic cursor for time points."""
 
-    def __init__(self, axe: Axes, func: Callable[[int], None], **lineprops):
+    def __init__(self, axe: Axes, func: Callable[[int], None],
+                 all_coord: dict[int, tuple[int, int]], rev_coord: dict[tuple[int, int], int],
+                 graph: SpatioTemporalGraph, **lineprops):
         super().__init__(ax=axe, horizOn=False, useblit=True, **lineprops)
         self.__callback = func
         self.__last_t = None
+        self.__all_coord = all_coord
+        self.__rev_coord = rev_coord
+        self.__graph = graph
+
+    def __get_connected_nodes_coord(self, t: int, y: int) -> list[tuple[int, int]] | None:
+        if n := self.__rev_coord.get((t, y)):
+            spatial_nodes = [sn for sn in self.__graph.adj[n]
+                             if self.__graph.adj[n][sn]["type"] == "spatial"]
+            return [self.__all_coord[sn] for sn in spatial_nodes]
+        else:
+            return None
 
     def onmove(self, event):
         if self.ignore(event):
             return
         if not self.canvas.widgetlock.available(self):
             return
+        if not self.ax.contains(event)[0]:
+            # TODO clean connected nodes
+            return
 
-        if event.inaxes == self.ax:
-            t = int(round(event.xdata))
+        # callback with the time position
+        t = int(round(event.xdata))
+        if self.__last_t != t:
+            self.__callback(t)
+            self.__last_t = t
+        event.xdata = t
 
-            if self.__last_t != t:
-                self.__callback(t)
-                self.__last_t = t
-            event.xdata = t
+        # TODO draw connected nodes
+        y = round(event.ydata)
+        if coord := self.__get_connected_nodes_coord(t, y):
+            markers = self.ax.plot(*list(zip(*coord)), 'sr')
+            for marker in markers:
+                self.ax.draw_artist(marker)
 
+        # blitting is done in parent's method
         super().onmove(event)
 
 
@@ -684,7 +701,7 @@ class DynamicPlot:
         init_t = 0
 
         # plot both temporal and spatial plots
-        temporal_plot(self.graph, ax=self.tpl_axe)
+        self.__all_coord, self.__rev_coord = temporal_plot(self.graph, ax=self.tpl_axe)
         _spatial_plot_background(self.graph, ax=self.spl_axe, show_regions=False)
 
         # set the initial spatial plot display
@@ -799,6 +816,7 @@ class DynamicPlot:
 
     def __initialize_widgets(self) -> None:
         self.fig.t_cursor = DynamicTimeCursor(self.tpl_axe, self.__on_cursor_changed,
+                                              self.__all_coord, self.__rev_coord, self.graph,
                                               color='k', lw=0.8, ls='--')
         time_range = self.graph.graph['min_time'], self.graph.graph['max_time']
         self.fig.w_slider = RangeSlider(ax=self.win_axe, label="Window", valstep=1,
