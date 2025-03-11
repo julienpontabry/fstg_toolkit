@@ -102,15 +102,13 @@ def __find_networks_per_region(graph: nx.Graph, regions: list[str]) -> list[tupl
     return networks_nodes
 
 
-def __compute_network_internal_strength(graph: nx.Graph, network: set[int]) -> float:
+def __compute_network_internal_strength(net_graph: nx.Graph) -> float:
     """Compute the internal strength of a network in a graph.
 
     Parameters
     ----------
-    graph: networkx.Graph
-        The non-directed graph that contains the network.
-    network: set[int]
-        The network as a set of nodes.
+    net_graph: networkx.Graph
+        The non-directed graph induced by a network.
 
     Returns
     -------
@@ -118,7 +116,7 @@ def __compute_network_internal_strength(graph: nx.Graph, network: set[int]) -> f
         The internal strength, calculated as the average correlation in the network.
     """
     internal_correlations = [data['correlation']
-                             for _, data in graph.subgraph(network).edges.items()]
+                             for _, data in net_graph.edges.items()]
     return 1 if len(internal_correlations) == 0 else float(np.mean(internal_correlations))
 
 
@@ -204,9 +202,12 @@ def networks_from_connect_graph(graph: nx.Graph, regions: list[str]) -> nx.Graph
     networks_graph = nx.Graph()
 
     for i, (region, network) in enumerate(networks):
-        internal_strength = __compute_network_internal_strength(graph, network)
+        net_graph = graph.subgraph(network)
+        internal_strength = __compute_network_internal_strength(net_graph)
+        efficiency = nx.global_efficiency(net_graph)
         networks_graph.add_node(i+1, areas=network, region=region,
-                                internal_strength=internal_strength)
+                                internal_strength=internal_strength,
+                                efficiency=efficiency)
 
         for j, (_, other_network) in enumerate(networks[:i]):
             adjacent_areas = __find_adjacent_areas(graph, network, other_network)
