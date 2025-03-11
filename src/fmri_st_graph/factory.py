@@ -204,7 +204,8 @@ def networks_from_connect_graph(graph: nx.Graph, regions: list[str]) -> nx.Graph
     for i, (region, network) in enumerate(networks):
         net_graph = graph.subgraph(network)
         internal_strength = __compute_network_internal_strength(net_graph)
-        efficiency = nx.global_efficiency(net_graph)
+        # FIXME is it really a good idea to set 1 as efficiency for areas alone in a network?
+        efficiency = nx.global_efficiency(net_graph) if len(net_graph) > 1 else 1
         networks_graph.add_node(i+1, areas=network, region=region,
                                 internal_strength=internal_strength,
                                 efficiency=efficiency)

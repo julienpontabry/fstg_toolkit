@@ -286,8 +286,9 @@ def _spatial_plot_artists(graph: SpatioTemporalGraph, t: float,
 
         x, y = __polar2cart(angle, 1)
         corr = data['internal_strength']
+        eff = data['efficiency']
         l = Line2D([x], [y], marker='o', mfc=cmap(corr / 2 + 0.5),
-                   mec='k', ms=(15 * np.abs(corr)), zorder=4)
+                   mec='k', ms=(15 * eff), zorder=4)
         networks_markers.append(l)
         nodes_coords[node] = (x, y)
         areas_network_map |= {i: (x, y) for i in indices}
