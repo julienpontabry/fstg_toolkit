@@ -288,7 +288,7 @@ def _spatial_plot_artists(graph: SpatioTemporalGraph, t: float,
         corr = data['internal_strength']
         eff = data['efficiency']
         l = Line2D([x], [y], marker='o', mfc=cmap(corr / 2 + 0.5),
-                   mec='k', ms=(15 * eff), zorder=4)
+                   mec='k', ms=15*eff, zorder=4)
         networks_markers.append(l)
         nodes_coords[node] = (x, y)
         areas_network_map |= {i: (x, y) for i in indices}
@@ -572,8 +572,10 @@ def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None) -> tuple[dict[int
         drawer.draw(coords, nodes, y)
 
         colors = [graph.nodes[n]['internal_strength'] for n in coords.keys()]
+        sizes = np.array([graph.nodes[n]['efficiency'] for n in coords.keys()])
         ax.scatter(*list(zip(*coords.values())), zorder=2.1,
-                s=20, c=colors, cmap=cmap, edgecolors='k', linewidths=0.1, vmin=-1, vmax=1)
+                s=10*sizes**5, c=colors, cmap=cmap, edgecolors='k',
+                   linewidths=0.1, vmin=-1, vmax=1)
 
         heights.append(max(coords.values(), key=lambda x: x[1])[1] + 1 - y)
         y += heights[-1] + 1
