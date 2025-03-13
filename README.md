@@ -11,7 +11,11 @@ To install the required dependencies, run:
 ```sh
 conda env create -n <env_name> -f environment.yml
 conda activate <env_name>
-pip install -r requirements.txt
+```
+
+Then in the project's folder, run:
+```sh
+poetry install
 ```
 
 ## Usage
