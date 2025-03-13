@@ -6,6 +6,7 @@ stages:
   before_script:
     - micromamba install --yes --name base --file environment.yml
     - micromamba clean --all --yes
+    - micromamba run poetry config virtualenvs.create false --local
     - micromamba run poetry install
     - export PYTHONPATH="$PYTHONPATH:src"
 
