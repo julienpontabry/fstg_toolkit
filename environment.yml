@@ -3,5 +3,5 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - poetry
   - python=3.10
-  - uv
