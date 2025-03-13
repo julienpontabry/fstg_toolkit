@@ -6,7 +6,7 @@ stages:
   before_script:
     - micromamba install --yes --name base --file environment.yml
     - micromamba clean --all --yes
-    - micromamba run uv pip install --requirement requirements.txt
+    - micromamba run poetry install
     - export PYTHONPATH="$PYTHONPATH:src"
 
 unit-tests:
