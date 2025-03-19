@@ -73,6 +73,7 @@ def build(correlation_matrices_path: str, areas_description_path: str, output_gr
             graph = spatio_temporal_graph_from_corr_matrices(
                 mat, areas, corr_thr=corr_threshold, abs_thr=absolute_thresholding, area_col_name=areas_column_name,
                 region_col_name=regions_column_name)
+            output.parent.mkdir(exist_ok=True)  # ensure path exists
             save_spatio_temporal_graph(graph, output)
 
 
