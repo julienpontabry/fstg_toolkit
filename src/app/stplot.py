@@ -4,12 +4,14 @@ import numpy as np
 import pandas as pd
 from dash import dcc, html
 from fmri_st_graph import spatio_temporal_graph_from_corr_matrices
+from fmri_st_graph.graph import RC5
 from fmri_st_graph.visualization import __CoordinatesGenerator, _trans_color
 from plotly import graph_objects as go
 
 
 class LifeLinesGenerator:
-    pass
+    def generate(self, starting_nodes: list[int], y: int):
+        pass
 
 
 def generate_subject_display_props(graph, name: str, regions: list[str]) -> dict[str, any]:
@@ -43,7 +45,7 @@ def generate_subject_display_props(graph, name: str, regions: list[str]) -> dict
     edges_colors = []
     for n in nodes_coord:
         for m, d in graph[n].items():
-            if d['type'] == 'temporal':
+            if d['type'] == 'temporal' and d['transition'] != RC5.EQ:
                 edges_x.append((nodes_coord[n][0], nodes_coord[m][0]))
                 edges_y.append((nodes_coord[n][1], nodes_coord[m][1]))
                 edges_colors.append(_trans_color(d['transition']))
@@ -70,6 +72,7 @@ def build_subject_figure(graph, name: str, regions: list[str]) -> go.Figure:
     # FIXME reduce the number of traces (7831!)
     # drop these and use nodes traces per life line
     # colors may be dropped
+    # => currently not displaying all the edges, only the non-EQ ones
     edges_traces = []
     for x, y, c in zip(props['edges_x'], props['edges_y'], props['edges_colors']):
         edges_trace = go.Scatter(
@@ -108,7 +111,7 @@ graph = spatio_temporal_graph_from_corr_matrices(matrices, desc)
 
 rels = desc.sort_values("Name_Region")
 regions = rels["Name_Region"].unique().tolist()
-regions = ['Thalamus', 'Midbrain', 'Retrosplenial']
+# regions = ['Thalamus', 'Midbrain', 'Retrosplenial']
 
 props = generate_subject_display_props(graph, 'test', regions)
 figure = build_subject_figure(graph, 'test', regions)
