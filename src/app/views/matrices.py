@@ -1,11 +1,11 @@
 from math import ceil
 
-from dash import html, Input, Output, callback, dcc
+from dash import Input, Output, callback, dcc, html
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
 
-def build_matrices_figure(corr, n_cols=5):
+def build_matrices_figure(corr, t, n_cols=5):
     # create figure for matrices to display
     names = list(corr.keys())
     n_rows = ceil(len(corr) / n_cols)
@@ -15,7 +15,7 @@ def build_matrices_figure(corr, n_cols=5):
         row = i // n_cols + 1
         col = i % n_cols + 1
         hm = go.Heatmap(
-            z=(corr[name][0]),
+            z=(corr[name][t]),
             zmin=-1, zmax=1,
             colorscale="RdBu_r",
             showscale=False
@@ -37,16 +37,23 @@ def build_matrices_figure(corr, n_cols=5):
 
 layout = [
     html.Div([
+        dcc.Slider(min=0, max=1, step=1, value=0, id='mtx-slider-time'),
         dcc.Graph(figure={}, id='mtx-graph')
     ])
 ]
 
+
 @callback(
     Output('mtx-graph', 'figure'),
+    Output('mtx-slider-time', 'max'),
+    Output('mtx-slider-time', 'marks'),
     Input('store-corr', 'data'),
+    Input('mtx-slider-time', 'value'),
 )
-def update_figure(corr):
-    if corr is None:
-        return {}
+def update_figure(corr, slider_value):
+    if corr is None or len(corr) == 0:
+        return {}, 1, {}
 
-    return build_matrices_figure(corr)
+    max_slider_value = len(next(iter(corr.values()))) - 1
+    marks_slider = {i: str(i) for i in range(0, max_slider_value + 1, max_slider_value//10)}
+    return build_matrices_figure(corr, slider_value), max_slider_value, marks_slider
