@@ -98,7 +98,7 @@ def build_subject_figure(graph, name: str, regions: list[str]) -> go.Figure:
 layout = html.Div([
     dcc.Dropdown([], clearable=False, id='subject-selection'),
     dcc.Dropdown([], multi=True, placeholder="Select regions...", id='regions-selection'),
-    dcc.Graph(figure={}, id='stgraph')
+    dcc.Graph(figure={}, id='st-graph')
 ])
 
 
@@ -129,7 +129,7 @@ def update_subjects(corr):
 
 
 @callback(
-    Output('stgraph', 'figure'),
+    Output('st-graph', 'figure'),
     Input('subject-selection', 'value'),
     Input('regions-selection', 'value'),
     State('store-desc', 'data'),
