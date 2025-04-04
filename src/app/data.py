@@ -10,6 +10,7 @@ from dash import html, dcc, dash_table, callback, Input, Output
 desc_columns = [{'name': "Area id", 'id': 'Id_Area'},
                 {'name': "Area name", 'id': 'Name_Area'},
                 {'name': "Region name", 'id': 'Name_Region'}]
+corr_columns = [{'name': "Subject", 'id': 'Subject'}]
 
 layout = [
     html.H2("Description of regions/areas"),
@@ -19,7 +20,10 @@ layout = [
     html.H2("Correlation matrices"),
     dcc.Upload(children=["Drag and drop or select correlation matrices files (.npy/.npz)"],
                multiple=True, id='upload-correlation'),
-    dcc.Loading([html.Div(id='loading-correlation')], type='circle',
+    dcc.Loading([
+                    dash_table.DataTable(columns=corr_columns, page_size=12, id='corr-table'),
+                ],
+                type='circle',
                 overlay_style={"visibility":"visible", "filter": "blur(2px)"})
 ]
 
@@ -50,19 +54,19 @@ def upload_description(filename, contents):
 
 @callback(
     Output('store-corr', 'data'),
-    Output('loading-correlation', 'children'),
+    Output('corr-table', 'data'),
     Input('upload-correlation', 'filename'),
     Input('upload-correlation', 'contents'),
 )
 def upload_corr(filenames, contents):
     if contents is None:
-        return None, ""
+        return None, None
 
     if all('npy' not in filename and \
            'npz' not in filename and \
            'zip' not in filename
            for filename in filenames):
-        return None, "Filename extension not supported!"
+        return None, None
 
     files = {filename: content for filename, content in zip(filenames, contents)}
     corr = {}
@@ -75,4 +79,4 @@ def upload_corr(filenames, contents):
         for name, matrices in data.items():
             corr[name] = matrices
 
-    return corr, "Data loaded successfully!"
+    return corr, [{'Subject': name} for name in corr.keys()]
