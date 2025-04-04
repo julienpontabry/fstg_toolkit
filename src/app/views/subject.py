@@ -141,7 +141,7 @@ def update_graph(name, regions, desc_json, corr):
 
     # FIXME very slow: we should keep the data on the server to avoid sending back and forth
     # for instance use ServerSideOutputTransform from dash extensions
-    desc = pd.read_json(io.StringIO(desc_json))
+    desc = pd.read_json(io.StringIO(desc_json)) # TODO put all reading in a utility function
     matrices = np.array(corr[name])
     graph = spatio_temporal_graph_from_corr_matrices(matrices, desc)
     return build_subject_figure(graph, name, regions)
