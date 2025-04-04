@@ -1,7 +1,7 @@
 import plotly.io as pio
 from dash import Dash, html, dcc
 
-import stplot, data
+from app.views import data, subject
 
 # use orsjon to make JSON 5-10x faster
 pio.json.config.default_engine = 'orjson'
@@ -13,7 +13,7 @@ app.layout = html.Div([
     # app's layout
     dcc.Tabs([
         dcc.Tab(label="Data", children=data.layout),
-        dcc.Tab(label="Subject view", children=stplot.layout),
+        dcc.Tab(label="Subject view", children=subject.layout),
     ]),
 
     # app's storage cache
