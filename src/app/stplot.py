@@ -1,3 +1,4 @@
+import io
 from pathlib import Path
 
 import numpy as np
@@ -96,24 +97,41 @@ def build_subject_figure(graph, name: str, regions: list[str]) -> go.Figure:
 
 
 data_path = Path('/home/jpontabry/Documents/projets/visualisation graphes spatio-temporels/data')
-desc = pd.read_csv(data_path / 'brain_areas_regions_rel_full.csv', index_col=0)
 data = np.load(data_path / 'list_of_corr_matrices_5months.zip')
 
 names = list(data.keys())
-regions = desc.sort_values("Name_Region")["Name_Region"].unique().tolist()
 
 layout = html.Div([
     dcc.Dropdown(names, names[0], clearable=False, id='subject_selection'),
-    dcc.Dropdown(regions, regions, multi=True, placeholder="Select regions...", id='regions_selection'),
+    dcc.Dropdown([], multi=True, placeholder="Select regions...", id='regions_selection'),
     dcc.Graph(figure={}, id='stgraph')
 ])
 
 
 @callback(
+    Output('regions_selection', 'options'),
+    Output('regions_selection', 'value'),
+    Input('store-desc', 'data'),
+)
+def update_regions(desc_json):
+    if desc_json is None:
+        return [], []
+
+    desc = pd.read_json(io.StringIO(desc_json))
+    regions = desc.sort_values("Name_Region")["Name_Region"].unique().tolist()
+    return regions, regions
+
+
+@callback(
     Output('stgraph', 'figure'),
     Input('subject_selection', 'value'),
-    Input('regions_selection', 'value')
+    Input('regions_selection', 'value'),
+    Input('store-desc', 'data'),
 )
-def update_graph(name, regions):
+def update_graph(name, regions, desc_json):
+    if desc_json is None:
+        return {}
+
+    desc = pd.read_json(io.StringIO(desc_json))
     graph = spatio_temporal_graph_from_corr_matrices(data[name], desc)
     return build_subject_figure(graph, name, regions)
