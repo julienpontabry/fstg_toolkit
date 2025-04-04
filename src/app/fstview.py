@@ -18,6 +18,7 @@ app.layout = html.Div([
 
     # app's storage cache
     dcc.Store(id='store-desc'),
+    dcc.Store(id='store-corr')
 ])
 
 if __name__ == '__main__':

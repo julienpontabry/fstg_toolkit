@@ -1,9 +1,8 @@
 import io
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from dash import dcc, html, callback, Output, Input
+from dash import Input, Output, State, callback, dcc, html
 from fmri_st_graph import spatio_temporal_graph_from_corr_matrices
 from fmri_st_graph.graph import RC5
 from fmri_st_graph.visualization import __CoordinatesGenerator, _trans_color
@@ -96,21 +95,16 @@ def build_subject_figure(graph, name: str, regions: list[str]) -> go.Figure:
     )
 
 
-data_path = Path('/home/jpontabry/Documents/projets/visualisation graphes spatio-temporels/data')
-data = np.load(data_path / 'list_of_corr_matrices_5months.zip')
-
-names = list(data.keys())
-
 layout = html.Div([
-    dcc.Dropdown(names, names[0], clearable=False, id='subject_selection'),
-    dcc.Dropdown([], multi=True, placeholder="Select regions...", id='regions_selection'),
+    dcc.Dropdown([], clearable=False, id='subject-selection'),
+    dcc.Dropdown([], multi=True, placeholder="Select regions...", id='regions-selection'),
     dcc.Graph(figure={}, id='stgraph')
 ])
 
 
 @callback(
-    Output('regions_selection', 'options'),
-    Output('regions_selection', 'value'),
+    Output('regions-selection', 'options'),
+    Output('regions-selection', 'value'),
     Input('store-desc', 'data'),
 )
 def update_regions(desc_json):
@@ -123,15 +117,30 @@ def update_regions(desc_json):
 
 
 @callback(
-    Output('stgraph', 'figure'),
-    Input('subject_selection', 'value'),
-    Input('regions_selection', 'value'),
-    Input('store-desc', 'data'),
+Output('subject-selection', 'options'),
+    Output('subject-selection', 'value'),
+    Input('store-corr', 'data'),
 )
-def update_graph(name, regions, desc_json):
-    if desc_json is None:
+def update_subjects(corr):
+    if corr is None or len(corr) == 0:
+        return None, None
+
+    return list(corr.keys()), next(iter(corr.keys()))
+
+
+@callback(
+    Output('stgraph', 'figure'),
+    Input('subject-selection', 'value'),
+    Input('regions-selection', 'value'),
+    State('store-desc', 'data'),
+    State('store-corr', 'data'),
+)
+def update_graph(name, regions, desc_json, corr):
+    if desc_json is None or corr is None:
         return {}
 
+    # FIXME very slow: we should keep the data on the server to avoid sending back and forth
     desc = pd.read_json(io.StringIO(desc_json))
-    graph = spatio_temporal_graph_from_corr_matrices(data[name], desc)
+    matrices = np.array(corr[name])
+    graph = spatio_temporal_graph_from_corr_matrices(matrices, desc)
     return build_subject_figure(graph, name, regions)

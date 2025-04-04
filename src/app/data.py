@@ -1,6 +1,7 @@
 import base64
 import io
 
+import numpy as np
 import pandas as pd
 
 from dash import dcc, callback, Input, Output
@@ -34,3 +35,32 @@ def upload_description(filename, contents):
     except Exception as e:
         print(f"Error reading CSV: {e}")
         return None
+
+
+@callback(
+    Output('store-corr', 'data'),
+    Input('upload-correlation', 'filename'),
+    Input('upload-correlation', 'contents'),
+)
+def upload_corr(filenames, contents):
+    if contents is None:
+        return None
+
+    if all('npy' not in filename and \
+           'npz' not in filename and \
+           'zip' not in filename
+           for filename in filenames):
+        return None
+
+    files = {filename: content for filename, content in zip(filenames, contents)}
+    corr = {}
+
+    for filename, content in files.items():
+        content_type, content_string = content.split(',')
+        decoded = base64.b64decode(content_string)
+        data = np.load(io.BytesIO(decoded))
+
+        for name, matrices in data.items():
+            corr[name] = matrices
+
+    return corr
