@@ -2,16 +2,11 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from dash import dcc, html
+from dash import dcc, html, callback, Output, Input
 from fmri_st_graph import spatio_temporal_graph_from_corr_matrices
 from fmri_st_graph.graph import RC5
 from fmri_st_graph.visualization import __CoordinatesGenerator, _trans_color
 from plotly import graph_objects as go
-
-
-class LifeLinesGenerator:
-    def generate(self, starting_nodes: list[int], y: int):
-        pass
 
 
 def generate_subject_display_props(graph, name: str, regions: list[str]) -> dict[str, any]:
@@ -36,7 +31,7 @@ def generate_subject_display_props(graph, name: str, regions: list[str]) -> dict
         levels.append(max(y) + 2)
 
         nodes_coord |= coord
-        nodes_x += x  # FIXME keep the structure of life lines
+        nodes_x += x
         nodes_y += y
 
     # define edges' properties
@@ -59,6 +54,7 @@ def generate_subject_display_props(graph, name: str, regions: list[str]) -> dict
 def build_subject_figure(graph, name: str, regions: list[str]) -> go.Figure:
     props = generate_subject_display_props(graph, name, regions)
 
+    # TODO find a way to reduce the number of elements displayed in the figure
     nodes_trace = go.Scatter(
         x=props['nodes_x'], y=props['nodes_y'],
         mode='markers',
@@ -69,10 +65,6 @@ def build_subject_figure(graph, name: str, regions: list[str]) -> go.Figure:
                     colorscale='RdBu_r', showscale=True)
     )
 
-    # FIXME reduce the number of traces (7831!)
-    # drop these and use nodes traces per life line
-    # colors may be dropped
-    # => currently not displaying all the edges, only the non-EQ ones
     edges_traces = []
     for x, y, c in zip(props['edges_x'], props['edges_y'], props['edges_colors']):
         edges_trace = go.Scatter(
@@ -82,7 +74,7 @@ def build_subject_figure(graph, name: str, regions: list[str]) -> go.Figure:
             line=dict(width=0.5, color=c)
         )
         edges_traces.append(edges_trace)
-    print(len(edges_traces))
+
     return go.Figure(
         data=[*edges_traces, nodes_trace],
         layout=go.Layout(
@@ -106,16 +98,25 @@ def build_subject_figure(graph, name: str, regions: list[str]) -> go.Figure:
 data_path = Path('/home/jpontabry/Documents/projets/visualisation graphes spatio-temporels/data')
 desc = pd.read_csv(data_path / 'brain_areas_regions_rel_full.csv', index_col=0)
 data = np.load(data_path / 'list_of_corr_matrices_5months.zip')
-matrices = next(iter(data.values()))
+name = next(iter(data.keys()))
+matrices = data[name]
 graph = spatio_temporal_graph_from_corr_matrices(matrices, desc)
 
 rels = desc.sort_values("Name_Region")
 regions = rels["Name_Region"].unique().tolist()
-# regions = ['Thalamus', 'Midbrain', 'Retrosplenial']
 
-props = generate_subject_display_props(graph, 'test', regions)
-figure = build_subject_figure(graph, 'test', regions)
+props = generate_subject_display_props(graph, name, regions)
+figure = build_subject_figure(graph, name, regions)
 
 layout = html.Div([
+    dcc.Dropdown(regions, regions, multi=True, placeholder="Select regions...", id='regions_selection'),
     dcc.Graph(figure=figure, id='stgraph')
 ])
+
+
+@callback(
+    Output('stgraph', 'figure'),
+    Input('regions_selection', 'value')
+)
+def update_graph_region(regions):
+    return build_subject_figure(graph, name, regions)
