@@ -14,17 +14,19 @@ corr_columns = [{'name': "Subject", 'id': 'Subject'}]
 
 layout = [
     html.H2("Description of regions/areas"),
-    dcc.Upload(children=["Drag and drop or select a description of regions/areas (.csv)"],
-               multiple=False, id='upload-description'),
+    dcc.Loading([
+        dcc.Upload(children=["Drag and drop or select a description of regions/areas (.csv)"],
+                   multiple=False, id='upload-description'),
+    ],
+    type='circle', overlay_style={"visibility":"visible", "filter": "blur(2px)"}),
     dash_table.DataTable(columns=desc_columns, page_size=12, id='desc-table'),
     html.H2("Correlation matrices"),
-    dcc.Upload(children=["Drag and drop or select correlation matrices files (.npy/.npz)"],
-               multiple=True, id='upload-correlation'),
     dcc.Loading([
-                    dash_table.DataTable(columns=corr_columns, page_size=12, id='corr-table'),
-                ],
-                type='circle',
-                overlay_style={"visibility":"visible", "filter": "blur(2px)"})
+        dcc.Upload(children=["Drag and drop or select correlation matrices files (.npy/.npz)"],
+                   multiple=True, id='upload-correlation'),
+        dash_table.DataTable(columns=corr_columns, page_size=12, id='corr-table'),
+    ],
+    type='circle', overlay_style={"visibility":"visible", "filter": "blur(2px)"})
 ]
 
 
