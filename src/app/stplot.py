@@ -123,7 +123,7 @@ Output('subject-selection', 'options'),
 )
 def update_subjects(corr):
     if corr is None or len(corr) == 0:
-        return None, None
+        return [], []
 
     return list(corr.keys()), next(iter(corr.keys()))
 
