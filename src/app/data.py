@@ -4,13 +4,15 @@ import io
 import numpy as np
 import pandas as pd
 
-from dash import dcc, callback, Input, Output
+from dash import html, dcc, callback, Input, Output
 
 layout = [
     dcc.Upload(children=["Drag and drop or select a description of regions/areas (.csv)"],
                multiple=False, id='upload-description'),
     dcc.Upload(children=["Drag and drop or select correlation matrices files (.npy/.npz)"],
                multiple=True, id='upload-correlation'),
+    dcc.Loading([html.Div(id='loading-correlation')], type='circle',
+                overlay_style={"visibility":"visible", "filter": "blur(2px)"})
 ]
 
 
@@ -39,18 +41,19 @@ def upload_description(filename, contents):
 
 @callback(
     Output('store-corr', 'data'),
+    Output('loading-correlation', 'children'),
     Input('upload-correlation', 'filename'),
     Input('upload-correlation', 'contents'),
 )
 def upload_corr(filenames, contents):
     if contents is None:
-        return None
+        return None, ""
 
     if all('npy' not in filename and \
            'npz' not in filename and \
            'zip' not in filename
            for filename in filenames):
-        return None
+        return None, "Filename extension not supported!"
 
     files = {filename: content for filename, content in zip(filenames, contents)}
     corr = {}
@@ -63,4 +66,4 @@ def upload_corr(filenames, contents):
         for name, matrices in data.items():
             corr[name] = matrices
 
-    return corr
+    return corr, "Data loaded successfully!"
