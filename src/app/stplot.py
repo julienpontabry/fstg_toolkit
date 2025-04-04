@@ -98,25 +98,22 @@ def build_subject_figure(graph, name: str, regions: list[str]) -> go.Figure:
 data_path = Path('/home/jpontabry/Documents/projets/visualisation graphes spatio-temporels/data')
 desc = pd.read_csv(data_path / 'brain_areas_regions_rel_full.csv', index_col=0)
 data = np.load(data_path / 'list_of_corr_matrices_5months.zip')
-name = next(iter(data.keys()))
-matrices = data[name]
-graph = spatio_temporal_graph_from_corr_matrices(matrices, desc)
 
-rels = desc.sort_values("Name_Region")
-regions = rels["Name_Region"].unique().tolist()
-
-props = generate_subject_display_props(graph, name, regions)
-figure = build_subject_figure(graph, name, regions)
+names = list(data.keys())
+regions = desc.sort_values("Name_Region")["Name_Region"].unique().tolist()
 
 layout = html.Div([
+    dcc.Dropdown(names, names[0], clearable=False, id='subject_selection'),
     dcc.Dropdown(regions, regions, multi=True, placeholder="Select regions...", id='regions_selection'),
-    dcc.Graph(figure=figure, id='stgraph')
+    dcc.Graph(figure={}, id='stgraph')
 ])
 
 
 @callback(
     Output('stgraph', 'figure'),
+    Input('subject_selection', 'value'),
     Input('regions_selection', 'value')
 )
-def update_graph_region(regions):
+def update_graph(name, regions):
+    graph = spatio_temporal_graph_from_corr_matrices(data[name], desc)
     return build_subject_figure(graph, name, regions)
