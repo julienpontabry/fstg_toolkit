@@ -1,22 +1,22 @@
 from math import ceil
 
-from dash import Input, Output, callback, dcc, html
 from dash.exceptions import PreventUpdate
+from dash_extensions.enrich import Input, Output, callback, dcc, html
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
 
-def build_matrices_figure(corr, t, n_cols=5):
+def build_matrices_figure(matrices, t, n_cols=5):
     # create figure for matrices to display
-    names = list(corr.keys())
-    n_rows = ceil(len(corr) / n_cols)
+    names = list(matrices.keys())
+    n_rows = ceil(len(matrices) / n_cols)
     fig = make_subplots(rows=n_rows, cols=n_cols)
 
     for i, name in enumerate(names):
         row = i // n_cols + 1
         col = i % n_cols + 1
         hm = go.Heatmap(
-            z=(corr[name][t]),
+            z=(matrices[name][t]),
             zmin=-1, zmax=1,
             colorscale="RdBu_r",
             showscale=False

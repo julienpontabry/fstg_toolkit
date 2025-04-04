@@ -1,10 +1,7 @@
-import io
 
 import numpy as np
-import pandas as pd
-from dash import Input, Output, State, callback, dcc, html
 from dash.exceptions import PreventUpdate
-
+from dash_extensions.enrich import Input, Output, State, callback, dcc, html
 from fmri_st_graph import spatio_temporal_graph_from_corr_matrices
 from fmri_st_graph.graph import RC5
 from fmri_st_graph.visualization import __CoordinatesGenerator, _trans_color
@@ -109,11 +106,10 @@ layout = html.Div([
     Output('regions-selection', 'value'),
     Input('store-desc', 'data'),
 )
-def update_regions(desc_json):
-    if desc_json is None:
+def update_regions(desc):
+    if desc is None:
         raise PreventUpdate
 
-    desc = pd.read_json(io.StringIO(desc_json))
     regions = desc.sort_values("Name_Region")["Name_Region"].unique().tolist()
     return regions, regions
 
@@ -137,13 +133,9 @@ def update_subjects(corr):
     State('store-desc', 'data'),
     State('store-corr', 'data'),
 )
-def update_graph(name, regions, desc_json, corr):
-    if desc_json is None or corr is None:
+def update_graph(name, regions, desc, corr):
+    if desc is None or corr is None:
         raise PreventUpdate
 
-    # FIXME very slow: we should keep the data on the server to avoid sending back and forth
-    # for instance use ServerSideOutputTransform from dash extensions
-    desc = pd.read_json(io.StringIO(desc_json)) # TODO put all reading in a utility function
-    matrices = np.array(corr[name])
-    graph = spatio_temporal_graph_from_corr_matrices(matrices, desc)
+    graph = spatio_temporal_graph_from_corr_matrices(corr[name], desc)
     return build_subject_figure(graph, name, regions)

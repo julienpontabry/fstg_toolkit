@@ -1,13 +1,13 @@
 import plotly.io as pio
-from dash import Dash, html, dcc
-
 from app.views import data, matrices, subject
+from dash_extensions.enrich import DashProxy, ServersideOutputTransform, dcc, html
 
 # use orsjon to make JSON 5-10x faster
 pio.json.config.default_engine = 'orjson'
 
 # app's definition
-app = Dash(title="fSTView - An fMRI spatio-temporal data viewer", name="fSTView")
+app = DashProxy(title="fSTView - An fMRI spatio-temporal data viewer", name="fSTView",
+                transforms=[ServersideOutputTransform()])
 
 app.layout = html.Div([
     # app's layout

@@ -3,9 +3,16 @@ import io
 
 import numpy as np
 import pandas as pd
-
-from dash import html, dcc, dash_table, callback, Input, Output
 from dash.exceptions import PreventUpdate
+from dash_extensions.enrich import (
+    Input,
+    Output,
+    Serverside,
+    callback,
+    dash_table,
+    dcc,
+    html,
+)
 
 desc_columns = [{'name': "Area id", 'id': 'Id_Area'},
                 {'name': "Area name", 'id': 'Name_Area'},
@@ -48,7 +55,7 @@ def upload_description(filename, contents):
 
     try:
         desc = pd.read_csv(io.StringIO(decoded.decode('utf-8')), index_col='Id_Area')
-        return desc.to_json(), desc.reset_index().to_dict('records')
+        return Serverside(desc), desc.reset_index().to_dict('records')
     except Exception as e:  # TODO display the error with a toaster or something?
         print(f"Error reading CSV: {e}")
         raise PreventUpdate
@@ -81,4 +88,4 @@ def upload_corr(filenames, contents):
         for name, matrices in data.items():
             corr[name] = matrices
 
-    return corr, [{'Subject': name} for name in corr.keys()]
+    return Serverside(corr), [{'Subject': name} for name in corr.keys()]
