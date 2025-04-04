@@ -4,11 +4,19 @@ import io
 import numpy as np
 import pandas as pd
 
-from dash import html, dcc, callback, Input, Output
+from dash import html, dcc, dash_table, callback, Input, Output
+
+
+desc_columns = [{'name': "Area id", 'id': 'Id_Area'},
+                {'name': "Area name", 'id': 'Name_Area'},
+                {'name': "Region name", 'id': 'Name_Region'}]
 
 layout = [
+    html.H2("Description of regions/areas"),
     dcc.Upload(children=["Drag and drop or select a description of regions/areas (.csv)"],
                multiple=False, id='upload-description'),
+    dash_table.DataTable(columns=desc_columns, page_size=12, id='desc-table'),
+    html.H2("Correlation matrices"),
     dcc.Upload(children=["Drag and drop or select correlation matrices files (.npy/.npz)"],
                multiple=True, id='upload-correlation'),
     dcc.Loading([html.Div(id='loading-correlation')], type='circle',
@@ -18,25 +26,26 @@ layout = [
 
 @callback(
 Output('store-desc', 'data'),
+    Output('desc-table', 'data'),
     Input('upload-description', 'filename'),
     Input('upload-description', 'contents'),
 )
 def upload_description(filename, contents):
     if contents is None:
-        return None
+        return None, None
 
     if 'csv' not in filename:
-        return None
+        return None, None
 
     content_type, content_string = contents.split(',')
     decoded = base64.b64decode(content_string)
 
     try:
         desc = pd.read_csv(io.StringIO(decoded.decode('utf-8')), index_col='Id_Area')
-        return desc.to_json()
-    except Exception as e:
+        return desc.to_json(), desc.reset_index().to_dict('records')
+    except Exception as e:  # TODO display the error with a toaster or something?
         print(f"Error reading CSV: {e}")
-        return None
+        return None, None
 
 
 @callback(
