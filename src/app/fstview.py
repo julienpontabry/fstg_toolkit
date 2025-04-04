@@ -7,7 +7,7 @@ from app.views import data, subject
 pio.json.config.default_engine = 'orjson'
 
 # app's definition
-app = Dash(title="FSTView - An fMRI spatio-temporal data viewer", name="FSTView")
+app = Dash(title="fSTView - An fMRI spatio-temporal data viewer", name="fSTView")
 
 app.layout = html.Div([
     # app's layout
