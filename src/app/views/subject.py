@@ -3,6 +3,8 @@ import io
 import numpy as np
 import pandas as pd
 from dash import Input, Output, State, callback, dcc, html
+from dash.exceptions import PreventUpdate
+
 from fmri_st_graph import spatio_temporal_graph_from_corr_matrices
 from fmri_st_graph.graph import RC5
 from fmri_st_graph.visualization import __CoordinatesGenerator, _trans_color
@@ -109,7 +111,7 @@ layout = html.Div([
 )
 def update_regions(desc_json):
     if desc_json is None:
-        return [], []
+        raise PreventUpdate
 
     desc = pd.read_json(io.StringIO(desc_json))
     regions = desc.sort_values("Name_Region")["Name_Region"].unique().tolist()
@@ -123,7 +125,7 @@ Output('subject-selection', 'options'),
 )
 def update_subjects(corr):
     if corr is None or len(corr) == 0:
-        return [], []
+        raise PreventUpdate
 
     return list(corr.keys()), next(iter(corr.keys()))
 
@@ -137,7 +139,7 @@ def update_subjects(corr):
 )
 def update_graph(name, regions, desc_json, corr):
     if desc_json is None or corr is None:
-        return {}
+        raise PreventUpdate
 
     # FIXME very slow: we should keep the data on the server to avoid sending back and forth
     # for instance use ServerSideOutputTransform from dash extensions

@@ -1,6 +1,7 @@
 from math import ceil
 
 from dash import Input, Output, callback, dcc, html
+from dash.exceptions import PreventUpdate
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
@@ -52,7 +53,7 @@ layout = [
 )
 def update_figure(corr, slider_value):
     if corr is None or len(corr) == 0:
-        return {}, 1, {}
+        raise PreventUpdate
 
     max_slider_value = len(next(iter(corr.values()))) - 1
     marks_slider = {i: str(i) for i in range(0, max_slider_value + 1, max_slider_value//10)}

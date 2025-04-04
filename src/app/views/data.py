@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from dash import html, dcc, dash_table, callback, Input, Output
-
+from dash.exceptions import PreventUpdate
 
 desc_columns = [{'name': "Area id", 'id': 'Id_Area'},
                 {'name': "Area name", 'id': 'Name_Area'},
@@ -38,10 +38,10 @@ Output('store-desc', 'data'),
 )
 def upload_description(filename, contents):
     if contents is None:
-        return None, None
+        raise PreventUpdate
 
     if 'csv' not in filename:
-        return None, None
+        raise PreventUpdate
 
     content_type, content_string = contents.split(',')
     decoded = base64.b64decode(content_string)
@@ -51,7 +51,7 @@ def upload_description(filename, contents):
         return desc.to_json(), desc.reset_index().to_dict('records')
     except Exception as e:  # TODO display the error with a toaster or something?
         print(f"Error reading CSV: {e}")
-        return None, None
+        raise PreventUpdate
 
 
 @callback(
@@ -62,13 +62,13 @@ def upload_description(filename, contents):
 )
 def upload_corr(filenames, contents):
     if contents is None:
-        return None, None
+        raise PreventUpdate
 
     if all('npy' not in filename and \
            'npz' not in filename and \
            'zip' not in filename
            for filename in filenames):
-        return None, None
+        raise PreventUpdate
 
     files = {filename: content for filename, content in zip(filenames, contents)}
     corr = {}
