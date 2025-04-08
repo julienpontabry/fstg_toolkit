@@ -97,7 +97,10 @@ def build_subject_figure(graph, name: str, regions: list[str]) -> go.Figure:
 layout = html.Div([
     dcc.Dropdown([], clearable=False, id='subject-selection'),
     dcc.Dropdown([], multi=True, placeholder="Select regions...", id='regions-selection'),
-    dcc.Graph(figure={}, id='st-graph')
+    dcc.Loading([
+        dcc.Graph(figure={}, id='st-graph')
+        ],
+        type='circle', overlay_style={"visibility": "visible", "filter": "blur(2px)"})
 ])
 
 
