@@ -39,7 +39,6 @@ layout = [
 
 @callback(
 Output('store-desc', 'data'),
-    Output('desc-table', 'data'),
     Input('upload-description', 'filename'),
     Input('upload-description', 'contents'),
 )
@@ -55,15 +54,25 @@ def upload_description(filename, contents):
 
     try:
         desc = pd.read_csv(io.StringIO(decoded.decode('utf-8')), index_col='Id_Area')
-        return Serverside(desc), desc.reset_index().to_dict('records')
+        return Serverside(desc)
     except Exception as e:  # TODO display the error with a toaster or something?
         print(f"Error reading CSV: {e}")
         raise PreventUpdate
 
 
 @callback(
+    Output('desc-table', 'data'),
+    Input('store-desc', 'data'),
+)
+def populate_desc_tab(desc):
+    if desc is None or len(desc) == 0:
+        raise PreventUpdate
+
+    return desc.reset_index().to_dict('records')
+
+
+@callback(
     Output('store-corr', 'data'),
-    Output('corr-table', 'data'),
     Input('upload-correlation', 'filename'),
     Input('upload-correlation', 'contents'),
 )
@@ -88,4 +97,15 @@ def upload_corr(filenames, contents):
         for name, matrices in data.items():
             corr[name] = matrices
 
-    return Serverside(corr), [{'Subject': name} for name in corr.keys()]
+    return Serverside(corr)
+
+
+@callback(
+    Output('corr-table', 'data'),
+    Input('store-corr', 'data')
+)
+def populate_corr_table(corr):
+    if corr is None or len(corr) == 0:
+        raise PreventUpdate
+
+    return [{'Subject': name} for name in corr.keys()]
