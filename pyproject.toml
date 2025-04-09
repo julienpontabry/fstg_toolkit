@@ -17,6 +17,7 @@ dependencies = [
     "orjson (>=3.10.16,<4.0.0)",
     "dash (>=3.0.2,<4.0.0)",
     "dash-extensions (>=2.0.0,<3.0.0)",
+    "dash-bootstrap-components (>=2.0.0,<3.0.0)",
 ]
 
 
