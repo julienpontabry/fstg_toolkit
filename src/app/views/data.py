@@ -1,20 +1,22 @@
 import base64
 import io
 
+import dash_bootstrap_components as dbc
 import numpy as np
 import pandas as pd
 from dash.exceptions import PreventUpdate
 from dash_extensions.enrich import (
     Input,
     Output,
+    State,
     Serverside,
     callback,
     dash_table,
     dcc,
-    html,
+    html
 )
-import dash_bootstrap_components as dbc
 
+from fmri_st_graph import spatio_temporal_graph_from_corr_matrices
 
 desc_columns = [{'name': "Area id", 'id': 'Id_Area'},
                 {'name': "Area name", 'id': 'Name_Area'},
@@ -41,6 +43,19 @@ layout = [
                 ],
                 type='circle', overlay_style={"visibility": "visible", "filter": "blur(2px)"})
         ])
+    ]),
+    dbc.Row([
+        html.H2("Spatio-temporal graph model"),
+        dbc.Form(
+            dbc.Row([
+                dbc.Label("Correlation threshold", width='auto'),
+                dbc.Col(dbc.Input(type='number', min=0, max=1, step=0.01, value=0.4)),
+                dbc.Col(dbc.Checkbox(label="Use absolute correlation", value=True)),
+                dbc.Col(dbc.Button("Process", color='primary', id='model-process-button'), width='auto')
+            ])
+        ),
+        dcc.Interval(id='model-process-monitor', disabled=True),
+        dbc.Progress(id='model-process-progress')
     ])
 ]
 
@@ -117,3 +132,49 @@ def populate_corr_table(corr):
         raise PreventUpdate
 
     return [{'Subject': name} for name in corr.keys()]
+
+
+@callback(
+    Input('model-process-button', 'n_clicks'),
+    State('store-desc', 'data'),
+    State('store-corr', 'data'),
+    State('cache-model-progress', 'data'),
+    prevent_initial_call=True,
+    running=[
+        (Output('model-process-button', 'disabled'), True, False),
+        (Output('model-process-monitor', 'disabled'), False, True)
+    ]
+    # background=True  # TODO use a background manager
+)
+def compute_model(_, desc, corr, cache):
+    if any(e is None for e in (desc, corr)):
+        return
+
+    cache['label'] = ""
+    cache['progress'] = 0.
+    n = len(corr)
+
+    try:
+        for i, (label, matrices) in enumerate(corr.items()):
+            cache['label'] = label  # FIXME does not persist data to other callbacks
+            graph = spatio_temporal_graph_from_corr_matrices(matrices, desc)
+            cache['progress'] = 100 * (i+1) / n  # FIXME same here
+            if i > 3:
+                break
+    except Exception as ex:
+        print(ex)
+
+
+@callback(
+    Output('model-process-progress', 'value'),
+    Output('model-process-progress', 'label'),
+    Input('model-process-monitor', 'n_intervals'),
+    State('cache-model-progress', 'data'),
+    prevent_initial_call=True
+)
+def update_process_progress(n, cache):
+    if cache is None:
+        raise PreventUpdate
+
+    print(n, cache)
+    return cache['progress'], cache['label']

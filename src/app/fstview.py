@@ -23,6 +23,7 @@ app.layout = dbc.Container(
         # app's storage cache
         dcc.Store(id='store-desc', storage_type='session'),
         dcc.Store(id='store-corr', storage_type='session'),
+        dcc.Store(id='cache-model-progress', storage_type='session', data=dict(label="", progress=0.))
     ],
     fluid='xxl'
 )
