@@ -13,6 +13,7 @@ from dash_extensions.enrich import (
     dcc,
     html,
 )
+import dash_bootstrap_components as dbc
 
 
 desc_columns = [{'name': "Area id", 'id': 'Id_Area'},
@@ -21,20 +22,26 @@ desc_columns = [{'name': "Area id", 'id': 'Id_Area'},
 corr_columns = [{'name': "Subject", 'id': 'Subject'}]
 
 layout = [
-    html.H2("Description of regions/areas"),
-    dcc.Loading([
-        dcc.Upload(children=["Drag and drop or select a description of regions/areas (.csv)"],
-                   multiple=False, id='upload-description'),
-    ],
-    type='circle', overlay_style={"visibility":"visible", "filter": "blur(2px)"}),
-    dash_table.DataTable(columns=desc_columns, page_size=12, id='desc-table'),
-    html.H2("Correlation matrices"),
-    dcc.Loading([
-        dcc.Upload(children=["Drag and drop or select correlation matrices files (.npy/.npz)"],
-                   multiple=True, id='upload-correlation'),
-        dash_table.DataTable(columns=corr_columns, page_size=12, id='corr-table'),
-    ],
-    type='circle', overlay_style={"visibility":"visible", "filter": "blur(2px)"})
+    dbc.Row([
+        dbc.Col([
+            html.H2("Description of regions/areas"),
+            dcc.Loading([
+                dcc.Upload(children=["Drag and drop or select a description of regions/areas (.csv)"],
+                           multiple=False, id='upload-description'),
+                ],
+                type='circle', overlay_style={"visibility":"visible", "filter": "blur(2px)"}),
+            dash_table.DataTable(columns=desc_columns, page_size=12, id='desc-table')
+        ]),
+        dbc.Col([
+            html.H2("Correlation matrices"),
+            dcc.Loading([
+                    dcc.Upload(children=["Drag and drop or select correlation matrices files (.npy/.npz)"],
+                               multiple=True, id='upload-correlation'),
+                    dash_table.DataTable(columns=corr_columns, page_size=12, id='corr-table'),
+                ],
+                type='circle', overlay_style={"visibility": "visible", "filter": "blur(2px)"})
+        ])
+    ])
 ]
 
 
