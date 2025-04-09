@@ -14,6 +14,7 @@ from dash_extensions.enrich import (
     html,
 )
 
+
 desc_columns = [{'name': "Area id", 'id': 'Id_Area'},
                 {'name': "Area name", 'id': 'Name_Area'},
                 {'name': "Region name", 'id': 'Name_Region'}]
