@@ -65,12 +65,8 @@ layout = [
             ])
         ),
     ]),
-    dbc.Row([
-            dbc.Label(id='model-process-label')
-    ]),
-    dbc.Row([
-            dbc.Progress(id='model-process-progress')
-    ])
+    dbc.Row(dbc.Label(id='model-process-label')),
+    dbc.Row(dbc.Progress(id='model-process-progress', class_name='invisible'))
 ]
 
 
@@ -165,7 +161,8 @@ def populate_corr_table(corr):
     progress=[
         Output('model-process-progress', 'value'),
         Output('model-process-progress', 'max'),
-        Output('model-process-label', 'children')
+        Output('model-process-label', 'children'),
+        Output('model-process-progress', 'class_name')
     ],
     # NOTE: cancelling is not compatible with dash extensions yet...
     # cancel=[
@@ -173,23 +170,22 @@ def populate_corr_table(corr):
     # ]
 )
 def compute_model(set_progress, n_clicks, threshold, use_absolute, desc, corr):
-    print(use_absolute)
     if n_clicks <= 0 or any(e is None for e in (desc, corr)):
         return
 
     n = len(corr)
-    set_progress((str(0), str(n), f"Processing..."))
+    set_progress((str(0), str(n), f"Processing...", 'visible'))
     graph = dict()
 
     for i, (label, matrices) in enumerate(corr.items()):
-        set_progress((str(i), str(n), f"Processing {label}..."))
+        set_progress((str(i), str(n), f"Processing {label}...", 'visible'))
         try:
             graph[label] = spatio_temporal_graph_from_corr_matrices(
                 matrices, desc, corr_thr=threshold, abs_thr=use_absolute)
         except Exception as ex:
             print(ex)  # TODO how to display this error?
-        set_progress((str(i+1), str(n), f"Processing {label}..."))
+        set_progress((str(i+1), str(n), f"Processing {label}...", 'visible'))
 
-    set_progress((str(n), str(n), "Done."))
+    set_progress((str(n), str(n), "Done.", 'visible'))
 
     return Serverside(graph)
