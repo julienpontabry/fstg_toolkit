@@ -5,6 +5,7 @@ import dash_bootstrap_components as dbc
 import numpy as np
 import pandas as pd
 from dash.exceptions import PreventUpdate
+import dash_daq as daq
 from dash_extensions.enrich import (
     Input,
     Output,
@@ -47,9 +48,14 @@ layout = [
         html.H2("Spatio-temporal graph model"),
         dbc.Form(
             dbc.Row([
-                dbc.Label("Correlation threshold", width='auto'),
-                dbc.Col(dbc.Input(id='model-threshold', type='number', min=0, max=1, step=0.01, value=0.4)),
-                dbc.Col(dbc.Checkbox(id='model-use-absolute', label="Use absolute correlation", value=True)),
+                dbc.Col(dbc.Row([
+                    dbc.Col(dbc.Label("Correlation threshold", width='auto'), width='auto'),
+                    dbc.Col(dbc.Input(id='model-threshold', type='number', min=0, max=1, step=0.01, value=0.4)),
+                ]), class_name='mx-2'),
+                dbc.Col(dbc.Row([
+                    dbc.Col(dbc.Label("Use absolute correlation", width='auto'), width='auto'),
+                    dbc.Col(daq.BooleanSwitch(id='model-use-absolute', on=True), width='auto'),
+                ]), class_name='mx-2'),
                 dbc.Col([
                         dbc.Button("Process", color='primary', id='model-process-button'),
                         # NOTE: cancelling is not compatible with dash extensions yet...
@@ -146,7 +152,7 @@ def populate_corr_table(corr):
     Output('store-graph', 'data'),
     Input('model-process-button', 'n_clicks'),
     State('model-threshold', 'value'),
-    State('model-use-absolute', 'value'),
+    State('model-use-absolute', 'on'),
     State('store-desc', 'data'),
     State('store-corr', 'data'),
     prevent_initial_call=True,
@@ -167,6 +173,7 @@ def populate_corr_table(corr):
     # ]
 )
 def compute_model(set_progress, n_clicks, threshold, use_absolute, desc, corr):
+    print(use_absolute)
     if n_clicks <= 0 or any(e is None for e in (desc, corr)):
         return
 

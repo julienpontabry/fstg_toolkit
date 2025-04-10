@@ -396,6 +396,21 @@ dash = ">=3.0.0"
 pandas = ["numpy (>=2.0.2)", "pandas (>=2.2.3)"]
 
 [[package]]
+name = "dash-daq"
+version = "0.6.0"
+description = "DAQ components for Dash"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "dash_daq-0.6.0-py3-none-any.whl", hash = "sha256:d155b5586f164d5d4379d5999275759c525b764a1eb5313a34abce13c50aa856"},
+    {file = "dash_daq-0.6.0.tar.gz", hash = "sha256:ae2568aca470b186d6805ff2317a932a6c1a5ed879fe33e525e43810fc354dce"},
+]
+
+[package.dependencies]
+dash = ">=1.6.1"
+
+[[package]]
 name = "dash-extensions"
 version = "2.0.0"
 description = "Extensions for Plotly Dash."
@@ -1760,4 +1775,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "39c7e8e799746492d6d204d4e9c51a9a40c1fbba81833d5d5cf3c6c7bf30802b"
+content-hash = "98d0be32ac792e46a4b1426ce02fc07b6d6feb594a6260bb2ee390fcf3edd6f4"
