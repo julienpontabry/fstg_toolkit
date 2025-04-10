@@ -58,12 +58,20 @@ app.layout = dbc.Container(
 
 @callback(
     Input('store-desc', 'data'),
-    Input('store-corr', 'data')
+    Input('store-corr', 'data'),
 )
 def set_tab_enabled(desc, corr):
     if all(e is not None for e in (desc, corr)):
-        for tab in ('tab-matrices', 'tab-subject'):
-            set_props(tab, dict(disabled=False))
+        set_props('tab-matrices', dict(disabled=False))
+        set_props('tabs', {'active_tab': 'tab-data'})
+
+
+@callback(
+    Input('store-graphs', 'data')
+)
+def set_tab_enabled(graphs):
+    if graphs is not None:
+        set_props('tab-subject', dict(disabled=False))
         set_props('tabs', {'active_tab': 'tab-data'})
 
 
