@@ -50,7 +50,11 @@ layout = [
                 dbc.Label("Correlation threshold", width='auto'),
                 dbc.Col(dbc.Input(id='model-threshold', type='number', min=0, max=1, step=0.01, value=0.4)),
                 dbc.Col(dbc.Checkbox(id='model-use-absolute', label="Use absolute correlation", value=True)),
-                dbc.Col(dbc.Button("Process", color='primary', id='model-process-button'), width='auto')
+                dbc.Col([
+                        dbc.Button("Process", color='primary', id='model-process-button'),
+                        dbc.Button("Cancel", color='danger', id='model-cancel-button', disabled=False),
+                    ],
+                    width='auto')
             ])
         ),
     ]),
@@ -148,11 +152,15 @@ def populate_corr_table(corr):
     background=True,
     running=[
         (Output('model-process-button', 'disabled'), True, False),
+        (Output('model-cancel-button', 'disabled'), False, True)
     ],
     progress=[
         Output('model-process-progress', 'value'),
         Output('model-process-progress', 'max'),
         Output('model-process-label', 'children')
+    ],
+    cancel=[
+        Input('model-cancel-button', 'n_clicks')
     ]
 )
 def compute_model(set_progress, n_clicks, threshold, use_absolute, desc, corr):
@@ -171,5 +179,7 @@ def compute_model(set_progress, n_clicks, threshold, use_absolute, desc, corr):
         except Exception as ex:
             print(ex)  # TODO how to display this error?
         set_progress((str(i+1), str(n), f"Processing {label}..."))
+
+    set_progress((str(n), str(n), "Done."))
 
     return Serverside(graph)
