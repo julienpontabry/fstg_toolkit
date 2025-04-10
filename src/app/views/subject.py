@@ -133,12 +133,10 @@ def update_subjects(corr):
     Output('st-graph', 'figure'),
     Input('subject-selection', 'value'),
     Input('regions-selection', 'value'),
-    State('store-desc', 'data'),
-    State('store-corr', 'data'),
+    State('store-graphs', 'data')
 )
-def update_graph(name, regions, desc, corr):
-    if desc is None or corr is None:
+def update_graph(name, regions, graphs):
+    if graphs is None:
         raise PreventUpdate
 
-    graph = spatio_temporal_graph_from_corr_matrices(corr[name], desc)
-    return build_subject_figure(graph, name, regions)
+    return build_subject_figure(graphs[name], name, regions)

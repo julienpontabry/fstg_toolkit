@@ -143,7 +143,7 @@ def populate_corr_table(corr):
 
 
 @callback(
-    Output('store-graph', 'data'),
+    Output('store-graphs', 'data'),
     Input('model-process-button', 'n_clicks'),
     State('model-threshold', 'value'),
     State('model-use-absolute', 'on'),

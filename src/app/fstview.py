@@ -44,7 +44,7 @@ app.layout = dbc.Container(
         # app's storage cache
         dcc.Store(id='store-desc', storage_type='session'),
         dcc.Store(id='store-corr', storage_type='session'),
-        dcc.Store(id='store-graph', storage_type='session'),
+        dcc.Store(id='store-graphs', storage_type='session'),
 
         # message display as toasts
         dbc.Toast("",
