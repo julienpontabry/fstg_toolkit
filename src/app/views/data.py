@@ -52,7 +52,8 @@ layout = [
                 dbc.Col(dbc.Checkbox(id='model-use-absolute', label="Use absolute correlation", value=True)),
                 dbc.Col([
                         dbc.Button("Process", color='primary', id='model-process-button'),
-                        dbc.Button("Cancel", color='danger', id='model-cancel-button', disabled=False),
+                        # NOTE: cancelling is not compatible with dash extensions yet...
+                        # dbc.Button("Cancel", color='danger', id='model-cancel-button', disabled=True),
                     ],
                     width='auto')
             ])
@@ -152,16 +153,18 @@ def populate_corr_table(corr):
     background=True,
     running=[
         (Output('model-process-button', 'disabled'), True, False),
-        (Output('model-cancel-button', 'disabled'), False, True)
+        # NOTE: cancelling is not compatible with dash extensions yet...
+        # (Output('model-cancel-button', 'disabled'), False, True)
     ],
     progress=[
         Output('model-process-progress', 'value'),
         Output('model-process-progress', 'max'),
         Output('model-process-label', 'children')
     ],
-    cancel=[
-        Input('model-cancel-button', 'n_clicks')
-    ]
+    # NOTE: cancelling is not compatible with dash extensions yet...
+    # cancel=[
+    #     Input('model-cancel-button', 'n_clicks')
+    # ]
 )
 def compute_model(set_progress, n_clicks, threshold, use_absolute, desc, corr):
     if n_clicks <= 0 or any(e is None for e in (desc, corr)):
