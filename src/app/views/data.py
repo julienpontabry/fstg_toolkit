@@ -16,6 +16,8 @@ from dash_extensions.enrich import (
     dcc,
     html,
 )
+from dash_extensions.logging import set_props
+
 from fmri_st_graph import spatio_temporal_graph_from_corr_matrices
 
 desc_columns = [{'name': "Area id", 'id': 'Id_Area'},
@@ -85,12 +87,8 @@ def upload_description(filename, contents):
     content_type, content_string = contents.split(',')
     decoded = base64.b64decode(content_string)
 
-    try:
-        desc = pd.read_csv(io.StringIO(decoded.decode('utf-8')), index_col='Id_Area')
-        return Serverside(desc)
-    except Exception as e:  # TODO display the error with a toaster or something?
-        print(f"Error reading CSV: {e}")
-        raise PreventUpdate
+    desc = pd.read_csv(io.StringIO(decoded.decode('utf-8')), index_col='Id_Area')
+    return Serverside(desc)
 
 
 @callback(
@@ -178,6 +176,7 @@ def compute_model(set_progress, n_clicks, threshold, use_absolute, desc, corr):
     n = len(corr)
     set_progress((str(0), str(n), f"Processing...", 'visible'))
     graph = dict()
+    errors = []
 
     for i, (label, matrices) in enumerate(corr.items()):
         set_progress((str(i), str(n), f"Processing {label}...", 'visible'))
@@ -185,9 +184,15 @@ def compute_model(set_progress, n_clicks, threshold, use_absolute, desc, corr):
             graph[label] = spatio_temporal_graph_from_corr_matrices(
                 matrices, desc, corr_thr=threshold, abs_thr=use_absolute)
         except Exception as ex:
-            print(ex)  # TODO how to display this error?
+            print(ex)
+            errors.append(label)
         set_progress((str(i+1), str(n), f"Processing {label}...", 'visible'))
 
     set_progress((str(n), str(n), "Done.", 'visible'))
+
+    if len(errors) > 0:
+        set_props('message-toast', dict(
+            is_open=True, header="Error", icon="danger", duration=None,
+            children="An error occurred while processing the following subjects: " + ", ".join(errors)))
 
     return Serverside(graph)

@@ -19,11 +19,18 @@ pio.json.config.default_engine = 'orjson'
 cache = diskcache.Cache("./cache")
 background_callback_manager = DiskcacheManager(cache)
 
+# handling of errors messages
+def callback_error(err):
+    set_props('message-toast', dict(
+        is_open=True, header="Error", icon="danger", duration=None,
+        children=str(err)))
+
 # app's definition
 app = DashProxy(title="fSTView - An fMRI spatio-temporal data viewer", name="fSTView",
                 transforms=[ServersideOutputTransform()],
                 external_stylesheets=[dbc.themes.BOOTSTRAP],
-                background_callback_manager=background_callback_manager)
+                background_callback_manager=background_callback_manager,
+                on_error=callback_error)
 
 app.layout = dbc.Container(
     children=[
@@ -37,7 +44,13 @@ app.layout = dbc.Container(
         # app's storage cache
         dcc.Store(id='store-desc', storage_type='session'),
         dcc.Store(id='store-corr', storage_type='session'),
-        dcc.Store(id='store-graph', storage_type='session')
+        dcc.Store(id='store-graph', storage_type='session'),
+
+        # message display as toasts
+        dbc.Toast("",
+                  id="message-toast", header="", icon="primary",
+                  duration=4_000, is_open=False, dismissable=True,
+                  style={'position': 'fixed', 'bottom': 10, 'right': 10, 'width': 350})
     ],
     fluid='xxl'
 )
