@@ -87,7 +87,7 @@ def upload_description(filename, contents):
     Output('desc-table', 'data'),
     Input('store-desc', 'data'),
 )
-def populate_desc_tab(desc):
+def populate_desc_table(desc):
     if desc is None or len(desc) == 0:
         raise PreventUpdate
 
@@ -147,6 +147,7 @@ def populate_corr_table(corr):
     # background=True  # TODO use a background manager
 )
 def compute_model(_, desc, corr, cache):
+    # TODO get threshold and absolute correlation from the form
     if any(e is None for e in (desc, corr)):
         return
 
