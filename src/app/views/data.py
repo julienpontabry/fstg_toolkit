@@ -172,4 +172,4 @@ def compute_model(set_progress, n_clicks, threshold, use_absolute, desc, corr):
             print(ex)  # TODO how to display this error?
         set_progress((str(i+1), str(n), f"Processing {label}..."))
 
-    return graph
+    return Serverside(graph)
