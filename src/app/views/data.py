@@ -8,14 +8,13 @@ from dash.exceptions import PreventUpdate
 from dash_extensions.enrich import (
     Input,
     Output,
-    State,
     Serverside,
+    State,
     callback,
     dash_table,
     dcc,
-    html
+    html,
 )
-
 from fmri_st_graph import spatio_temporal_graph_from_corr_matrices
 
 desc_columns = [{'name': "Area id", 'id': 'Id_Area'},
@@ -49,13 +48,17 @@ layout = [
         dbc.Form(
             dbc.Row([
                 dbc.Label("Correlation threshold", width='auto'),
-                dbc.Col(dbc.Input(type='number', min=0, max=1, step=0.01, value=0.4)),
-                dbc.Col(dbc.Checkbox(label="Use absolute correlation", value=True)),
+                dbc.Col(dbc.Input(id='model-threshold', type='number', min=0, max=1, step=0.01, value=0.4)),
+                dbc.Col(dbc.Checkbox(id='model-use-absolute', label="Use absolute correlation", value=True)),
                 dbc.Col(dbc.Button("Process", color='primary', id='model-process-button'), width='auto')
             ])
         ),
-        dcc.Interval(id='model-process-monitor', disabled=True),
-        dbc.Progress(id='model-process-progress')
+    ]),
+    dbc.Row([
+            dbc.Label(id='model-process-label')
+    ]),
+    dbc.Row([
+            dbc.Progress(id='model-process-progress')
     ])
 ]
 
@@ -135,47 +138,38 @@ def populate_corr_table(corr):
 
 
 @callback(
+    Output('store-graph', 'data'),
     Input('model-process-button', 'n_clicks'),
+    State('model-threshold', 'value'),
+    State('model-use-absolute', 'value'),
     State('store-desc', 'data'),
     State('store-corr', 'data'),
-    State('cache-model-progress', 'data'),
     prevent_initial_call=True,
+    background=True,
     running=[
         (Output('model-process-button', 'disabled'), True, False),
-        (Output('model-process-monitor', 'disabled'), False, True)
+    ],
+    progress=[
+        Output('model-process-progress', 'value'),
+        Output('model-process-progress', 'max'),
+        Output('model-process-label', 'children')
     ]
-    # background=True  # TODO use a background manager
 )
-def compute_model(_, desc, corr, cache):
-    # TODO get threshold and absolute correlation from the form
-    if any(e is None for e in (desc, corr)):
+def compute_model(set_progress, n_clicks, threshold, use_absolute, desc, corr):
+    if n_clicks <= 0 or any(e is None for e in (desc, corr)):
         return
 
-    cache['label'] = ""
-    cache['progress'] = 0.
     n = len(corr)
+    set_progress((str(0), str(n), f"Processing..."))
+    graph = dict()
 
-    try:
-        for i, (label, matrices) in enumerate(corr.items()):
-            cache['label'] = label  # FIXME does not persist data to other callbacks
-            graph = spatio_temporal_graph_from_corr_matrices(matrices, desc)
-            cache['progress'] = 100 * (i+1) / n  # FIXME same here
-            if i > 3:
-                break
-    except Exception as ex:
-        print(ex)
+    for i, (label, matrices) in enumerate(corr.items()):
+        set_progress((str(i), str(n), f"Processing {label}..."))
+        try:
+            graph[label] = spatio_temporal_graph_from_corr_matrices(
+                matrices, desc, corr_thr=threshold, abs_thr=use_absolute)
+        except Exception as ex:
+            print(ex)  # TODO how to display this error?
+        set_progress((str(i+1), str(n), f"Processing {label}..."))
 
-
-@callback(
-    Output('model-process-progress', 'value'),
-    Output('model-process-progress', 'label'),
-    Input('model-process-monitor', 'n_intervals'),
-    State('cache-model-progress', 'data'),
-    prevent_initial_call=True
-)
-def update_process_progress(n, cache):
-    if cache is None:
-        raise PreventUpdate
-
-    print(n, cache)
-    return cache['progress'], cache['label']
+    return graph

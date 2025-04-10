@@ -4,4 +4,5 @@ channels:
   - defaults
 dependencies:
   - poetry
-  - python=3.12
+  - python==3.12.3
+  - sqlite=3.42.0  # necessary for diskcache to work
