@@ -154,6 +154,8 @@ def populate_corr_table(corr):
     prevent_initial_call=True,
     background=True,
     running=[
+        (Output('model-threshold', 'disabled'), True, False),
+        (Output('model-use-absolute', 'disabled'), True, False),
         (Output('model-process-button', 'disabled'), True, False),
         # NOTE: cancelling is not compatible with dash extensions yet...
         # (Output('model-cancel-button', 'disabled'), False, True)
