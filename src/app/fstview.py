@@ -24,6 +24,7 @@ def callback_error(err):
     set_props('message-toast', dict(
         is_open=True, header="Error", icon="danger", duration=None,
         children=str(err)))
+    print(err)
 
 # app's definition
 app = DashProxy(title="fSTView - An fMRI spatio-temporal data viewer", name="fSTView",
