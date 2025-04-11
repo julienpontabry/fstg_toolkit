@@ -1,7 +1,8 @@
 from math import ceil
 
 from dash.exceptions import PreventUpdate
-from dash_extensions.enrich import Input, Output, callback, dcc, html
+from dash_extensions.enrich import Input, Output, callback, dcc
+import dash_bootstrap_components as dbc
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
@@ -9,8 +10,10 @@ from plotly.subplots import make_subplots
 def build_matrices_figure(matrices, t, n_cols=5):
     # create figure for matrices to display
     names = list(matrices.keys())
-    n_rows = ceil(len(matrices) / n_cols)
-    fig = make_subplots(rows=n_rows, cols=n_cols)
+    n = len(matrices)
+    n_rows = ceil(n / n_cols)
+    fig = make_subplots(rows=n_rows, cols=n_cols,
+                        vertical_spacing=0.05, horizontal_spacing=0.05)
 
     for i, name in enumerate(names):
         row = i // n_cols + 1
@@ -18,29 +21,32 @@ def build_matrices_figure(matrices, t, n_cols=5):
         hm = go.Heatmap(
             z=(matrices[name][t]),
             zmin=-1, zmax=1,
-            colorscale="RdBu_r",
+            coloraxis='coloraxis',
             showscale=False
         )
         fig.add_trace(hm, row=row, col=col)
 
     # set up the layout
-    fig.update_layout(width=200 * n_cols, height=200 * n_rows)
+    fig.update_layout(coloraxis=dict(colorscale='RdBu_r'), showlegend=False)
     fig.update_xaxes(showticklabels=False)
     fig.update_yaxes(showticklabels=False, autorange='reversed')
 
     for i in range(1, n_rows + 1):
         for j in range(1, n_cols + 1):
-            fig.update_yaxes(scaleanchor=f"x{(i-1) * n_cols + j}", scaleratio=1, row=i, col=j)
-            fig.update_xaxes(constrain="domain", row=i, col=j)
+            fig.update_xaxes(constrain='domain', row=i, col=j)
+            fig.update_yaxes(scaleanchor=f'x{(i-1)*n_cols+j}', scaleratio=1,
+                             constrain='domain', row=i, col=j)
 
     return fig
 
 
+plotly_config = dict(displayModeBar='hover', displaylogo=False)
 layout = [
-    html.Div([
-        dcc.Slider(min=0, max=1, step=1, value=0, id='mtx-slider-time'),
-        dcc.Graph(figure={}, id='mtx-graph')
-    ])
+    dbc.Row([
+        dbc.Col(dbc.Label("Time"), width='auto'),
+        dbc.Col(dcc.Slider(min=0, max=1, step=1, value=0, id='mtx-slider-time'))
+    ]),
+    dbc.Row(dcc.Graph(figure={}, id='mtx-graph', style={'height': '90vh'}, config=plotly_config)),
 ]
 
 
@@ -58,3 +64,8 @@ def update_figure(corr, slider_value):
     max_slider_value = len(next(iter(corr.values()))) - 1
     marks_slider = {i: str(i) for i in range(0, max_slider_value + 1, max_slider_value//10)}
     return build_matrices_figure(corr, slider_value), max_slider_value, marks_slider
+
+
+# TODO add a callback to resize everything when graph is zoomed
+
+# TODO add a callback to update the number of columns when the window is resized
