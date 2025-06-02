@@ -175,7 +175,7 @@ def populate_corr_table(corr):
 )
 def compute_model(set_progress, n_clicks, threshold, use_absolute, desc, corr):
     if n_clicks <= 0 or any(e is None for e in (desc, corr)):
-        return
+        raise PreventUpdate
 
     n = len(corr)
     set_progress((str(0), str(n), f"Processing...", 'visible'))
