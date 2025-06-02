@@ -1,6 +1,7 @@
 
 import numpy as np
 from dash.exceptions import PreventUpdate
+import dash_bootstrap_components as dbc
 from dash_extensions.enrich import Input, Output, State, callback, dcc, html
 from fmri_st_graph import spatio_temporal_graph_from_corr_matrices
 from fmri_st_graph.graph import RC5
@@ -94,14 +95,22 @@ def build_subject_figure(graph, name: str, regions: list[str]) -> go.Figure:
     )
 
 
-layout = html.Div([
-    dcc.Dropdown([], clearable=False, id='subject-selection'),
-    dcc.Dropdown([], multi=True, placeholder="Select regions...", id='regions-selection'),
-    dcc.Loading(
-        children=[dcc.Graph(figure={}, id='st-graph')],
-        type='circle', overlay_style={"visibility": "visible", "filter": "blur(2px)"}
+layout = [
+    dbc.Row(
+        dcc.Dropdown([], clearable=False, id='subject-selection')
+    ),
+    dbc.Row([
+        dbc.Col(dcc.Dropdown([], multi=True, placeholder="Select regions...", id='regions-selection'), width=11),
+        dbc.Col(dbc.Button("Apply", color='secondary', id='apply-button'),
+                className='d-grid gap-2 d-md-block', align='center')
+    ], className='g-0'),
+    dbc.Row(
+        dcc.Loading(
+            children=[dcc.Graph(figure={}, id='st-graph')],
+            type='circle', overlay_style={"visibility": "visible", "filter": "blur(2px)"}
+        )
     )
-])
+]
 
 
 @callback(
@@ -131,12 +140,25 @@ def update_subjects(corr):
 
 @callback(
     Output('st-graph', 'figure'),
+    Output('apply-button', 'disabled'),
+    Input('apply-button', 'n_clicks'),
     Input('subject-selection', 'value'),
-    Input('regions-selection', 'value'),
-    State('store-graphs', 'data')
+    State('regions-selection', 'value'),
+    State('store-graphs', 'data'),
+    prevent_initial_call=True,
+    allow_duplicate=True
 )
-def update_graph(name, regions, graphs):
-    if graphs is None:
+def update_graph(n_clicks, name, regions, graphs):
+    if (n_clicks is not None and n_clicks <= 0) or graphs is None:
         raise PreventUpdate
 
-    return build_subject_figure(graphs[name], name, regions)
+    return build_subject_figure(graphs[name], name, regions), True
+
+
+@callback(
+    Output('apply-button', 'disabled', allow_duplicate=True),
+    Input('regions-selection', 'value'),
+    prevent_initial_call=True
+)
+def enable_apply_button_at_selection_changed(regions):
+    return regions is None or len(regions) == 0
