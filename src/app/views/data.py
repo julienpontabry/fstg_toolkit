@@ -15,8 +15,10 @@ from dash_extensions.enrich import (
     dash_table,
     dcc,
     html,
+    callback_context as ctx
 )
 from dash_extensions.logging import set_props
+from dash.dependencies import ALL
 
 from fmri_st_graph import spatio_temporal_graph_from_corr_matrices
 
@@ -45,6 +47,7 @@ layout = [
                                                   html.A("select correlation matrices files (.npy/.npz)")]),
                                multiple=True, id='upload-correlation', accept='.npy,.npz,.zip',
                                className='upload', className_active='upload-active'),
+                    html.Div(id='uploaded-corr-files-list'),
                     dash_table.DataTable(columns=corr_columns, page_size=12, id='corr-table'),
                 ],
                 type='circle', overlay_style={"visibility": "visible", "filter": "blur(2px)"})
@@ -106,19 +109,21 @@ def populate_desc_table(desc):
     return desc.reset_index().to_dict('records')
 
 
+# FIXME put that in an update_corr methods along with removing to avoid chained callbacks
 @callback(
     Output('store-corr', 'data'),
     Input('upload-correlation', 'filename'),
     Input('upload-correlation', 'contents'),
+    prevent_initial_call=True,
 )
 def upload_corr(filenames, contents):
     if contents is None:
         raise PreventUpdate
 
-    if all('npy' not in filename and \
-           'npz' not in filename and \
-           'zip' not in filename
-           for filename in filenames):
+    if len(filenames) > 0 and all('npy' not in filename and
+                                  'npz' not in filename and
+                                  'zip' not in filename
+                                  for filename in filenames):
         raise PreventUpdate
 
     files = {filename: content for filename, content in zip(filenames, contents)}
@@ -135,12 +140,57 @@ def upload_corr(filenames, contents):
     return Serverside(corr)
 
 
+# FIXME put that in an update_corr methods along with uploading to avoid chained callbacks
+@callback(
+    Output("upload-correlation", "filename"),
+    Output("upload-correlation", "contents"),
+    Input({"type": "remove-corr-file", "index": ALL}, "n_clicks"),
+    State('upload-correlation', 'filename'),
+    State('upload-correlation', 'contents'),
+)
+def remove_uploaded_file(remove_clicks, filenames, contents):
+    # Find the first one that has been clicked
+    for i, n in enumerate(remove_clicks):
+        if n is not None and n > 0:
+            idx = i
+            break
+    else:
+        raise PreventUpdate
+
+    # Remove the matching file
+    new_filenames = list(filenames)
+    new_contents = list(contents)
+    del new_filenames[idx]
+    del new_contents[idx]
+
+    return new_filenames, new_contents
+
+
+@callback(
+    Output('uploaded-corr-files-list', 'children'),
+    Input('upload-correlation', 'filename'),
+    prevent_initial_call=True
+)
+def update_uploaded_corr_files_list(filenames):
+    if not filenames:
+        return None
+
+    return dbc.ListGroup([
+        dbc.ListGroupItem([filename,
+                           dbc.Badge(html.I(className="bi bi-x-lg"), pill=True, color='danger',
+                                     id={'type': 'remove-corr-file', 'index': i}, n_clicks=0,
+                                     className="ms-1 file-remove")
+                           ])
+        for i, filename in enumerate(filenames)
+    ])
+
+
 @callback(
     Output('corr-table', 'data'),
     Input('store-corr', 'data')
 )
 def populate_corr_table(corr):
-    if corr is None or len(corr) == 0:
+    if corr is None:
         raise PreventUpdate
 
     return [{'Subject': name} for name in corr.keys()]

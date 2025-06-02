@@ -29,7 +29,7 @@ def callback_error(err):
 # app's definition
 app = DashProxy(title="fSTView - An fMRI spatio-temporal data viewer", name="fSTView",
                 transforms=[ServersideOutputTransform()],
-                external_stylesheets=[dbc.themes.BOOTSTRAP],
+                external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
                 background_callback_manager=background_callback_manager,
                 on_error=callback_error)
 
