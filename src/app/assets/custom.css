@@ -1,0 +1,23 @@
+.upload {
+    width: 30em;
+    height: 3em;
+    line-height: 3em;
+    border-style: solid;
+    border-width: 1px;
+    border-radius: 20px;
+    text-align: center;
+    margin: auto;
+    margin-top: 1%;
+    margin-bottom: 1%;
+}
+
+.upload:hover {
+    border-style: dashed;
+    cursor: pointer;
+}
+
+.upload-active {
+    background-color: transparent !important;
+    border-style: dashed !important;
+    border-color: white !important;
+}

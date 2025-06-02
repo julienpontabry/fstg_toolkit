@@ -31,7 +31,8 @@ layout = [
             html.H2("Description of regions/areas"),
             dcc.Loading([
                 dcc.Upload(children=["Drag and drop or select a description of regions/areas (.csv)"],
-                           multiple=False, id='upload-description'),
+                           multiple=False, id='upload-description', accept='.csv',
+                           className='upload', className_active='upload-active'),
                 ],
                 type='circle', overlay_style={"visibility":"visible", "filter": "blur(2px)"}),
             dash_table.DataTable(columns=desc_columns, page_size=12, id='desc-table')
@@ -39,8 +40,9 @@ layout = [
         dbc.Col([
             html.H2("Correlation matrices"),
             dcc.Loading([
-                    dcc.Upload(children=["Drag and drop or select correlation matrices files (.npy/.npz)"],
-                               multiple=True, id='upload-correlation'),
+                    dcc.Upload(children=html.Div(["Drag and drop or ", html.A("select correlation matrices files (.npy/.npz)")]),
+                               multiple=True, id='upload-correlation', accept='.npy,.npz,.zip',
+                               className='upload', className_active='upload-active'),
                     dash_table.DataTable(columns=corr_columns, page_size=12, id='corr-table'),
                 ],
                 type='circle', overlay_style={"visibility": "visible", "filter": "blur(2px)"})
