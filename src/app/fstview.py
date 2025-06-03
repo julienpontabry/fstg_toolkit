@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
 import diskcache
 import plotly.io as pio
-from app.views import data, matrices, subject
+from app.views import data, matrices, model, subject
 from dash import DiskcacheManager
 from dash_extensions.enrich import (
     DashProxy,
@@ -39,6 +39,7 @@ app.layout = dbc.Container(
         dbc.Tabs([
             dbc.Tab(label="Data", id='tab-data', tab_id='tab-data', children=data.layout),
             dbc.Tab(label="Raw data view", id='tab-matrices', children=matrices.layout, disabled=True),
+            dbc.Tab(label="Model", id='tab-model', children=model.layout, disabled=True),
             dbc.Tab(label="Subject view", id='tab-subject', children=subject.layout, disabled=True),
         ], id='tabs'),
 
@@ -64,7 +65,8 @@ app.layout = dbc.Container(
 def set_tab_enabled(desc, corr):
     if all(e is not None for e in (desc, corr)):
         set_props('tab-matrices', dict(disabled=False))
-        set_props('tabs', {'active_tab': 'tab-data'})
+        set_props('tab-model', dict(disabled=False))
+        set_props('tabs', {'active_tab': 'tab-data'})  # FIXME find another way to update the display
 
 
 @callback(
@@ -73,7 +75,7 @@ def set_tab_enabled(desc, corr):
 def set_tab_enabled(graphs):
     if graphs is not None:
         set_props('tab-subject', dict(disabled=False))
-        set_props('tabs', {'active_tab': 'tab-data'})
+        set_props('tabs', {'active_tab': 'tab-data'})  # FIXME find another way to update the display
 
 
 if __name__ == '__main__':
