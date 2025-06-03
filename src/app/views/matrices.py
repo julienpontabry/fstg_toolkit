@@ -33,7 +33,7 @@ def build_matrices_figure(matrices, t, desc, n_cols=5):
         fig.add_trace(hm, row=row, col=col)
 
     # set up the layout
-    fig.update_layout(coloraxis=dict(colorscale='RdBu_r'), showlegend=False)
+    fig.update_layout(coloraxis=dict(colorscale='RdBu_r', cmin=-1, cmax=1), showlegend=False)
     fig.update_xaxes(showticklabels=False)
     fig.update_yaxes(showticklabels=False, autorange='reversed')
 
