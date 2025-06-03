@@ -1,7 +1,7 @@
 .upload {
     height: 3em;
     line-height: 3em;
-    border-style: solid;
+    border-style: dashed;
     border-width: 1px;
     border-radius: 20px;
     text-align: center;
@@ -11,7 +11,7 @@
 }
 
 .upload:hover {
-    border-style: dashed;
+    border-style: solid;
     cursor: pointer;
 }
 
@@ -23,4 +23,12 @@
 
 .file-remove {
     cursor: pointer;
+}
+
+.upload-link {
+    text-decoration: none;
+}
+
+.upload-link:hover {
+    text-decoration: underline;
 }

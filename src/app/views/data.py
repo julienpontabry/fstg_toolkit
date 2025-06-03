@@ -32,7 +32,8 @@ layout = [
             html.H2("Description of regions/areas"),
             dcc.Loading([
                 dcc.Upload(children=html.Div(["Drag and drop or ",
-                                              html.A("select a description of regions/areas (.csv)")]),
+                                              html.A("select a description of regions/areas (.csv)",
+                                                     className='upload-link')]),
                            multiple=False, id='upload-description', accept='.csv',
                            className='upload', className_active='upload-active'),
                 ],
@@ -43,7 +44,8 @@ layout = [
             html.H2("Correlation matrices"),
             dcc.Loading([
                     dcc.Upload(children=html.Div(["Drag and drop or ",
-                                                  html.A("select correlation matrices files (.npy/.npz)")]),
+                                                  html.A("select correlation matrices files (.npy/.npz)",
+                                                         className='upload-link')]),
                                multiple=True, id='upload-correlation', accept='.npy,.npz,.zip',
                                className='upload', className_active='upload-active'),
                     html.Div(id='uploaded-corr-files-list'),
