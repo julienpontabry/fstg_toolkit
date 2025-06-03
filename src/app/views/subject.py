@@ -1,15 +1,15 @@
+from typing import Any
 
 import numpy as np
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
-from dash_extensions.enrich import Input, Output, State, callback, dcc, html
-from fmri_st_graph import spatio_temporal_graph_from_corr_matrices
+from dash_extensions.enrich import Input, Output, State, callback, dcc
 from fmri_st_graph.graph import RC5
 from fmri_st_graph.visualization import __CoordinatesGenerator, _trans_color
 from plotly import graph_objects as go
 
 
-def generate_subject_display_props(graph, name: str, regions: list[str]) -> dict[str, any]:
+def generate_subject_display_props(graph, name: str, regions: list[str]) -> dict[str, Any]:
     start_graph = graph.conditional_subgraph(t=0)
 
     # define nodes' properties
