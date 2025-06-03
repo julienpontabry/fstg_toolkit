@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
 import diskcache
 import plotly.io as pio
-from app.views import data, matrices, model, subject
+from app.views import data, matrices, model, subject, population
 from dash import DiskcacheManager
 from dash_extensions.enrich import (
     DashProxy,
@@ -41,6 +41,7 @@ app.layout = dbc.Container(
             dbc.Tab(label="Raw data view", id='tab-matrices', children=matrices.layout, disabled=True),
             dbc.Tab(label="Model", id='tab-model', children=model.layout, disabled=True),
             dbc.Tab(label="Subject view", id='tab-subject', children=subject.layout, disabled=True),
+            dbc.Tab(label="Population view", id='tab-population', children=population.layout, disabled=True),
         ], id='tabs'),
 
         # app's storage cache
@@ -75,6 +76,7 @@ def set_tab_enabled(desc, corr):
 def set_tab_enabled(graphs):
     if graphs is not None:
         set_props('tab-subject', dict(disabled=False))
+        set_props('tab-population', dict(disabled=False))
         set_props('tabs', {'active_tab': 'tab-data'})  # FIXME find another way to update the display
 
 
