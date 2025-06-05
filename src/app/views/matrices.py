@@ -9,20 +9,21 @@ from plotly.subplots import make_subplots
 
 def build_matrices_figure(matrices, t, desc, n_cols=5):
     # create figure for matrices to display
-    names = list(matrices.keys())
+    ids = list(matrices.keys())
     n = len(matrices)
     n_rows = ceil(n / n_cols)
     fig = make_subplots(rows=n_rows, cols=n_cols,
                         vertical_spacing=0.05, horizontal_spacing=0.05)
 
-    for i, name in enumerate(names):
+    for i, ident in enumerate(ids):
         row = i // n_cols + 1
         col = i % n_cols + 1
         hm = go.Heatmap(
-            name=name,
+            # name=ident,
+            name='/'.join(ident),
             x=desc['Name_Area'],
             y=desc['Name_Area'],
-            z=(matrices[name][t]),
+            z=(matrices[ident][t]),
             zmin=-1, zmax=1,
             coloraxis='coloraxis',
             showscale=False,
