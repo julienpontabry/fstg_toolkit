@@ -135,7 +135,7 @@ def update_subjects(corr):
     if corr is None or len(corr) == 0:
         raise PreventUpdate
 
-    return list(corr.keys()), next(iter(corr.keys()))
+    return ['/'.join(ids) for ids in corr.keys()], '/'.join(next(iter(corr.keys())))
 
 
 @callback(
@@ -147,11 +147,11 @@ def update_subjects(corr):
     State('regions-selection', 'value'),
     prevent_initial_call=True
 )
-def update_graph(n_clicks, name, graphs, regions):
+def update_graph(n_clicks, ids, graphs, regions):
     if (n_clicks is not None and n_clicks <= 0) or graphs is None:
         raise PreventUpdate
 
-    return build_subject_figure(graphs[name], name, regions), True
+    return build_subject_figure(graphs[tuple(ids.split('/'))], ids, regions), True
 
 
 @callback(
