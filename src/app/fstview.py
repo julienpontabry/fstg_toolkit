@@ -1,18 +1,18 @@
 import dash_bootstrap_components as dbc
 import diskcache
 import plotly.io as pio
-from app.views import data, matrices, model, subject, population
 from dash import DiskcacheManager
 from dash_extensions.enrich import (
     DashProxy,
     Input,
-    Output,
     State,
     ServersideOutputTransform,
     callback,
     dcc,
     set_props,
 )
+
+from app.views import data, matrices, model, subject, population
 
 # use orsjon to make JSON 5-10x faster
 pio.json.config.default_engine = 'orjson'
@@ -52,6 +52,7 @@ app.layout = dbc.Container(
 
         # app's storage cache
         dcc.Store(id='store-desc', storage_type='session'),
+        dcc.Store(id='store-factors', storage_type='session'),
         dcc.Store(id='store-corr', storage_type='session'),
         dcc.Store(id='store-graphs', storage_type='session'),
 

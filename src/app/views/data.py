@@ -4,6 +4,7 @@ import io
 import dash_bootstrap_components as dbc
 import numpy as np
 import pandas as pd
+from dash.dependencies import ALL
 from dash.exceptions import PreventUpdate
 from dash_extensions.enrich import (
     Input,
@@ -15,8 +16,8 @@ from dash_extensions.enrich import (
     dcc,
     html
 )
-from dash.dependencies import ALL
 
+from app.core.utils import split_factors_from_name
 
 desc_columns = [{'name': "Area id", 'id': 'Id_Area'},
                 {'name': "Area name", 'id': 'Name_Area'},
@@ -86,6 +87,7 @@ def populate_desc_table(desc):
 
 # FIXME put that in an update_corr methods along with removing to avoid chained callbacks
 @callback(
+    Output('store-factors', 'data'),
     Output('store-corr', 'data'),
     Input('upload-correlation', 'filename'),
     Input('upload-correlation', 'contents'),
@@ -101,10 +103,11 @@ def upload_corr(filenames, contents):
                                   for filename in filenames):
         raise PreventUpdate
 
+    # load data
     files = {filename: content for filename, content in zip(filenames, contents)}
     corr = {}
 
-    for filename, content in files.items():
+    for _, content in files.items():
         content_type, content_string = content.split(',')
         decoded = base64.b64decode(content_string)
         data = np.load(io.BytesIO(decoded))
@@ -112,7 +115,10 @@ def upload_corr(filenames, contents):
         for name, matrices in data.items():
             corr[name] = matrices
 
-    return Serverside(corr)
+    # extract factors and ids from names
+    factors, ids = split_factors_from_name(corr.keys())
+
+    return Serverside(factors), Serverside({ident: corr[name] for name, ident in zip(corr.keys(), ids)})
 
 
 # FIXME put that in an update_corr methods along with uploading to avoid chained callbacks
@@ -161,11 +167,26 @@ def update_uploaded_corr_files_list(filenames):
 
 
 @callback(
+    Output('corr-table', 'columns'),
     Output('corr-table', 'data'),
-    Input('store-corr', 'data')
+    Input('store-corr', 'data'),
+    State('store-factors', 'data')
 )
-def populate_corr_table(corr):
+def populate_corr_table(corr, factors):
     if corr is None:
         raise PreventUpdate
 
-    return [{'Subject': name} for name in corr.keys()]
+    # update columns
+    columns = [{'name': f"Factor {i+1}", 'id': f'Factor{i}'}
+               for i in range(len(factors))]
+    columns.append({'name': "Subject", 'id': 'Subject'})
+
+    # update contents
+    contents = []
+    for ids in corr.keys():
+        desc = {'Subject': ids[-1]}
+        for i, factor in enumerate(ids[:-1]):
+            desc[f'Factor{i}'] = factor
+        contents.append(desc)
+
+    return columns, contents
