@@ -143,12 +143,11 @@ def update_subjects(corr):
     Output('apply-button', 'disabled'),
     Input('apply-button', 'n_clicks'),
     Input('subject-selection', 'value'),
+    Input('store-graphs', 'data'),
     State('regions-selection', 'value'),
-    State('store-graphs', 'data'),
-    prevent_initial_call=True,
-    allow_duplicate=True
+    prevent_initial_call=True
 )
-def update_graph(n_clicks, name, regions, graphs):
+def update_graph(n_clicks, name, graphs, regions):
     if (n_clicks is not None and n_clicks <= 0) or graphs is None:
         raise PreventUpdate
 
