@@ -71,15 +71,15 @@ def compute_model(set_progress, n_clicks, threshold, use_absolute, desc, corr):
     graph = dict()
     errors = []
 
-    for i, (label, matrices) in enumerate(corr.items()):
-        set_progress((str(i), str(n), f"Processing {label}...", 'visible'))
+    for i, (ids, matrices) in enumerate(corr.items()):
+        set_progress((str(i), str(n), f"Processing {'/'.join(ids)}...", 'visible'))
         try:
-            graph[label] = spatio_temporal_graph_from_corr_matrices(
+            graph[ids] = spatio_temporal_graph_from_corr_matrices(
                 matrices, desc, corr_thr=threshold, abs_thr=use_absolute)
         except Exception as ex:
             print(ex)
-            errors.append(label)
-        set_progress((str(i+1), str(n), f"Processing {label}...", 'visible'))
+            errors.append(ids)
+        set_progress((str(i+1), str(n), f"Processing {'/'.join(ids)}...", 'visible'))
 
     set_progress((str(n), str(n), "Done.", 'visible'))
 
