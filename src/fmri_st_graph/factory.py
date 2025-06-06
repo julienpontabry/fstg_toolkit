@@ -194,7 +194,9 @@ def networks_from_connect_graph(graph: nx.Graph, regions: list[str]) -> nx.Graph
     The graph of networks of connected areas for both regions is built using the following.
     >>> netG = networks_from_connect_graph(G, ['R1', 'R2'])
     >>> netG.nodes(data=True)
-    NodeDataView({1: {'areas': {1}, 'region': 'R1', 'internal_strength': 1}, 2: {'areas': {2}, 'region': 'R1', 'internal_strength': 1}, 3: {'areas': {3}, 'region': 'R2', 'internal_strength': 1}})
+    NodeDataView({1: {'areas': {1}, 'region': 'R1', 'internal_strength': 1, 'efficiency': 1},
+                  2: {'areas': {2}, 'region': 'R1', 'internal_strength': 1, 'efficiency': 1},
+                  3: {'areas': {3}, 'region': 'R2', 'internal_strength': 1, 'efficiency': 1}})
     >>> netG.edges(data=True)
     EdgeDataView([(1, 3, {'correlation': -0.41853318}), (2, 3, {'correlation': 0.75087697})])
     """
@@ -374,11 +376,11 @@ def spatio_temporal_graph_from_corr_matrices(corr_matrices: Iterable[np.array], 
     >>> areas.set_index('Id', inplace=True)
     >>> result = spatio_temporal_graph_from_corr_matrices((M1, M2), areas)
     >>> result.nodes(data=True)
-    NodeDataView({1: {'t': 0, 'areas': {1}, 'region': 'R1', 'internal_strength': 1},
-                  2: {'t': 0, 'areas': {2}, 'region': 'R1', 'internal_strength': 1},
-                  3: {'t': 0, 'areas': {3}, 'region': 'R2', 'internal_strength': 1},
-                  4: {'t': 1, 'areas': {1, 2}, 'region': 'R1', 'internal_strength': 0.52873788},
-                  5: {'t': 1, 'areas': {3}, 'region': 'R2', 'internal_strength': 1}})
+    NodeDataView({1: {'t': 0, 'areas': {1}, 'region': 'R1', 'internal_strength': 1, 'efficiency': 1},
+                  2: {'t': 0, 'areas': {2}, 'region': 'R1', 'internal_strength': 1, 'efficiency': 1},
+                  3: {'t': 0, 'areas': {3}, 'region': 'R2', 'internal_strength': 1, 'efficiency': 1},
+                  4: {'t': 1, 'areas': {1, 2}, 'region': 'R1', 'internal_strength': 0.52873788, 'efficiency': 1.0},
+                  5: {'t': 1, 'areas': {3}, 'region': 'R2', 'internal_strength': 1, 'efficiency': 1}})
     >>> result.edges(data=True)
     OutEdgeDataView([(1, 3, {'t': 0, 'type': 'spatial', 'correlation': -0.41853318}),
                      (1, 4, {'type': 'temporal', 'transition': <RC5.PP: 2>}),
