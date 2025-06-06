@@ -17,5 +17,12 @@ def factory_suite():
 
 if __name__ == '__main__':
     runner = unittest.TextTestRunner()
-    runner.run(simulation_suite())
-    runner.run(factory_suite())
+
+    total_failed = 0
+
+    for suite in (simulation_suite(), factory_suite()):
+        result = runner.run(suite)
+        total_failed += len(result.failures)
+
+    if total_failed > 0:
+        exit(1)
