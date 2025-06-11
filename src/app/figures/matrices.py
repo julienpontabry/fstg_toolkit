@@ -1,5 +1,6 @@
 from math import ceil
 
+from matplotlib.pyplot import title
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
@@ -32,6 +33,7 @@ def build_matrices_figure(matrices, t, desc, n_cols=5):
 
     # set up the layout
     fig.update_layout(coloraxis=dict(colorscale='RdBu_r', cmin=-1, cmax=1), showlegend=False)
+    fig.update_layout(coloraxis_colorbar=dict(title=dict(text="Correlation", side='top')))
     fig.update_xaxes(showticklabels=False)
     fig.update_yaxes(showticklabels=False, autorange='reversed')
 
