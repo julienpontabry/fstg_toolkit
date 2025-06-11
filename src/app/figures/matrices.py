@@ -5,13 +5,17 @@ from plotly.subplots import make_subplots
 
 
 def build_matrices_figure(matrices, t, desc, n_cols=5):
-    # create figure for matrices to display
+    # prepare figure
     ids = list(matrices.keys())
     n = len(matrices)
     n_rows = ceil(n / n_cols)
     fig = make_subplots(rows=n_rows, cols=n_cols,
-                        vertical_spacing=0.05, horizontal_spacing=0.05)
+                        vertical_spacing=0.05, horizontal_spacing=0.05,
+                        subplot_titles=[f"{ident[-1]} ({'/'.join(ident[:-1])})"
+                                        for ident in ids])
+    # TODO make subtitles display factors only if there are different factors
 
+    # create heatmaps for matrices
     for i, ident in enumerate(ids):
         row = i // n_cols + 1
         col = i % n_cols + 1
