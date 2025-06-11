@@ -1,6 +1,5 @@
 from math import ceil
 
-from matplotlib.pyplot import title
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
@@ -17,7 +16,6 @@ def build_matrices_figure(matrices, t, desc, n_cols=5):
         row = i // n_cols + 1
         col = i % n_cols + 1
         hm = go.Heatmap(
-            # name=ident,
             name='/'.join(ident),
             x=desc['Name_Area'],
             y=desc['Name_Area'],
