@@ -10,7 +10,7 @@ def build_matrices_figure(matrices, t, desc, n_cols=5, hs_ratio=0.2, matrix_heig
     n = len(matrices)
     n_rows = ceil(n / n_cols)
     vs_ratio = hs_ratio / 2
-    fig = make_subplots(rows=n_rows, cols=n_cols,
+    fig = make_subplots(rows=n_rows, cols=n_cols, shared_xaxes='all', shared_yaxes='all',
                         horizontal_spacing=hs_ratio / n_cols, vertical_spacing=vs_ratio / n_rows,
                         subplot_titles=[f"{ident[-1]} ({'/'.join(ident[:-1])})"
                                         for ident in ids])

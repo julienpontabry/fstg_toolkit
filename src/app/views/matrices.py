@@ -65,6 +65,4 @@ def update_figure(corr, slider_value, factor_values, desc):
     return build_matrices_figure(corr, slider_value, desc), max_slider_value, marks_slider
 
 
-# TODO add a callback to resize everything when graph is zoomed
-
 # TODO add a callback to update the number of columns when the window is resized
