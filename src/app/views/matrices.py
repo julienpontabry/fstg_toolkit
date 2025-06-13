@@ -13,7 +13,7 @@ layout = [
         dbc.Col(dbc.Label("Time"), width='auto'),
         dbc.Col(dcc.Slider(min=0, max=1, step=1, value=0, id='mtx-slider-time'))
     ]),
-    dbc.Row(dcc.Graph(figure={}, id='mtx-graph', style={'height': '90vh'}, config=plotly_config)),
+    dbc.Row(dcc.Graph(figure={}, id='mtx-graph', config=plotly_config)),
 ]
 
 
