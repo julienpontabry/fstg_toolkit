@@ -4,12 +4,11 @@ from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
 
-def build_matrices_figure(matrices, t, desc, n_cols=5, hs_ratio=0.2, matrix_height=300):
+def build_matrices_figure(matrices, t, desc, n_cols=5, vs_ratio=0.1, hs_ratio=0.2, matrix_height=300):
     # prepare figure
     ids = list(matrices.keys())
     n = len(matrices)
     n_rows = ceil(n / n_cols)
-    vs_ratio = hs_ratio / 2
     fig = make_subplots(rows=n_rows, cols=n_cols, shared_xaxes='all', shared_yaxes='all',
                         horizontal_spacing=hs_ratio / n_cols, vertical_spacing=vs_ratio / n_rows,
                         subplot_titles=[f"{ident[-1]} ({'/'.join(ident[:-1])})"
