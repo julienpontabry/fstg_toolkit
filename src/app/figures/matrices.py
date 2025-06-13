@@ -27,7 +27,6 @@ def build_matrices_figure(matrices, t, desc, n_cols=5, hs_ratio=0.2, matrix_heig
             z=(matrices[ident][t]),
             zmin=-1, zmax=1,
             coloraxis='coloraxis',
-            showscale=False,
             hovertemplate='Row: %{y}'+
                           '<br>Column: %{x}<br>'+
                           'Corr: %{z:.2f}',
@@ -35,8 +34,13 @@ def build_matrices_figure(matrices, t, desc, n_cols=5, hs_ratio=0.2, matrix_heig
         fig.add_trace(hm, row=row, col=col)
 
     # set up the layout
-    fig.update_layout(coloraxis=dict(colorscale='RdBu_r', cmin=-1, cmax=1), showlegend=False)
-    fig.update_layout(coloraxis_colorbar=dict(title=dict(text="Correlation", side='top')))
+    fig.update_layout(coloraxis=dict(
+            colorscale='RdBu_r', cmin=-1, cmax=1,
+            colorbar=dict(
+                orientation='h', yanchor='bottom',
+                title=dict(text="Correlation", side='top')
+            )
+        ), showlegend=False)
     fig.update_xaxes(showticklabels=False)
     fig.update_yaxes(showticklabels=False, autorange='reversed')
 
