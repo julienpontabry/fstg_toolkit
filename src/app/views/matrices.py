@@ -29,9 +29,11 @@ def update_factor_controls(factors):
     controls = []
 
     for i, factor in enumerate(factors):
+        factor_values = list(factor)
         controls.append(dbc.Row([
                 dbc.Col(dbc.Label(f"Factor {i+1}"), width='auto'),
-                dbc.Col(dcc.Dropdown(list(factor), id={'type': 'mtx-factor', 'index': i}))
+                dbc.Col(dcc.Dropdown(options=factor_values, value=factor_values,
+                                     multi=True, id={'type': 'mtx-factor', 'index': i}))
             ])
         )
 
@@ -53,9 +55,10 @@ def update_figure(corr, slider_value, factor_values, desc):
 
     # filter the matrices based on the selected factors (if any)
     defined_factor_values = [factor_value for factor_value in factor_values
-                             if factor_value is not None]
+                             if factor_value is not None and len(factor_value) > 0]
     corr = {key: matrix for key, matrix in corr.items()
-            if all(factor_value in key for factor_value in defined_factor_values)}
+            if all(any(value in key for value in factor_value)
+                   for factor_value in defined_factor_values)}
 
     # set the time slider properties
     max_slider_value = len(next(iter(corr.values()))) - 1
