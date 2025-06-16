@@ -11,9 +11,8 @@ def build_matrices_figure(matrices, t, desc, n_cols=3, vs_ratio=0.1, hs_ratio=0.
     n_rows = ceil(n / n_cols)
     fig = make_subplots(rows=n_rows, cols=n_cols, shared_xaxes='all', shared_yaxes='all',
                         horizontal_spacing=hs_ratio / n_cols, vertical_spacing=vs_ratio / n_rows,
-                        subplot_titles=[f"{ident[-1]} ({'/'.join(ident[:-1])})"
-                                        for ident in ids])
-    # TODO make subtitles display factors only if there are different factors
+                        subplot_titles=[f"{ident[-1]} {'/'.join(ident[:-1])}"
+                                        for ident in __keep_nonunique_factors(ids)])
 
     # create heatmaps for matrices
     for i, ident in enumerate(ids):
@@ -69,3 +68,10 @@ def break_width_to_cols(break_name: str) -> int:
         return 5
     else:
         return 6
+
+
+def __keep_nonunique_factors(ids: list[tuple[any, ...]]) -> list[tuple[any, ...]]:
+    factors_vals = list(zip(*ids))
+    tmp = [f_vals for f_vals in factors_vals[:-1] if len(set(f_vals)) > 1]
+    tmp.append(factors_vals[-1])
+    return list(zip(*tmp))
