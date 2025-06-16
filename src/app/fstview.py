@@ -5,12 +5,14 @@ from dash import DiskcacheManager
 from dash_extensions.enrich import (
     DashProxy,
     Input,
+    Output,
     State,
     ServersideOutputTransform,
     callback,
     dcc,
     set_props,
 )
+from dash_breakpoints import WindowBreakpoints
 
 from app.views import data, matrices, model, subject, population
 
@@ -55,6 +57,14 @@ app.layout = dbc.Container(
         dcc.Store(id='store-factors', storage_type='session'),
         dcc.Store(id='store-corr', storage_type='session'),
         dcc.Store(id='store-graphs', storage_type='session'),
+        dcc.Store(id='store-break-width', storage_type='memory'),
+
+        # setup event on window's width breakpoints
+        WindowBreakpoints(
+            id='window-width-break',
+            widthBreakpointThresholdsPx=[576, 768, 992, 1200, 1400],
+            widthBreakpointNames=['xsm', 'sm', 'md', 'lg', 'xl', 'xxl'],
+        ),
 
         # message display as toasts
         dbc.Toast("",
@@ -87,6 +97,15 @@ def set_tab_enabled_after_model(graphs, active_tab):
         set_props('tab-subject', dict(disabled=False))
         set_props('tab-population', dict(disabled=False))
         set_props('tabs', {'active_tab': active_tab})
+
+
+@callback(
+    Output('store-break-width', 'data'),
+    Input('window-width-break', 'widthBreakpoint'),
+    State('window-width-break', 'width')
+)
+def store_current_break_width(breakpoint_name, breakpoint_width):
+    return {'name': breakpoint_name, 'width': breakpoint_width}
 
 
 if __name__ == '__main__':

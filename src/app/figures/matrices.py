@@ -4,7 +4,7 @@ from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
 
-def build_matrices_figure(matrices, t, desc, n_cols=5, vs_ratio=0.1, hs_ratio=0.2, matrix_height=300):
+def build_matrices_figure(matrices, t, desc, n_cols=3, vs_ratio=0.1, hs_ratio=0.2, matrix_height=300):
     # prepare figure
     ids = list(matrices.keys())
     n = len(matrices)
@@ -54,3 +54,18 @@ def build_matrices_figure(matrices, t, desc, n_cols=5, vs_ratio=0.1, hs_ratio=0.
                              constrain='domain', row=i, col=j)
 
     return fig
+
+
+def break_width_to_cols(break_name: str) -> int:
+    if break_name == 'xsm':
+        return 1
+    elif break_name == 'sm':
+        return 2
+    elif break_name == 'md':
+        return 3
+    elif break_name == 'lg':
+        return 4
+    elif break_name == 'xl':
+        return 5
+    else:
+        return 6

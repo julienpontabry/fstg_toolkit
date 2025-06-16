@@ -3,7 +3,7 @@ from dash.dependencies import ALL
 from dash_extensions.enrich import Input, Output, State, callback, dcc, html
 import dash_bootstrap_components as dbc
 
-from app.figures.matrices import build_matrices_figure
+from app.figures.matrices import build_matrices_figure, break_width_to_cols
 
 
 plotly_config = dict(displayModeBar='hover', displaylogo=False)
@@ -47,9 +47,10 @@ def update_factor_controls(factors):
     Input('store-corr', 'data'),
     Input('mtx-slider-time', 'value'),
     Input({'type': 'mtx-factor', 'index': ALL}, 'value'),
+    Input('store-break-width', 'data'),
     State('store-desc', 'data'),
 )
-def update_figure(corr, slider_value, factor_values, desc):
+def update_figure(corr, slider_value, factor_values, break_width, desc):
     if corr is None or len(corr) == 0:
         raise PreventUpdate
 
@@ -64,8 +65,8 @@ def update_figure(corr, slider_value, factor_values, desc):
     max_slider_value = len(next(iter(corr.values()))) - 1
     marks_slider = {i: str(i) for i in range(0, max_slider_value + 1, max_slider_value//10)}
 
+    # update the number of columns depending on the breakpoints width
+    n_cols = break_width_to_cols(break_width['name'])
+
     # create figure
-    return build_matrices_figure(corr, slider_value, desc), max_slider_value, marks_slider
-
-
-# TODO add a callback to update the number of columns when the window is resized
+    return build_matrices_figure(corr, slider_value, desc, n_cols=n_cols), max_slider_value, marks_slider

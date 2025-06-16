@@ -396,6 +396,18 @@ dash = ">=3.0.4"
 pandas = ["numpy (>=2.0.2)", "pandas (>=2.2.3)"]
 
 [[package]]
+name = "dash-breakpoints"
+version = "0.1.0"
+description = "Component to listen to the elements and window resize"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "dash_breakpoints-0.1.0-py3-none-any.whl", hash = "sha256:0b85a53c779f8edce0d20af76ddb6b1476593f6d3c1af5c163c3e9023c48e3b7"},
+    {file = "dash_breakpoints-0.1.0.tar.gz", hash = "sha256:8892b53c3259b08f24f789785d5e4d10beb194812c0ae85c458752ab083ec86f"},
+]
+
+[[package]]
 name = "dash-daq"
 version = "0.6.0"
 description = "DAQ components for Dash"
@@ -1775,4 +1787,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "98d0be32ac792e46a4b1426ce02fc07b6d6feb594a6260bb2ee390fcf3edd6f4"
+content-hash = "1a699e26e4e5272a0e8c0f31fbb34de71168c4d97c4373c5adc6c821d366e174"
