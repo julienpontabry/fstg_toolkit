@@ -4,6 +4,7 @@ from dash_extensions.enrich import Input, Output, State, callback, dcc, html
 import dash_bootstrap_components as dbc
 
 from app.figures.matrices import build_matrices_figure, break_width_to_cols
+from app.views.common import update_factor_controls
 
 
 plotly_config = dict(displayModeBar='hover', displaylogo=False)
@@ -22,22 +23,8 @@ layout = [
     Input('store-factors', 'data'),
     prevent_initial_call=True,
 )
-def update_factor_controls(factors):
-    if factors is None or len(factors) == 0:
-        raise PreventUpdate
-
-    controls = []
-
-    for i, factor in enumerate(factors):
-        factor_values = list(factor)
-        controls.append(dbc.Row([
-                dbc.Col(dbc.Label(f"Factor {i+1}"), width='auto'),
-                dbc.Col(dcc.Dropdown(options=factor_values, value=factor_values,
-                                     multi=True, id={'type': 'mtx-factor', 'index': i}))
-            ])
-        )
-
-    return controls
+def update_mtx_factor_controls(factors):
+    return update_factor_controls('mtx', factors)
 
 
 @callback(
