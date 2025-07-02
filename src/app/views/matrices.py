@@ -24,7 +24,7 @@ layout = [
     prevent_initial_call=True,
 )
 def update_mtx_factor_controls(factors):
-    return update_factor_controls('mtx', factors)
+    return update_factor_controls('mtx', factors, multi=True)
 
 
 @callback(

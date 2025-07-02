@@ -1,11 +1,13 @@
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
-from dash_extensions.enrich import Input, Output, State, callback, dcc
+from dash_extensions.enrich import Input, Output, State, callback, dcc, html
 
 from app.figures.subject import build_subject_figure
+from app.views.common import update_factor_controls
 
 
 layout = [
+    html.Div([], id='subject-factors-block'),
     dbc.Row(
         dcc.Dropdown([], clearable=False, id='subject-selection')
     ),
@@ -21,6 +23,15 @@ layout = [
         )
     )
 ]
+
+
+@callback(
+    Output('subject-factors-block', 'children'),
+    Input('store-factors', 'data'),
+    prevent_initial_call=True,
+)
+def update_subject_factor_controls(factors):
+    return update_factor_controls('subject', factors, multi=False)
 
 
 @callback(
