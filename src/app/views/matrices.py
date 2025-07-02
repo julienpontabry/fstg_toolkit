@@ -8,7 +8,7 @@ from app.figures.matrices import build_matrices_figure, break_width_to_cols
 
 plotly_config = dict(displayModeBar='hover', displaylogo=False)
 layout = [
-    html.Div([], id='factors-block'),
+    html.Div([], id='mtx-factors-block'),
     dbc.Row([
         dbc.Col(dbc.Label("Time"), width='auto'),
         dbc.Col(dcc.Slider(min=0, max=1, step=1, value=0, id='mtx-slider-time'))
@@ -18,7 +18,7 @@ layout = [
 
 
 @callback(
-    Output('factors-block', 'children'),
+    Output('mtx-factors-block', 'children'),
     Input('store-factors', 'data'),
     prevent_initial_call=True,
 )
