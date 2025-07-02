@@ -4,10 +4,9 @@ from dash_extensions.enrich import Input, Output, State, callback, dcc, html
 import dash_bootstrap_components as dbc
 
 from app.figures.matrices import build_matrices_figure, break_width_to_cols
-from app.views.common import update_factor_controls
+from app.views.common import update_factor_controls, plotly_config
 
 
-plotly_config = dict(displayModeBar='hover', displaylogo=False)
 layout = [
     html.Div([], id='mtx-factors-block'),
     dbc.Row([

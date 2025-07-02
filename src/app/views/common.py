@@ -3,6 +3,9 @@ from dash_extensions.enrich import dcc
 import dash_bootstrap_components as dbc
 
 
+plotly_config = dict(displayModeBar='hover', displaylogo=False)
+
+
 def update_factor_controls(prefix: str, factors: list[set[str]], multi: bool = True):
     if factors is None or len(factors) == 0:
         raise PreventUpdate

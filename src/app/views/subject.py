@@ -3,7 +3,7 @@ import dash_bootstrap_components as dbc
 from dash_extensions.enrich import Input, Output, State, callback, dcc, html
 
 from app.figures.subject import build_subject_figure
-from app.views.common import update_factor_controls
+from app.views.common import update_factor_controls, plotly_config
 
 
 layout = [
@@ -18,7 +18,7 @@ layout = [
     ], className='g-0'),
     dbc.Row(
         dcc.Loading(
-            children=[dcc.Graph(figure={}, id='st-graph')],
+            children=[dcc.Graph(figure={}, id='st-graph', config=plotly_config)],
             type='circle', overlay_style={"visibility": "visible", "filter": "blur(2px)"}
         )
     )
