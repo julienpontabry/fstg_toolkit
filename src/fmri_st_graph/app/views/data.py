@@ -17,7 +17,7 @@ from dash_extensions.enrich import (
     html
 )
 
-from app.core.utils import split_factors_from_name
+from fmri_st_graph.app.core.utils import split_factors_from_name
 
 desc_columns = [{'name': "Area id", 'id': 'Id_Area'},
                 {'name': "Area name", 'id': 'Name_Area'},

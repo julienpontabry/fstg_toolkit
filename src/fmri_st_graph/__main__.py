@@ -12,6 +12,7 @@ from fmri_st_graph import generate_pattern, SpatioTemporalGraphSimulator, Correl
 from .factory import spatio_temporal_graph_from_corr_matrices
 from .io import load_spatio_temporal_graph, save_spatio_temporal_graph
 from .visualization import spatial_plot, temporal_plot, multipartite_plot, DynamicPlot
+from .app.fstview import app
 
 
 @click.group()
@@ -380,6 +381,18 @@ def correlations(ctx: click.core.Context, graph_path: Path, threshold: float):
     simulator = CorrelationMatrixSequenceSimulator(graph, threshold=threshold)
     matrices = simulator.simulate()
     np.savez_compressed(ctx.obj, simulated=matrices)
+
+
+## showing #################################################################
+
+@cli.command()
+@click.option('--debug', is_flag=True, default=False,
+              help="Run the dashboard in debug mode.")
+@click.option('-p-', '--port', type=int, default=8050, show_default=True,
+              help="Port to run the dashboard on.")
+def show(debug: bool, port: int):
+    """Show a dashboard for visualizing spatio-temporal graphs."""
+    app.run(debug=debug, port=port)
 
 
 if __name__ == '__main__':

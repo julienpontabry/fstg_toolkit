@@ -2,8 +2,8 @@ from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 from dash_extensions.enrich import Input, Output, State, callback, dcc, html
 
-from app.figures.subject import build_subject_figure
-from app.views.common import update_factor_controls, plotly_config
+from fmri_st_graph.app.figures.subject import build_subject_figure
+from fmri_st_graph.app.views.common import update_factor_controls, plotly_config
 
 
 layout = [

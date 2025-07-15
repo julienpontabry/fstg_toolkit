@@ -14,7 +14,7 @@ from dash_extensions.enrich import (
 )
 from dash_breakpoints import WindowBreakpoints
 
-from app.views import data, matrices, model, subject, population
+from fmri_st_graph.app.views import model, population, data, subject, matrices
 
 # use orsjon to make JSON 5-10x faster
 pio.json.config.default_engine = 'orjson'

@@ -2,7 +2,7 @@ if __name__ == '__main__':
     import doctest
 
     from fmri_st_graph import graph, factory, io, simulation
-    from app.core import utils
+    from fmri_st_graph.app.core import utils
 
     total_failed = 0
 
