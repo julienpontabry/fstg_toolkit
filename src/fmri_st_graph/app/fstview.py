@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import dash_bootstrap_components as dbc
 import diskcache
 import plotly.io as pio
@@ -34,6 +36,7 @@ def callback_error(err):
 app = DashProxy(title="fSTView - An fMRI spatio-temporal data viewer", name="fSTView",
                 transforms=[ServersideOutputTransform()],
                 external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
+                assets_folder=str(Path(__file__).parent / 'assets'),
                 background_callback_manager=background_callback_manager,
                 on_error=callback_error)
 
