@@ -37,8 +37,11 @@ def cli():
               show_default=True, help="The name of the column of areas' names in the description file.")
 @click.option('-rcn', '--regions-column-name', type=str, default='Name_Region',
               show_default=True, help="The name of the column of regions' names in the description file.")
+@click.option('-a', '--process-all', is_flag=True, default=False,
+              help="Process all available correlation matrices in the file. This will create a directory.")
 def build(correlation_matrices_path: str, areas_description_path: str, output_graph: str,
-          corr_threshold: float, absolute_thresholding: bool, areas_column_name: str, regions_column_name: str):
+          corr_threshold: float, absolute_thresholding: bool, areas_column_name: str, regions_column_name: str,
+          process_all: bool):
     """Build a spatio-temporal graph from correlation matrices.
 
     The spatio-temporal graph will be saved to OUTPUT, built from the correlation matrices in CORRELATION_MATRICES_PATH and the area descriptions in AREAS_DESCRIPTION_PATH.
@@ -52,15 +55,24 @@ def build(correlation_matrices_path: str, areas_description_path: str, output_gr
     matrices = np.load(correlation_matrices_path)
 
     if isinstance(matrices, np.lib.npyio.NpzFile):
-        click.echo("The following sequences of matrices are available from the file:")
-        click.echo(";\n".join(matrices.keys()) + ".")
-        chosen = click.prompt("Which one to process ('all' to process all)?", default='all')
+        if process_all:
+            chosen = 'all'
+        else:
+            click.echo("The following sequences of matrices are available from the file:")
+            click.echo(";\n".join(matrices.keys()) + ".")
+            chosen = click.prompt("Which one to process ('all' to process all)?", default='all')
 
         if chosen == 'all':
             output_path = Path(output_graph)
-            if not output_path.is_dir():
+            if output_path.exists() and not output_path.is_dir():
                 click.echo("Output path must be a directory!", err=True)
-                return
+                exit(1)
+            else:
+                try:
+                    output_path.mkdir()
+                except FileExistsError:
+                    click.echo(f"Output path {output_path} already exists!", err=True)
+                    exit(1)
             matrices = [(matrices[k], output_path / f"{k}.zip") for k in matrices.keys()]
         else:
             matrices = [(matrices[chosen], output_graph)]
