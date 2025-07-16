@@ -1,4 +1,5 @@
 from dash.exceptions import PreventUpdate
+from dash.dependencies import ALL
 import dash_bootstrap_components as dbc
 from dash_extensions.enrich import Input, Output, State, callback, dcc, html
 
@@ -51,12 +52,21 @@ def update_regions(desc):
 Output('subject-selection', 'options'),
     Output('subject-selection', 'value'),
     Input('store-corr', 'data'),
+    Input({'type': 'subject-factor', 'index': ALL}, 'value'),
+    State('subject-selection', 'value'),
 )
-def update_subjects(corr):
-    if corr is None or len(corr) == 0:
+def update_subjects(corr, factor_values, current_selection):
+    if corr is None or len(corr) == 0 or len(factor_values) == 0:
         raise PreventUpdate
 
-    return ['/'.join(ids) for ids in corr.keys()], '/'.join(next(iter(corr.keys())))
+    # filter subjects based on selected factors
+    filtered_corr_keys = filter(lambda k: all(f in factor_values for f in k[:-1]), corr.keys())
+    filtered_corr_ids = list(map(lambda k: k[-1], filtered_corr_keys))
+
+    # do not select a new subject in the filtered list if the old one is also in the filtered list
+    selection = current_selection if current_selection in filtered_corr_ids else next(iter(filtered_corr_ids), None)
+
+    return filtered_corr_ids, selection
 
 
 @callback(
@@ -66,13 +76,18 @@ def update_subjects(corr):
     Input('subject-selection', 'value'),
     Input('store-graphs', 'data'),
     State('regions-selection', 'value'),
+    State({'type': 'subject-factor', 'index': ALL}, 'value'),
     prevent_initial_call=True
 )
-def update_graph(n_clicks, ids, graphs, regions):
+def update_graph(n_clicks, subject, graphs, regions, factor_values):
     if (n_clicks is not None and n_clicks <= 0) or graphs is None:
         raise PreventUpdate
 
-    return build_subject_figure(graphs[tuple(ids.split('/'))], ids, regions), True
+    if subject is None or len(factor_values) == 0:
+        raise PreventUpdate
+
+    ids = tuple(factor_values + [subject])
+    return build_subject_figure(graphs[ids], subject, regions), True
 
 
 @callback(
