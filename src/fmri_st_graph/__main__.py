@@ -81,7 +81,10 @@ def build(correlation_matrices_path: str, areas_description_path: str, output_gr
 
     areas = pd.read_csv(areas_description_path, index_col='Id_Area')
 
-    with click.progressbar(matrices) as bar:
+    with click.progressbar(matrices,
+                           label="Building ST graphs",
+                           item_show_func=lambda a: str(a[1]) if a is not None else None,
+                           ) as bar:
         for mat, output in bar:
             graph = spatio_temporal_graph_from_corr_matrices(
                 mat, areas, corr_thr=corr_threshold, abs_thr=absolute_thresholding, area_col_name=areas_column_name,
