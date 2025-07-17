@@ -128,8 +128,8 @@ clientside_callback(
         const y = point['y'];
         
         const coord = storeHoverGraph[x][y];
-        const xs = [x, ...coord.map(c => c[0])];
-        const ys = [y, ...coord.map(c => c[1])];
+        const xs = [x, ...coord[0]];
+        const ys = [y, ...coord[1]];
         
         const n = figure.data.length;
         const trace = figure.data[n-1];

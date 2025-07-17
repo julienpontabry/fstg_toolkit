@@ -53,9 +53,8 @@ def generate_subject_display_props(graph, regions: list[str]) -> dict[str, Any]:
         if x not in spat_conn:
             spat_conn[x] = {}
         # NOTE use double key x/y and list to get it JSON serializable
-        spat_conn[x][y] = [list(all_coord[sn])
-                           for sn in graph.adj[n]
-                           if graph.adj[n][sn]["type"] == 'spatial']
+        con_coord = [list(all_coord[sn]) for sn in graph.adj[n] if graph.adj[n][sn]["type"] == 'spatial']
+        spat_conn[x][y] = list(zip(*con_coord))  # prepare two elements for x and y coordinates
 
     return {
         'nodes_x': nodes_x,
