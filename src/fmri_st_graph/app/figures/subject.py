@@ -7,7 +7,7 @@ from fmri_st_graph.graph import RC5
 from fmri_st_graph.visualization import __CoordinatesGenerator, _trans_color
 
 
-def generate_subject_display_props(graph, name: str, regions: list[str]) -> dict[str, Any]:
+def generate_subject_display_props(graph, regions: list[str]) -> dict[str, Any]:
     start_graph = graph.conditional_subgraph(t=0)
 
     # define nodes' properties
@@ -49,9 +49,7 @@ def generate_subject_display_props(graph, name: str, regions: list[str]) -> dict
             'levels': levels, 'height': levels[-1] - 2, 'regions': regions}
 
 
-def build_subject_figure(graph, name: str, regions: list[str]) -> go.Figure:
-    props = generate_subject_display_props(graph, name, regions)
-
+def build_subject_figure(props: dict[str, Any]) -> go.Figure:
     # TODO find a way to reduce the number of elements displayed in the figure
     nodes_trace = go.Scatter(
         x=props['nodes_x'], y=props['nodes_y'],

@@ -3,7 +3,12 @@ from dash.dependencies import ALL
 import dash_bootstrap_components as dbc
 from dash_extensions.enrich import Input, Output, State, callback, dcc, html
 
-from fmri_st_graph.app.figures.subject import build_subject_figure
+from plotly import graph_objects as go
+
+from fmri_st_graph.app.figures.subject import (
+    build_subject_figure,
+    generate_subject_display_props,
+)
 from fmri_st_graph.app.views.common import update_factor_controls, plotly_config
 
 
@@ -87,7 +92,9 @@ def update_graph(n_clicks, subject, graphs, regions, factor_values):
         raise PreventUpdate
 
     ids = tuple(factor_values + [subject])
-    return build_subject_figure(graphs[ids], subject, regions), True
+    figure_props = generate_subject_display_props(graphs[ids], regions)
+
+    return build_subject_figure(figure_props), True
 
 
 @callback(
