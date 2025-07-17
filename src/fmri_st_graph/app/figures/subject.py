@@ -18,6 +18,7 @@ def generate_subject_display_props(graph, regions: list[str]) -> dict[str, Any]:
     nodes_color = []
     nodes_sizes = []
     levels = [0]
+    all_coord = {}
 
     for region in regions:
         nodes = [n for n, d in start_graph.nodes.items() if d['region'] == region]
@@ -32,6 +33,9 @@ def generate_subject_display_props(graph, regions: list[str]) -> dict[str, Any]:
         nodes_x += x
         nodes_y += y
 
+        all_coord.update(coord)
+
+
     # define edges' properties
     edges_x = []
     edges_y = []
@@ -43,10 +47,29 @@ def generate_subject_display_props(graph, regions: list[str]) -> dict[str, Any]:
                 edges_y.append((nodes_coord[n][1], nodes_coord[m][1]))
                 edges_colors.append(_trans_color(d['transition']))
 
-    return {'nodes_x': nodes_x, 'nodes_y': nodes_y,
-            'nodes_color': nodes_color, 'nodes_sizes': nodes_sizes,
-            'edges_x': edges_x, 'edges_y': edges_y, 'edges_colors': edges_colors,
-            'levels': levels, 'height': levels[-1] - 2, 'regions': regions}
+    # define spatial connections
+    spat_conn = {}
+    for n, (x, y) in all_coord.items():
+        if x not in spat_conn:
+            spat_conn[x] = {}
+        # NOTE use double key x/y and list to get it JSON serializable
+        spat_conn[x][y] = [list(all_coord[sn])
+                           for sn in graph.adj[n]
+                           if graph.adj[n][sn]["type"] == 'spatial']
+
+    return {
+        'nodes_x': nodes_x,
+        'nodes_y': nodes_y,
+        'nodes_color': nodes_color,
+        'nodes_sizes': nodes_sizes,
+        'edges_x': edges_x,
+        'edges_y': edges_y,
+        'edges_colors': edges_colors,
+        'levels': levels,
+        'height': levels[-1] - 2,
+        'regions': regions,
+        'spatial_connections': spat_conn,
+    }
 
 
 def build_subject_figure(props: dict[str, Any]) -> go.Figure:

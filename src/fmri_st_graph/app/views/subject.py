@@ -26,7 +26,9 @@ layout = [
             children=[dcc.Graph(figure={}, id='st-graph', config=plotly_config)],
             type='circle', overlay_style={"visibility": "visible", "filter": "blur(2px)"}
         )
-    )
+    ),
+
+    dcc.Store(id='store-spatial-connections', storage_type='memory'),
 ]
 
 
@@ -75,6 +77,7 @@ def update_subjects(corr, factor_values, current_selection):
 
 @callback(
     Output('st-graph', 'figure'),
+    Output('store-spatial-connections', 'data'),
     Output('apply-button', 'disabled'),
     Input('apply-button', 'n_clicks'),
     Input('subject-selection', 'value'),
@@ -93,7 +96,7 @@ def update_graph(n_clicks, subject, graphs, regions, factor_values):
     ids = tuple(factor_values + [subject])
     figure_props = generate_subject_display_props(graphs[ids], regions)
 
-    return build_subject_figure(figure_props), True
+    return build_subject_figure(figure_props), figure_props['spatial_connections'], True
 
 
 @callback(
@@ -108,12 +111,11 @@ def enable_apply_button_at_selection_changed(regions):
 # TODO put the clientside callback into a javascript file in the assets folder
 clientside_callback(
     """
-    function(hoverData) {
-        if (!hoverData || !hoverData.points || hoverData.points.length === 0) {
+    function(hoverData, storeHoverGraph) {
+        if (!hoverData || !hoverData.points || hoverData.points.length === 0 || !storeHoverGraph) {
             return window.dash_clientside.no_update;
         }
         
-        const point = hoverData.points[0];
         const graphDiv = document.getElementById('st-graph');
         const figure = graphDiv.querySelector('.js-plotly-plot');
         
@@ -121,18 +123,29 @@ clientside_callback(
             return window.dash_clientside.no_update;
         }
         
+        const point = hoverData.points[0];
+        const x = point['x'];
+        const y = point['y'];
+        
+        const coord = storeHoverGraph[x][y];
+        const xs = [x, ...coord.map(c => c[0])];
+        const ys = [y, ...coord.map(c => c[1])];
+        
         const n = figure.data.length;
         const trace = figure.data[n-1];
         
         if (!trace.name || trace.name !== 'hover-spatial-connections') {
+            const colors = Array(coord.length + 1).fill('green');
+            colors[0] = 'red'; // Highlight the hovered point
+        
             Plotly.addTraces(figure, [{
-                x: [point['x']], 
-                y: [point['y']],
+                x: [xs], 
+                y: [ys],
                 type: 'scatter',
                 name: 'hover-spatial-connections',
                 marker: {
                     size: 12,
-                    color: 'red',
+                    color: colors,
                     line: {'width': 0},
                     symbol: 'square',
                     opacity: 0.5
@@ -140,8 +153,8 @@ clientside_callback(
             }]);        
         } else {
             Plotly.restyle(figure, {
-                    x: [[point['x']]],
-                    y: [[point['y']]]
+                    x: [xs],
+                    y: [ys]
                 }, n-1);        
         }
         
@@ -150,5 +163,6 @@ clientside_callback(
     """,
     Output('st-graph', 'style'), # NOTE this is a workaround to ensure the clientside callback is registered
     Input('st-graph', 'hoverData'),
+    State('store-spatial-connections', 'data'),
     prevent_initial_call=True
 )
