@@ -2,8 +2,7 @@ from dash.exceptions import PreventUpdate
 from dash.dependencies import ALL
 import dash_bootstrap_components as dbc
 from dash_extensions.enrich import Input, Output, State, callback, dcc, html
-
-from plotly import graph_objects as go
+from dash import clientside_callback
 
 from fmri_st_graph.app.figures.subject import (
     build_subject_figure,
@@ -104,3 +103,52 @@ def update_graph(n_clicks, subject, graphs, regions, factor_values):
 )
 def enable_apply_button_at_selection_changed(regions):
     return regions is None or len(regions) == 0
+
+
+# TODO put the clientside callback into a javascript file in the assets folder
+clientside_callback(
+    """
+    function(hoverData) {
+        if (!hoverData || !hoverData.points || hoverData.points.length === 0) {
+            return window.dash_clientside.no_update;
+        }
+        
+        const point = hoverData.points[0];
+        const graphDiv = document.getElementById('st-graph');
+        const figure = graphDiv.querySelector('.js-plotly-plot');
+        
+        if (!figure || !figure.data) {
+            return window.dash_clientside.no_update;
+        }
+        
+        const n = figure.data.length;
+        const trace = figure.data[n-1];
+        
+        if (!trace.name || trace.name !== 'hover-spatial-connections') {
+            Plotly.addTraces(figure, [{
+                x: [point['x']], 
+                y: [point['y']],
+                type: 'scatter',
+                name: 'hover-spatial-connections',
+                marker: {
+                    size: 12,
+                    color: 'red',
+                    line: {'width': 0},
+                    symbol: 'square',
+                    opacity: 0.5
+                },
+            }]);        
+        } else {
+            Plotly.restyle(figure, {
+                    x: [[point['x']]],
+                    y: [[point['y']]]
+                }, n-1);        
+        }
+        
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('st-graph', 'style'), # NOTE this is a workaround to ensure the clientside callback is registered
+    Input('st-graph', 'hoverData'),
+    prevent_initial_call=True
+)
