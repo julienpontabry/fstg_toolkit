@@ -1,3 +1,4 @@
+import traceback as tb
 from pathlib import Path
 
 import dash_bootstrap_components as dbc
@@ -31,6 +32,9 @@ def callback_error(err):
         is_open=True, header="Error", icon="danger", duration=None,
         children=str(err)))
     print(err)
+
+    if err_tb := getattr(err, '__traceback__', None):
+        tb.print_tb(err_tb)
 
 # app's definition
 app = DashProxy(title="fSTView - An fMRI spatio-temporal data viewer", name="fSTView",
