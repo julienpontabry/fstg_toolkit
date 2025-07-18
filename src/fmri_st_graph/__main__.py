@@ -52,7 +52,13 @@ def build(correlation_matrices_path: str, areas_description_path: str, output_gr
 
     If CORRELATION_MATRICES_PATH contains multiple sets of matrices, a list of available names will be displayed, and you will be prompted to choose one.
     """
-    matrices = np.load(correlation_matrices_path)
+
+    # read input matrices
+    try:
+        matrices = np.load(correlation_matrices_path)
+    except Exception as ex:
+        click.echo(f"Error while reading matrices: {ex}", err=True)
+        exit(1)
 
     if isinstance(matrices, np.lib.npyio.NpzFile):
         if process_all:
@@ -70,7 +76,12 @@ def build(correlation_matrices_path: str, areas_description_path: str, output_gr
         # TODO check that there is a single set of matrices in the file (shape should be (t, n, n))
         matrices = [(matrices, output_graph)]
 
-    areas = pd.read_csv(areas_description_path, index_col='Id_Area')
+    # read input areas description
+    try:
+        areas = pd.read_csv(areas_description_path, index_col='Id_Area')
+    except Exception as ex:
+        click.echo(f"Error while reading areas description: {ex}", err=True)
+        exit(1)
 
     # build the graphs
     graphs = {}
