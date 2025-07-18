@@ -2,7 +2,7 @@ from dash.exceptions import PreventUpdate
 from dash.dependencies import ALL
 import dash_bootstrap_components as dbc
 from dash_extensions.enrich import Input, Output, State, callback, dcc, html
-from dash import clientside_callback
+from dash import clientside_callback, ClientsideFunction
 
 from fmri_st_graph.app.figures.subject import (
     build_subject_figure,
@@ -110,57 +110,10 @@ def enable_apply_button_at_selection_changed(regions):
 
 # TODO put the clientside callback into a javascript file in the assets folder
 clientside_callback(
-    """
-    function(hoverData, storeHoverGraph) {
-        if (!hoverData || !hoverData.points || hoverData.points.length === 0 || !storeHoverGraph) {
-            return window.dash_clientside.no_update;
-        }
-        
-        const graphDiv = document.getElementById('st-graph');
-        const figure = graphDiv.querySelector('.js-plotly-plot');
-        
-        if (!figure || !figure.data) {
-            return window.dash_clientside.no_update;
-        }
-        
-        const point = hoverData.points[0];
-        const x = point['x'];
-        const y = point['y'];
-        
-        const coord = storeHoverGraph[x][y];
-        const xs = [x, ...coord[0]];
-        const ys = [y, ...coord[1]];
-        
-        const n = figure.data.length;
-        const trace = figure.data[n-1];
-        
-        if (!trace.name || trace.name !== 'hover-spatial-connections') {
-            const colors = Array(coord.length + 1).fill('green');
-            colors[0] = 'red'; // Highlight the hovered point
-        
-            Plotly.addTraces(figure, [{
-                x: [xs], 
-                y: [ys],
-                type: 'scatter',
-                name: 'hover-spatial-connections',
-                marker: {
-                    size: 12,
-                    color: colors,
-                    line: {'width': 0},
-                    symbol: 'square',
-                    opacity: 0.5
-                },
-            }]);        
-        } else {
-            Plotly.restyle(figure, {
-                    x: [xs],
-                    y: [ys]
-                }, n-1);        
-        }
-        
-        return window.dash_clientside.no_update;
-    }
-    """,
+    ClientsideFunction(
+        namespace='clientside',
+        function_name='subject_node_hover',
+    ),
     Output('st-graph', 'style'), # NOTE this is a workaround to ensure the clientside callback is registered
     Input('st-graph', 'hoverData'),
     State('store-spatial-connections', 'data'),
