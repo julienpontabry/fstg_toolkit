@@ -17,19 +17,20 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
             const y = point['y'];
             
             const coord = storeHoverGraph[x][y];
+            // TODO check that coord is has two components
             const xs = [x, ...coord[0]];
             const ys = [y, ...coord[1]];
+            
+            const colors = Array(xs.length + 1).fill('green');
+            colors[0] = 'red'; // Highlight the hovered point
             
             const n = figure.data.length;
             const trace = figure.data[n-1];
             
             if (!trace.name || trace.name !== 'hover-spatial-connections') {
-                const colors = Array(coord.length + 1).fill('green');
-                colors[0] = 'red'; // Highlight the hovered point
-            
                 Plotly.addTraces(figure, [{
-                    x: [xs], 
-                    y: [ys],
+                    x: xs, 
+                    y: ys,
                     type: 'scatter',
                     name: 'hover-spatial-connections',
                     marker: {
@@ -43,7 +44,8 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
             } else {
                 Plotly.restyle(figure, {
                         x: [xs],
-                        y: [ys]
+                        y: [ys],
+                        'marker.color': [colors],
                     }, n-1);        
             }
             
