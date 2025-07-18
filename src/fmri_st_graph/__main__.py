@@ -37,11 +37,11 @@ def cli():
               show_default=True, help="The name of the column of areas' names in the description file.")
 @click.option('-rcn', '--regions-column-name', type=str, default='Name_Region',
               show_default=True, help="The name of the column of regions' names in the description file.")
-@click.option('-a', '--process-all', is_flag=True, default=False,
-              help="Process all available correlation matrices in the file. This will create a directory.")
+@click.option('-s', '--select', is_flag=True, default=False,
+              help="Select the graphs to build and save (only if there are multiple sets of correlation matrices).")
 def build(correlation_matrices_path: Path, areas_description_path: Path, output: Path,
           corr_threshold: float, absolute_thresholding: bool, areas_column_name: str, regions_column_name: str,
-          process_all: bool):
+          select: bool):
     """Build a spatio-temporal graph from correlation matrices.
 
     The spatio-temporal graph will be saved to OUTPUT, built from the correlation matrices in CORRELATION_MATRICES_PATH and the area descriptions in AREAS_DESCRIPTION_PATH.
@@ -60,18 +60,17 @@ def build(correlation_matrices_path: Path, areas_description_path: Path, output:
         click.echo(f"Error while reading matrices: {ex}", err=True)
         exit(1)
 
+    # select the matrices to process
     if isinstance(matrices, np.lib.npyio.NpzFile):
-        if process_all:
-            chosen = 'all'
-        else:
+        if select:
             click.echo("The following sequences of matrices are available from the file:")
             click.echo(";\n".join(matrices.keys()) + ".")
-            chosen = click.prompt("Which one to process ('all' to process all)?", default='all')
-
-        if chosen == 'all':
-            matrices = [(matrices[name], name) for name in matrices.keys()]
+            chosen = click.prompt("Which one to process?", default=next(iter(matrices.keys())))
+            selected = [chosen]
         else:
-            matrices = [(matrices[chosen], output)]
+            selected = matrices.keys()
+
+        matrices = [(matrices[name], name) for name in selected]
     else:
         # TODO check that there is a single set of matrices in the file (shape should be (t, n, n))
         matrices = [(matrices, output)]
