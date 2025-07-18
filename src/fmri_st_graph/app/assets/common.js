@@ -33,6 +33,7 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
                     y: ys,
                     type: 'scatter',
                     name: 'hover-spatial-connections',
+                    hoverinfo: 'skip',
                     marker: {
                         size: 12,
                         color: colors,
