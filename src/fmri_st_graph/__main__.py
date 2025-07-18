@@ -24,10 +24,10 @@ def cli():
 ## building ###################################################################
 
 @cli.command()
-@click.argument('correlation_matrices_path', type=click.Path(exists=True))
-@click.argument('areas_description_path', type=click.Path(exists=True))
-@click.option('-o', '--output_graph', type=click.Path(writable=True),
-              default="output", show_default="a graph archive named 'output.zip' in the current directory",
+@click.argument('correlation_matrices_path', type=click.Path(exists=True, path_type=Path))
+@click.argument('areas_description_path', type=click.Path(exists=True, path_type=Path))
+@click.option('-o', '--output', type=click.Path(writable=True, path_type=Path),
+              default="output.zip", show_default="a graph archive named 'output.zip' in the current directory",
               help="Path where to write the built graph. If there is no '.zip' extension, it will be added.")
 @click.option('-t', '--corr-threshold', type=click.FloatRange(min=0, max=1), default=0.4,
               show_default=True, help="The threshold of the correlations maps.")
@@ -39,7 +39,7 @@ def cli():
               show_default=True, help="The name of the column of regions' names in the description file.")
 @click.option('-a', '--process-all', is_flag=True, default=False,
               help="Process all available correlation matrices in the file. This will create a directory.")
-def build(correlation_matrices_path: str, areas_description_path: str, output_graph: str,
+def build(correlation_matrices_path: Path, areas_description_path: Path, output: Path,
           corr_threshold: float, absolute_thresholding: bool, areas_column_name: str, regions_column_name: str,
           process_all: bool):
     """Build a spatio-temporal graph from correlation matrices.
@@ -71,10 +71,10 @@ def build(correlation_matrices_path: str, areas_description_path: str, output_gr
         if chosen == 'all':
             matrices = [(matrices[name], name) for name in matrices.keys()]
         else:
-            matrices = [(matrices[chosen], output_graph)]
+            matrices = [(matrices[chosen], output)]
     else:
         # TODO check that there is a single set of matrices in the file (shape should be (t, n, n))
-        matrices = [(matrices, output_graph)]
+        matrices = [(matrices, output)]
 
     # read input areas description
     try:
@@ -99,10 +99,10 @@ def build(correlation_matrices_path: str, areas_description_path: str, output_gr
     # save the graphs into a single zip file
     try:
         with click.progressbar(length=1, label="Saving ST graphs", show_eta=False, show_percent=False) as bar:
-            save_spatio_temporal_graphs(graphs, output_graph)
+            save_spatio_temporal_graphs(graphs, output)
             bar.update(1)
     except OSError as ex:
-        click.echo(f"Error while saving to {output_graph}: {ex}", err=True)
+        click.echo(f"Error while saving to {output}: {ex}", err=True)
         exit(1)
 
 
