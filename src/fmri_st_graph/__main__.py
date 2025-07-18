@@ -83,7 +83,7 @@ def build(correlation_matrices_path: Path, areas_description_path: Path, output:
 
     # build the graphs
     graphs = {}
-    with click.progressbar(matrices, label="Building ST graphs", show_pos=True,
+    with click.progressbar(matrices, label="Building ST graphs...", show_pos=True,
                            item_show_func=lambda a: str(a[1]) if a is not None else None) as bar:
         for mat, name in bar:
             try:
@@ -96,9 +96,8 @@ def build(correlation_matrices_path: Path, areas_description_path: Path, output:
 
     # save the graphs into a single zip file
     try:
-        with click.progressbar(length=1, label="Saving ST graphs", show_eta=False, show_percent=False) as bar:
-            save_spatio_temporal_graphs(graphs, output)
-            bar.update(1)
+        click.echo("Saving ST graphs...")
+        save_spatio_temporal_graphs(graphs, output)
     except OSError as ex:
         click.echo(f"Error while saving to {output}: {ex}", err=True)
         exit(1)
