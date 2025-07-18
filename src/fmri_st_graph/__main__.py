@@ -72,8 +72,7 @@ def build(correlation_matrices_path: Path, areas_description_path: Path, output:
 
         matrices = [(matrices[name], name) for name in selected]
     else:
-        # TODO check that there is a single set of matrices in the file (shape should be (t, n, n))
-        matrices = [(matrices, output)]
+        matrices = [(matrices, correlation_matrices_path.name)]
 
     # read input areas description
     try:
