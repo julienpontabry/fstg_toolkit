@@ -117,7 +117,7 @@ def save_spatio_temporal_graph(graph: SpatioTemporalGraph, filepath: Path | str)
 
     Example
     -------
-        >>> G = nx.DiGraph()
+    >>> G = nx.DiGraph()
     >>> G.add_nodes_from({
     ...     1: {'t': 0, 'areas': {1}, 'region': 'R1', 'internal_strength': 1},
     ...     2: {'t': 0, 'areas': {2}, 'region': 'R1', 'internal_strength': 1},
