@@ -25,6 +25,19 @@ def cli():
 ## building ###################################################################
 
 def __read_load_np(path: Path) -> list[tuple[np.ndarray, str]]:
+    """
+    Reads a numpy file (.npz or .npy) and returns a list of tuples containing the matrices and their names.
+
+    Parameters
+    ----------
+    path : Path
+        Path to the numpy file to load.
+
+    Returns
+    -------
+    list[tuple[np.ndarray, str]]
+        List of tuples (matrix, name) extracted from the file.
+    """
     red = np.load(path)
 
     if isinstance(red, np.lib.npyio.NpzFile):
@@ -48,7 +61,8 @@ def __read_load_np(path: Path) -> list[tuple[np.ndarray, str]]:
 @click.option('-rcn', '--regions-column-name', type=str, default='Name_Region',
               show_default=True, help="The name of the column of regions' names in the description file.")
 @click.option('-s', '--select', is_flag=True, default=False,
-              help="Select the graphs to build and save (only if there are multiple sets of correlation matrices).")
+              help="Select the graphs to build and save using an input prompt "
+                   "(only if there are multiple sets of correlation matrices).")
 def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], output: Path,
           corr_threshold: float, absolute_thresholding: bool, areas_column_name: str, regions_column_name: str,
           select: bool):
@@ -59,8 +73,6 @@ def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], 
     Accepted file formats for correlation matrices are numpy pickle files with extensions `.npz` or `.npy`.
 
     The CSV file for the description of areas and regions should have the columns: `Id_Area`, `Name_Area`, and `Name_Region`.
-
-    If CORRELATION_MATRICES_PATH contains multiple sets of matrices, a list of available names will be displayed, and you will be prompted to choose one.
     """
 
     # read input matrices
