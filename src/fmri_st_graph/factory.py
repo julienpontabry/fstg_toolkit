@@ -339,7 +339,7 @@ def spatio_temporal_graph_from_networks_graphs(networks_graphs: tuple[nx.Graph, 
     return st_graph
 
 
-def spatio_temporal_graph_from_corr_matrices(corr_matrices: Iterable[np.array], areas_desc: pd.DataFrame,
+def spatio_temporal_graph_from_corr_matrices(corr_matrices: Iterable[np.ndarray], areas_desc: pd.DataFrame,
                                              region_col_name: str = 'Name_Region',
                                              **corr_mat_kwd) -> SpatioTemporalGraph:
     """Build a spatio-temporal graph a set of temporal correlation matrices and areas description.

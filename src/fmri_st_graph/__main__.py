@@ -10,7 +10,7 @@ from screeninfo import get_monitors
 
 from fmri_st_graph import generate_pattern, SpatioTemporalGraphSimulator, CorrelationMatrixSequenceSimulator
 from .factory import spatio_temporal_graph_from_corr_matrices
-from .io import load_spatio_temporal_graph, save_spatio_temporal_graph
+from .io import load_spatio_temporal_graph, save_spatio_temporal_graph, save_spatio_temporal_graphs
 from .visualization import spatial_plot, temporal_plot, multipartite_plot, DynamicPlot
 from .app.fstview import app
 
@@ -63,35 +63,36 @@ def build(correlation_matrices_path: str, areas_description_path: str, output_gr
             chosen = click.prompt("Which one to process ('all' to process all)?", default='all')
 
         if chosen == 'all':
-            output_path = Path(output_graph)
-            if output_path.exists() and not output_path.is_dir():
-                click.echo("Output path must be a directory!", err=True)
-                exit(1)
-            else:
-                try:
-                    output_path.mkdir()
-                except FileExistsError:
-                    click.echo(f"Output path {output_path} already exists!", err=True)
-                    exit(1)
-            matrices = [(matrices[k], output_path / f"{k}.zip") for k in matrices.keys()]
+            matrices = [(matrices[name], name) for name in matrices.keys()]
         else:
             matrices = [(matrices[chosen], output_graph)]
     else:
+        # TODO check that there is a single set of matrices in the file (shape should be (t, n, n))
         matrices = [(matrices, output_graph)]
 
     areas = pd.read_csv(areas_description_path, index_col='Id_Area')
 
-    with click.progressbar(matrices,
-                           label="Building ST graphs",
-                           item_show_func=lambda a: str(a[1]) if a is not None else None,
-                           ) as bar:
-        for mat, output in bar:
-            graph = spatio_temporal_graph_from_corr_matrices(
-                mat, areas, corr_thr=corr_threshold, abs_thr=absolute_thresholding, area_col_name=areas_column_name,
-                region_col_name=regions_column_name)
-            if isinstance(output, Path):
-                output.parent.mkdir(exist_ok=True)  # ensure path exists
-            save_spatio_temporal_graph(graph, output)
+    # build the graphs
+    graphs = {}
+    with click.progressbar(matrices, label="Building ST graphs", show_pos=True,
+                           item_show_func=lambda a: str(a[1]) if a is not None else None) as bar:
+        for mat, name in bar:
+            try:
+                graphs[name] = spatio_temporal_graph_from_corr_matrices(
+                    mat, areas, corr_thr=corr_threshold, abs_thr=absolute_thresholding,
+                    area_col_name=areas_column_name, region_col_name=regions_column_name)
+            except Exception as ex:
+                click.echo(f"Error while processing {name}: {ex}", err=True)
+                continue
+
+    # save the graphs into a single zip file
+    try:
+        with click.progressbar(length=1, label="Saving ST graphs", show_eta=False, show_percent=False) as bar:
+            save_spatio_temporal_graphs(graphs, output_graph)
+            bar.update(1)
+    except OSError as ex:
+        click.echo(f"Error while saving to {output_graph}: {ex}", err=True)
+        exit(1)
 
 
 ## plotting ###################################################################

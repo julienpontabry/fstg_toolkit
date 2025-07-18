@@ -150,3 +150,56 @@ def save_spatio_temporal_graph(graph: SpatioTemporalGraph, filepath: Path | str)
         # write the areas description into csv file
         with zfp.open('areas.csv', 'w') as fp:
             graph.areas.to_csv(fp)
+
+
+def save_spatio_temporal_graphs(graphs: dict[str, SpatioTemporalGraph], filepath: Path | str) -> None:
+    """Save multiple spatio-temporal graphs to a zip file.
+
+    Note that no check is done to ensure the graphs share the same areas description.
+
+    Parameters
+    ----------
+    graphs: dict[str, SpatioTemporalGraph]
+        The spatio-temporal graphs to save.
+    filepath: Path | str
+        The path to the zip file.
+
+    Example
+    -------
+    >>> G = nx.DiGraph()
+    >>> G.add_nodes_from({
+    ...     1: {'t': 0, 'areas': {1}, 'region': 'R1', 'internal_strength': 1},
+    ...     2: {'t': 0, 'areas': {2}, 'region': 'R1', 'internal_strength': 1},
+    ...     3: {'t': 0, 'areas': {3}, 'region': 'R2', 'internal_strength': 1},
+    ...     4: {'t': 1, 'areas': {1, 2}, 'region': 'R1', 'internal_strength': 0.52873788},
+    ...     5: {'t': 1, 'areas': {3}, 'region': 'R2', 'internal_strength': 1}})
+    >>> G.add_edges_from([
+    ...     (1, 3, {'t': 0, 'type': 'spatial', 'correlation': -0.41853318}),
+    ...     (1, 4, {'type': 'temporal', 'transition': RC5.PP}),
+    ...     (2, 3, {'t': 0, 'type': 'spatial', 'correlation': 0.75087697}),
+    ...     (2, 4, {'type': 'temporal', 'transition': RC5.PP}),
+    ...     (3, 1, {'t': 0, 'type': 'spatial', 'correlation': -0.41853318}),
+    ...     (3, 2, {'t': 0, 'type': 'spatial', 'correlation': 0.75087697}),
+    ...     (3, 5, {'type': 'temporal', 'transition': RC5.EQ}),
+    ...     (4, 5, {'t': 1, 'type': 'spatial', 'correlation': 0.75087697}),
+    ...     (5, 4, {'t': 1, 'type': 'spatial', 'correlation': 0.75087697})])
+    >>> areas_desc = pd.DataFrame({
+    ...     'Name_Area': ['Area 1', 'Area 2', 'Area 3'],
+    ...     'Name_Region': ['R1', 'R2', 'R3']}, index=[1, 2, 3])
+    >>> graph_path = Path('/tmp/tmp.zip')
+    >>> graph_struct1 = SpatioTemporalGraph(G, areas_desc)
+    >>> graph_struct2 = SpatioTemporalGraph(G, areas_desc)
+    >>> save_spatio_temporal_graphs({'g1': graph_struct1, 'g2': graph_struct2}, graph_path)
+    """
+    with ZipFile(str(filepath), 'w') as zfp:
+        # write the graphs into json file
+        for name, graph in graphs.items():
+            graph_dict = nx.json_graph.node_link_data(graph, edges='edges')
+            graph_json = json.dumps(graph_dict, indent=4, cls=__SpatioTemporalGraphEncoder)
+            zfp.writestr(f'{name}.json', data=graph_json)
+
+        # write the areas description into csv file
+        if len(graphs) > 0:
+            areas = next(iter(graphs.values())).areas
+            with zfp.open('areas.csv', 'w') as fp:
+                areas.to_csv(fp)
