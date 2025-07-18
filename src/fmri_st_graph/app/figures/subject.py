@@ -106,7 +106,7 @@ def build_subject_figure(props: dict[str, Any]) -> go.Figure:
                        tickvals=props['levels'][:-1], ticktext=props['regions'],
                        minor=dict(tickvals=np.subtract(props['levels'][1:-1], 1),
                                   showgrid=True, gridwidth=2, griddash='dash',
-                                  gridcolor='lightgray')
-                       )
+                                  gridcolor='lightgray'),
+                       range=[-1.5, props['height']+1.5])
         )
     )
