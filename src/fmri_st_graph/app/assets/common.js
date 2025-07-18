@@ -41,6 +41,10 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
                         symbol: 'square',
                         opacity: 0.5
                     },
+                    line: {
+                        width: 1.0,
+                        color: 'orange'
+                    }
                 }]);        
             } else {
                 Plotly.restyle(figure, {
