@@ -1,6 +1,7 @@
 import re
 from pathlib import Path
 from typing import Optional
+from itertools import chain
 
 import click
 import numpy as np
@@ -23,9 +24,18 @@ def cli():
 
 ## building ###################################################################
 
+def __read_load_np(path: Path) -> list[tuple[np.ndarray, str]]:
+    red = np.load(path)
+
+    if isinstance(red, np.lib.npyio.NpzFile):
+        return [(matrices, name) for name, matrices in red.items()]
+    else:
+        return [(red, path.name)]
+
+
 @cli.command()
-@click.argument('correlation_matrices_path', type=click.Path(exists=True, path_type=Path))
 @click.argument('areas_description_path', type=click.Path(exists=True, path_type=Path))
+@click.argument('correlation_matrices_path', type=click.Path(exists=True, path_type=Path), nargs=-1)
 @click.option('-o', '--output', type=click.Path(writable=True, path_type=Path),
               default="output.zip", show_default="a graph archive named 'output.zip' in the current directory",
               help="Path where to write the built graph. If there is no '.zip' extension, it will be added.")
@@ -39,7 +49,7 @@ def cli():
               show_default=True, help="The name of the column of regions' names in the description file.")
 @click.option('-s', '--select', is_flag=True, default=False,
               help="Select the graphs to build and save (only if there are multiple sets of correlation matrices).")
-def build(correlation_matrices_path: Path, areas_description_path: Path, output: Path,
+def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], output: Path,
           corr_threshold: float, absolute_thresholding: bool, areas_column_name: str, regions_column_name: str,
           select: bool):
     """Build a spatio-temporal graph from correlation matrices.
@@ -55,24 +65,26 @@ def build(correlation_matrices_path: Path, areas_description_path: Path, output:
 
     # read input matrices
     try:
-        matrices = np.load(correlation_matrices_path)
+        click.echo(f"Reading {len(correlation_matrices_path)} files...")
+        for cm in correlation_matrices_path:
+            click.echo(f"\t- {cm.name}")
+        matrices = list(chain.from_iterable(__read_load_np(cm) for cm in correlation_matrices_path))
     except Exception as ex:
         click.echo(f"Error while reading matrices: {ex}", err=True)
         exit(1)
 
     # select the matrices to process
-    if isinstance(matrices, np.lib.npyio.NpzFile):
-        if select:
-            click.echo("The following sequences of matrices are available from the file:")
-            click.echo(";\n".join(matrices.keys()) + ".")
-            chosen = click.prompt("Which one to process?", default=next(iter(matrices.keys())))
-            selected = [chosen]
-        else:
-            selected = matrices.keys()
+    keys = list(map(lambda x: x[1], matrices))
 
-        matrices = [(matrices[name], name) for name in selected]
+    if select:
+        click.echo("The following sequences of matrices are available from the file:")
+        click.echo(";\n".join(keys) + ".")
+        chosen = click.prompt("Which one to process?", default=keys[0])
+        selected = [chosen]
     else:
-        matrices = [(matrices, correlation_matrices_path.name)]
+        selected = keys
+
+    matrices = list(filter(lambda x: x[1] in selected, matrices))
 
     # read input areas description
     try:
