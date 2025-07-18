@@ -412,10 +412,15 @@ def correlations(ctx: click.core.Context, graph_path: Path, threshold: float):
 @cli.command()
 @click.option('--debug', is_flag=True, default=False,
               help="Run the dashboard in debug mode.")
-@click.option('-p-', '--port', type=int, default=8050, show_default=True,
+@click.option('-p', '--port', type=int, default=8050, show_default=True,
               help="Port to run the dashboard on.")
-def show(debug: bool, port: int):
+@click.option('--no-browser', is_flag=True, default=False,
+              help="Start without opening the app in the default browser.")
+def show(debug: bool, port: int, no_browser: bool):
     """Show a dashboard for visualizing spatio-temporal graphs."""
+    if not no_browser:
+        click.launch('http://127.0.0.1:8050')
+
     app.run(debug=debug, port=port)
 
 
