@@ -14,10 +14,13 @@ from dash_extensions.enrich import (
     callback,
     dcc,
     set_props,
+    Serverside
 )
 from dash_breakpoints import WindowBreakpoints
 
 from fmri_st_graph.app.views import model, population, data, subject, matrices
+from .core.datafilesdb import get_data_file_db
+from ..io import load_spatio_temporal_graphs
 
 # use orsjon to make JSON 5-10x faster
 pio.json.config.default_engine = 'orjson'
@@ -46,6 +49,9 @@ app = DashProxy(title="fSTView - An fMRI spatio-temporal data viewer", name="fST
 
 app.layout = dbc.Container(
     children=[
+        # browser address
+        dcc.Location(id='url'),
+
         # app's layout
         dbc.Tabs([
             dbc.Tab(label="Data", id='tab-data', tab_id='tab-data', children=data.layout),
@@ -113,6 +119,23 @@ def set_tab_enabled_after_model(graphs, active_tab):
 )
 def store_current_break_width(breakpoint_name, breakpoint_width):
     return {'name': breakpoint_name, 'width': breakpoint_width}
+
+
+@callback(
+    Output('store-desc', 'data', allow_duplicate=True),
+    Input('url', 'pathname'),
+    prevent_initial_call=True
+)
+def data_file_has_changed(pathname):
+    db = get_data_file_db()
+    filepath = db.get(pathname[1:])
+    print("pathname:", pathname)
+    print("file_path:", filepath)
+
+    graphs = load_spatio_temporal_graphs(filepath)
+    print(graphs)
+    print(graphs['list_of_corr_matrices_5months/list_of_corr_matrices_WT_T77'].areas)
+    return Serverside(graphs[next(iter(graphs))].areas)
 
 
 if __name__ == '__main__':
