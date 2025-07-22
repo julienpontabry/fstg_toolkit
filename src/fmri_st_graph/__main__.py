@@ -14,6 +14,7 @@ from .factory import spatio_temporal_graph_from_corr_matrices
 from .io import load_spatio_temporal_graph, save_spatio_temporal_graph, save_spatio_temporal_graphs
 from .visualization import spatial_plot, temporal_plot, multipartite_plot, DynamicPlot
 from .app.fstview import app
+from .app.core.datafilesdb import get_data_file_db, MemoryDataFilesDB
 
 
 @click.group()
@@ -434,16 +435,24 @@ def correlations(ctx: click.core.Context, graph_path: Path, threshold: float):
 ## showing #################################################################
 
 @cli.command()
+@click.argument('graphs-data',
+                type=click.Path(exists=True, dir_okay=False, readable=True, executable=False, path_type=Path))
 @click.option('--debug', is_flag=True, default=False,
               help="Run the dashboard in debug mode.")
 @click.option('-p', '--port', type=int, default=8050, show_default=True,
               help="Port to run the dashboard on.")
 @click.option('--no-browser', is_flag=True, default=False,
               help="Start without opening the app in the default browser.")
-def show(debug: bool, port: int, no_browser: bool):
+def show(graphs_data: Path, debug: bool, port: int, no_browser: bool):
     """Show a dashboard for visualizing spatio-temporal graphs."""
+
+    db = get_data_file_db(requested_type=MemoryDataFilesDB)
+    token = db.add(graphs_data)
+
     if not no_browser:
-        click.launch('http://127.0.0.1:8050')
+        click.launch(f'http://127.0.0.1:8050/{token}')
+    else:
+        click.echo(f"Dashboard for file {graphs_data} is at URL http://127.0.0.1:8050/{token}")
 
     app.run(debug=debug, port=port)
 
