@@ -91,6 +91,10 @@ def load_spatio_temporal_graph(filepath: Path | str) -> SpatioTemporalGraph:
     >>> graph_path = Path('/tmp/tmp.zip')
     >>> save_spatio_temporal_graph(SpatioTemporalGraph(G, areas_desc), graph_path)
     >>> graph_struct = load_spatio_temporal_graph(graph_path)
+
+    Raises
+    ------
+    See {`zipfile`} for exceptions and errors raised.
     """
     with ZipFile(str(filepath), 'r') as zfp:
         # read the graph from json file
@@ -103,6 +107,70 @@ def load_spatio_temporal_graph(filepath: Path | str) -> SpatioTemporalGraph:
             areas = pd.read_csv(fp, index_col='Id_Area')
 
         return SpatioTemporalGraph(graph, areas)
+
+
+def load_spatio_temporal_graphs(filepath: Path | str) -> dict[str, SpatioTemporalGraph]:
+    """Load multiple spatio-temporal graphs from a zip file.
+
+    Parameters
+    ----------
+    filepath: Path | str
+        The path to the zip file.
+
+    Returns
+    -------
+    dict[str, SpatioTemporalGraph]
+        A dictionary of spatio-temporal graphs contained in the zip file, where the keys are
+        the names of the graphs (the filenames without extension).
+
+    Example
+    -------
+    >>> G = nx.DiGraph()
+    >>> G.add_nodes_from({
+    ...     1: {'t': 0, 'areas': {1}, 'region': 'R1', 'internal_strength': 1},
+    ...     2: {'t': 0, 'areas': {2}, 'region': 'R1', 'internal_strength': 1},
+    ...     3: {'t': 0, 'areas': {3}, 'region': 'R2', 'internal_strength': 1},
+    ...     4: {'t': 1, 'areas': {1, 2}, 'region': 'R1', 'internal_strength': 0.52873788},
+    ...     5: {'t': 1, 'areas': {3}, 'region': 'R2', 'internal_strength': 1}})
+    >>> G.add_edges_from([
+    ...     (1, 3, {'t': 0, 'type': 'spatial', 'correlation': -0.41853318}),
+    ...     (1, 4, {'type': 'temporal', 'transition': RC5.PP}),
+    ...     (2, 3, {'t': 0, 'type': 'spatial', 'correlation': 0.75087697}),
+    ...     (2, 4, {'type': 'temporal', 'transition': RC5.PP}),
+    ...     (3, 1, {'t': 0, 'type': 'spatial', 'correlation': -0.41853318}),
+    ...     (3, 2, {'t': 0, 'type': 'spatial', 'correlation': 0.75087697}),
+    ...     (3, 5, {'type': 'temporal', 'transition': RC5.EQ}),
+    ...     (4, 5, {'t': 1, 'type': 'spatial', 'correlation': 0.75087697}),
+    ...     (5, 4, {'t': 1, 'type': 'spatial', 'correlation': 0.75087697})])
+    >>> areas_desc = pd.DataFrame({
+    ...     'Name_Area': ['Area 1', 'Area 2', 'Area 3'],
+    ...     'Name_Region': ['R1', 'R2', 'R3']}, index=[1, 2, 3])
+    >>> graph_path = Path('/tmp/tmp.zip')
+    >>> graph_struct1 = SpatioTemporalGraph(G, areas_desc)
+    >>> graph_struct2 = SpatioTemporalGraph(G, areas_desc)
+    >>> save_spatio_temporal_graphs({'g1': graph_struct1, 'g2': graph_struct2}, graph_path)
+    >>> graphs_dict = load_spatio_temporal_graphs(graph_path)
+
+    Raises
+    ------
+    See {`zipfile`} for exceptions and errors raised.
+    """
+    graphs = {}
+
+    with ZipFile(str(filepath), 'r') as zfp:
+        # read the areas description from csv file
+        with zfp.open('areas.csv', 'r') as fp:
+            areas = pd.read_csv(fp, index_col='Id_Area')
+
+        # read the graphs from the json files
+        for name in zfp.namelist():
+            if name.endswith('.json'):
+                with zfp.open(name, 'r') as fp:
+                    graph_dict = json.load(fp, object_hook=__spatio_temporal_object_hook)
+                    graph = nx.json_graph.node_link_graph(graph_dict, edges='edges')
+                    graphs[name.split('.json')[0]] = SpatioTemporalGraph(graph, areas)
+
+    return graphs
 
 
 def save_spatio_temporal_graph(graph: SpatioTemporalGraph, filepath: Path | str) -> None:
