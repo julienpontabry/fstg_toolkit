@@ -3,7 +3,6 @@ import io
 
 import dash_bootstrap_components as dbc
 import numpy as np
-import pandas as pd
 from dash.dependencies import ALL
 from dash.exceptions import PreventUpdate
 from dash_extensions.enrich import (
@@ -28,14 +27,6 @@ layout = [
     dbc.Row([
         dbc.Col([
             html.H2("Description of regions/areas"),
-            dcc.Loading([
-                dcc.Upload(children=html.Div(["Drag and drop or ",
-                                              html.A("select a description of regions/areas (.csv)",
-                                                     className='upload-link')]),
-                           multiple=False, id='upload-description', accept='.csv',
-                           className='upload', className_active='upload-active'),
-                ],
-                type='circle', overlay_style={"visibility":"visible", "filter": "blur(2px)"}),
             dash_table.DataTable(columns=desc_columns, page_size=12, id='desc-table')
         ]),
         dbc.Col([
@@ -53,25 +44,6 @@ layout = [
         ])
     ]),
 ]
-
-
-@callback(
-Output('store-desc', 'data'),
-    Input('upload-description', 'filename'),
-    Input('upload-description', 'contents'),
-)
-def upload_description(filename, contents):
-    if contents is None:
-        raise PreventUpdate
-
-    if 'csv' not in filename:
-        raise PreventUpdate
-
-    content_type, content_string = contents.split(',')
-    decoded = base64.b64decode(content_string)
-
-    desc = pd.read_csv(io.StringIO(decoded.decode('utf-8')), index_col='Id_Area')
-    return Serverside(desc)
 
 
 @callback(
