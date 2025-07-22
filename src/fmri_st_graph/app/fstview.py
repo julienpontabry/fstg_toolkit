@@ -52,6 +52,8 @@ app.layout = dbc.Container(
         # browser address
         dcc.Location(id='url'),
 
+        # TODO add a fullscreen app loading page when loading data
+
         # app's layout
         dbc.Tabs([
             dbc.Tab(label="Data", id='tab-data', tab_id='tab-data', children=data.layout),
@@ -123,19 +125,20 @@ def store_current_break_width(breakpoint_name, breakpoint_width):
 
 @callback(
     Output('store-desc', 'data', allow_duplicate=True),
+    Output('store-graphs', 'data', allow_duplicate=True),
     Input('url', 'pathname'),
     prevent_initial_call=True
 )
 def data_file_has_changed(pathname):
+    # get file path from token in pathname
     db = get_data_file_db()
     filepath = db.get(pathname[1:])
-    print("pathname:", pathname)
-    print("file_path:", filepath)
 
+    # store the areas and graphs
     graphs = load_spatio_temporal_graphs(filepath)
-    print(graphs)
-    print(graphs['list_of_corr_matrices_5months/list_of_corr_matrices_WT_T77'].areas)
-    return Serverside(graphs[next(iter(graphs))].areas)
+    areas_desc = graphs[next(iter(graphs))].areas
+
+    return Serverside(areas_desc), Serverside(graphs)
 
 
 if __name__ == '__main__':
