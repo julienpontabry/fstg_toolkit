@@ -18,7 +18,7 @@ from dash_extensions.enrich import (
 )
 from dash_breakpoints import WindowBreakpoints
 
-from fmri_st_graph.app.views import model, population, data, subject, matrices
+from .views import population, data, subject, matrices
 from .core.datafilesdb import get_data_file_db
 from ..io import load_spatio_temporal_graphs
 
@@ -59,8 +59,6 @@ app.layout = dbc.Container(
             dbc.Tab(label="Data", id='tab-data', tab_id='tab-data', children=data.layout),
             dbc.Tab(label="Data view", id='tab-matrices', tab_id='tab-matrices',
                     children=matrices.layout, disabled=True),
-            dbc.Tab(label="Model", id='tab-model', tab_id='tab-model',
-                    children=model.layout, disabled=True),
             dbc.Tab(label="Subject view", id='tab-subject', tab_id='tab-subject',
                     children=subject.layout, disabled=True),
             dbc.Tab(label="Population view", id='tab-population', tab_id='tab-population',
