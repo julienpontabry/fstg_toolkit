@@ -27,7 +27,9 @@ layout = [
     dbc.Row([
         dbc.Col([
             html.H2("Description of regions/areas"),
-            dash_table.DataTable(columns=desc_columns, page_size=12, id='desc-table')
+            dcc.Loading(
+                children=dash_table.DataTable(columns=desc_columns, page_size=15, id='desc-table'),
+                type='circle', overlay_style={'visibility': 'visible', 'filter': 'blur(2px)'})
         ]),
         dbc.Col([
             html.H2("Subjects"),
@@ -38,7 +40,7 @@ layout = [
                                multiple=True, id='upload-correlation', accept='.npy,.npz,.zip',
                                className='upload', className_active='upload-active'),
                     html.Div(id='uploaded-corr-files-list'),
-                    dash_table.DataTable(columns=corr_columns, page_size=12, id='corr-table'),
+                    dash_table.DataTable(columns=corr_columns, page_size=15, id='corr-table'),
                 ],
                 type='circle', overlay_style={"visibility": "visible", "filter": "blur(2px)"})
         ])
