@@ -143,6 +143,7 @@ def load_spatio_temporal_graphs(filepath: Path | str) -> dict[str, SpatioTempora
     ...     (4, 5, {'t': 1, 'type': 'spatial', 'correlation': 0.75087697}),
     ...     (5, 4, {'t': 1, 'type': 'spatial', 'correlation': 0.75087697})])
     >>> areas_desc = pd.DataFrame({
+    ...     'Id_Area': [1, 2, 3],
     ...     'Name_Area': ['Area 1', 'Area 2', 'Area 3'],
     ...     'Name_Region': ['R1', 'R2', 'R3']}, index=[1, 2, 3])
     >>> graph_path = Path('/tmp/tmp.zip')
