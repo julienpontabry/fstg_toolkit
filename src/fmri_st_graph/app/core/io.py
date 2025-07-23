@@ -27,9 +27,9 @@ class GraphsDataset:
     @staticmethod
     def deserialize(data: dict[str, Any]) -> 'GraphsDataset':
         return GraphsDataset(filepath=data['filepath'],
-                             areas_desc=data['areas_desc'],
+                             areas_desc=pd.DataFrame(data['areas_desc']).set_index('Id_Area'),
                              factors=[set(f) for f in data['factors']],
-                             subjects=data['subjects'])
+                             subjects=pd.DataFrame(data['subjects']))
 
     @staticmethod
     def from_filepath(filepath: Path) -> 'GraphsDataset':
