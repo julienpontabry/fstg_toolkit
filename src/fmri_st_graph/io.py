@@ -281,28 +281,20 @@ def save_spatio_temporal_graphs(graphs: dict[str, SpatioTemporalGraph], filepath
 class GraphsDataset:
     filepath: Path
     areas_desc: pd.DataFrame
-    graph_names: list[str]
-
-    @property
-    def n_areas(self) -> int:
-        return len(self.areas_desc)
-
-    @property
-    def n_graphs(self) -> int:
-        return len(self.graph_names)
+    subjects: pd.DataFrame
 
     def serialize(self) -> dict[str, Any]:
         return {
             'filepath': str(self.filepath),
             'areas_desc': self.areas_desc.reset_index().to_dict('records'),
-            'graph_names': self.graph_names
+            'subjects': self.subjects.reset_index().to_dict('records')
         }
 
     @staticmethod
     def deserialize(data: dict[str, Any]) -> 'GraphsDataset':
         return GraphsDataset(filepath=data['filepath'],
                              areas_desc=data['areas_desc'],
-                             graph_names=data['filenames'])
+                             subjects=data['subjects'])
 
     @staticmethod
     def from_filepath(filepath: Path) -> 'GraphsDataset':
@@ -311,16 +303,18 @@ class GraphsDataset:
             with zfp.open('areas.csv', 'r') as fp:
                 areas_desc = pd.read_csv(fp, index_col='Id_Area')
 
-            # get the name of the included graphs
+            # build the subjects from the name of the included graphs
             filenames = [name.split('.json')[0] for name in zfp.namelist()
                          if name.endswith('.json')]
+            subjects = pd.DataFrame({'Subject': filenames})
 
         return GraphsDataset(filepath=filepath,
                              areas_desc=areas_desc,
-                             graph_names=filenames)
+                             subjects=subjects)
 
     def __str__(self) -> str:
-        return f"GraphsDataset(filepath=\"{self.filepath}\", n_areas={self.n_areas}, n_graphs={self.n_graphs})"
+        return f"GraphsDataset(filepath=\"{self.filepath}\", "\
+               f"#areas={len(self.areas_desc)}, #subjects={len(self.subjects)})"
 
     def __repr__(self) -> str:
         return str(self)

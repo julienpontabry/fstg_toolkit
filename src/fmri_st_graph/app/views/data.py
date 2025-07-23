@@ -30,7 +30,7 @@ layout = [
             dash_table.DataTable(columns=desc_columns, page_size=12, id='desc-table')
         ]),
         dbc.Col([
-            html.H2("Correlation matrices"),
+            html.H2("Subjects"),
             dcc.Loading([
                     dcc.Upload(children=html.Div(["Drag and drop or ",
                                                   html.A("select correlation matrices files (.npy/.npz)",
@@ -48,14 +48,15 @@ layout = [
 
 @callback(
     Output('desc-table', 'data'),
+    Output('corr-table', 'data'),
     Input('store-dataset', 'data'),
     prevent_initial_call=True
 )
-def populate_desc_table(store_dataset):
-    if store_dataset is None or 'areas_desc' not in store_dataset:
+def dataset_changed(store_dataset):
+    if store_dataset is None:
         return PreventUpdate
 
-    return store_dataset['areas_desc']
+    return store_dataset['areas_desc'], store_dataset['subjects']
 
 
 # FIXME put that in an update_corr methods along with removing to avoid chained callbacks
@@ -139,27 +140,27 @@ def update_uploaded_corr_files_list(filenames):
     ])
 
 
-@callback(
-    Output('corr-table', 'columns'),
-    Output('corr-table', 'data'),
-    Input('store-corr', 'data'),
-    State('store-factors', 'data')
-)
-def populate_corr_table(corr, factors):
-    if corr is None:
-        raise PreventUpdate
-
-    # update columns
-    columns = [{'name': f"Factor {i+1}", 'id': f'Factor{i}'}
-               for i in range(len(factors))]
-    columns.append({'name': "Subject", 'id': 'Subject'})
-
-    # update contents
-    contents = []
-    for ids in corr.keys():
-        desc = {'Subject': ids[-1]}
-        for i, factor in enumerate(ids[:-1]):
-            desc[f'Factor{i}'] = factor
-        contents.append(desc)
-
-    return columns, contents
+# @callback(
+#     Output('corr-table', 'columns'),
+#     Output('corr-table', 'data'),
+#     Input('store-corr', 'data'),
+#     State('store-factors', 'data')
+# )
+# def populate_corr_table(corr, factors):
+#     if corr is None:
+#         raise PreventUpdate
+#
+#     # update columns
+#     columns = [{'name': f"Factor {i+1}", 'id': f'Factor{i}'}
+#                for i in range(len(factors))]
+#     columns.append({'name': "Subject", 'id': 'Subject'})
+#
+#     # update contents
+#     contents = []
+#     for ids in corr.keys():
+#         desc = {'Subject': ids[-1]}
+#         for i, factor in enumerate(ids[:-1]):
+#             desc[f'Factor{i}'] = factor
+#         contents.append(desc)
+#
+#     return columns, contents
