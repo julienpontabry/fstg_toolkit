@@ -130,7 +130,3 @@ def pathname_changed(pathname):
 
     dataset = GraphsDataset.from_filepath(filepath)
     return dataset.serialize()
-
-
-if __name__ == '__main__':
-    app.run(debug=True)
