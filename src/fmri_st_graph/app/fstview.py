@@ -57,7 +57,7 @@ app.layout = dbc.Container(
             dbc.Tab(label="Data view", id='tab-matrices', tab_id='tab-matrices',
                     children=matrices.layout, disabled=True),
             dbc.Tab(label="Subject view", id='tab-subject', tab_id='tab-subject',
-                    children=subject.layout, disabled=True),
+                    children=subject.layout, disabled=False),
             dbc.Tab(label="Population view", id='tab-population', tab_id='tab-population',
                     children=population.layout, disabled=True),
         ], id='tabs'),

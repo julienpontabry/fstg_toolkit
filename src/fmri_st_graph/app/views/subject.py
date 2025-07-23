@@ -9,6 +9,7 @@ from fmri_st_graph.app.figures.subject import (
     generate_subject_display_props,
 )
 from fmri_st_graph.app.views.common import update_factor_controls, plotly_config
+from ..core.io import GraphsDataset
 
 
 layout = [
@@ -34,45 +35,47 @@ layout = [
 
 @callback(
     Output('subject-factors-block', 'children'),
-    Input('store-factors', 'data'),
-    prevent_initial_call=True,
-)
-def update_subject_factor_controls(factors):
-    return update_factor_controls('subject', factors, multi=False)
-
-
-@callback(
     Output('regions-selection', 'options'),
     Output('regions-selection', 'value'),
-    Input('store-desc', 'data'),
+    Input('store-dataset', 'data'),
+    prevent_initial_call=True,
 )
-def update_regions(desc):
-    if desc is None:
+def dataset_changed(store_dataset):
+    if store_dataset is None:
         raise PreventUpdate
 
-    regions = desc.sort_values("Name_Region")["Name_Region"].unique().tolist()
-    return regions, regions
+    dataset = GraphsDataset.deserialize(store_dataset)
+
+    # update the layout of the factors' controls
+    factor_controls_layout = update_factor_controls('subject', dataset.factors, multi=False)
+
+    # update the selectable regions
+    regions = dataset.areas_desc.sort_values("Name_Region")["Name_Region"].unique().tolist()
+
+    return factor_controls_layout, regions, regions
 
 
 @callback(
 Output('subject-selection', 'options'),
     Output('subject-selection', 'value'),
-    Input('store-corr', 'data'),
     Input({'type': 'subject-factor', 'index': ALL}, 'value'),
+    State('store-dataset', 'data'),
     State('subject-selection', 'value'),
+    prevent_initial_call=True
 )
-def update_subjects(corr, factor_values, current_selection):
-    if corr is None or len(corr) == 0 or len(factor_values) == 0:
+def factors_changed(factor_values, store_dataset, current_selection):
+    if store_dataset is None or factor_values is None:
         raise PreventUpdate
 
     # filter subjects based on selected factors
-    filtered_corr_keys = filter(lambda k: all(f in factor_values for f in k[:-1]), corr.keys())
-    filtered_corr_ids = list(map(lambda k: k[-1], filtered_corr_keys))
+    ids = [tuple(record.values()) for record in store_dataset['subjects']]
+    filtered_ids = filter(lambda k: all(f in factor_values for f in k[:-1]), ids)
+    filtered_ids = list(map(lambda k: k[-1], filtered_ids))
 
     # do not select a new subject in the filtered list if the old one is also in the filtered list
-    selection = current_selection if current_selection in filtered_corr_ids else next(iter(filtered_corr_ids), None)
+    selection = current_selection if current_selection in filtered_ids else next(iter(filtered_ids), None)
 
-    return filtered_corr_ids, selection
+    return filtered_ids, selection
 
 
 @callback(
@@ -108,7 +111,6 @@ def enable_apply_button_at_selection_changed(regions):
     return regions is None or len(regions) == 0
 
 
-# TODO put the clientside callback into a javascript file in the assets folder
 clientside_callback(
     ClientsideFunction(
         namespace='clientside',
