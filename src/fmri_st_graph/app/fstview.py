@@ -14,13 +14,12 @@ from dash_extensions.enrich import (
     callback,
     dcc,
     set_props,
-    Serverside
 )
 from dash_breakpoints import WindowBreakpoints
 
 from .views import population, data, subject, matrices
 from .core.datafilesdb import get_data_file_db
-from ..io import load_spatio_temporal_graphs
+from ..io import GraphsDataset
 
 # use orsjon to make JSON 5-10x faster
 pio.json.config.default_engine = 'orjson'
@@ -52,8 +51,6 @@ app.layout = dbc.Container(
         # browser address
         dcc.Location(id='url'),
 
-        # TODO add a fullscreen app loading page when loading data
-
         # app's layout
         dbc.Tabs([
             dbc.Tab(label="Data", id='tab-data', tab_id='tab-data', children=data.layout),
@@ -66,6 +63,7 @@ app.layout = dbc.Container(
         ], id='tabs'),
 
         # app's storage cache
+        dcc.Store(id='store-dataset', storage_type='memory'),
         dcc.Store(id='store-desc', storage_type='session'),
         dcc.Store(id='store-factors', storage_type='session'),
         dcc.Store(id='store-corr', storage_type='session'),
@@ -122,21 +120,16 @@ def store_current_break_width(breakpoint_name, breakpoint_width):
 
 
 @callback(
-    Output('store-desc', 'data', allow_duplicate=True),
-    Output('store-graphs', 'data', allow_duplicate=True),
+    Output('store-dataset', 'data'),
     Input('url', 'pathname'),
     prevent_initial_call=True
 )
-def data_file_has_changed(pathname):
-    # get file path from token in pathname
+def set_new_dataset(pathname):
     db = get_data_file_db()
-    filepath = db.get(pathname[1:])
+    filepath = db.get(pathname[1:])  # remove first character, which is '/'
 
-    # store the areas and graphs
-    graphs = load_spatio_temporal_graphs(filepath)
-    areas_desc = graphs[next(iter(graphs))].areas
-
-    return Serverside(areas_desc), Serverside(graphs)
+    dataset = GraphsDataset.from_filepath(filepath)
+    return dataset.serialize()
 
 
 if __name__ == '__main__':

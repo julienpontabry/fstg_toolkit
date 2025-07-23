@@ -48,13 +48,14 @@ layout = [
 
 @callback(
     Output('desc-table', 'data'),
-    Input('store-desc', 'data'),
+    Input('store-dataset', 'data'),
+    prevent_initial_call=True
 )
-def populate_desc_table(desc):
-    if desc is None or len(desc) == 0:
-        raise PreventUpdate
+def populate_desc_table(store_dataset):
+    if store_dataset is None or 'areas_desc' not in store_dataset:
+        return PreventUpdate
 
-    return desc.reset_index().to_dict('records')
+    return store_dataset['areas_desc']
 
 
 # FIXME put that in an update_corr methods along with removing to avoid chained callbacks

@@ -1,5 +1,8 @@
 """Defines helpers for inputs/outputs."""
 
+from typing import Any
+from dataclasses import dataclass
+
 from pathlib import Path
 from zipfile import ZipFile
 import json
@@ -272,3 +275,52 @@ def save_spatio_temporal_graphs(graphs: dict[str, SpatioTemporalGraph], filepath
             areas = next(iter(graphs.values())).areas
             with zfp.open('areas.csv', 'w') as fp:
                 areas.to_csv(fp)
+
+
+@dataclass(frozen=True)
+class GraphsDataset:
+    filepath: Path
+    areas_desc: pd.DataFrame
+    graph_names: list[str]
+
+    @property
+    def n_areas(self) -> int:
+        return len(self.areas_desc)
+
+    @property
+    def n_graphs(self) -> int:
+        return len(self.graph_names)
+
+    def serialize(self) -> dict[str, Any]:
+        return {
+            'filepath': str(self.filepath),
+            'areas_desc': self.areas_desc.reset_index().to_dict('records'),
+            'graph_names': self.graph_names
+        }
+
+    @staticmethod
+    def deserialize(data: dict[str, Any]) -> 'GraphsDataset':
+        return GraphsDataset(filepath=data['filepath'],
+                             areas_desc=data['areas_desc'],
+                             graph_names=data['filenames'])
+
+    @staticmethod
+    def from_filepath(filepath: Path) -> 'GraphsDataset':
+        with ZipFile(str(filepath), 'r') as zfp:
+            # read the areas description from csv file
+            with zfp.open('areas.csv', 'r') as fp:
+                areas_desc = pd.read_csv(fp, index_col='Id_Area')
+
+            # get the name of the included graphs
+            filenames = [name for name in zfp.namelist()
+                         if name.endswith('.json')]
+
+        return GraphsDataset(filepath=filepath,
+                             areas_desc=areas_desc,
+                             graph_names=filenames)
+
+    def __str__(self) -> str:
+        return f"GraphsDataset(filepath=\"{self.filepath}\", n_areas={self.n_areas}, n_graphs={self.n_graphs})"
+
+    def __repr__(self) -> str:
+        return str(self)
