@@ -19,7 +19,7 @@ from dash_breakpoints import WindowBreakpoints
 
 from .views import population, data, subject, matrices
 from .core.datafilesdb import get_data_file_db
-from ..io import GraphsDataset
+from .core.io import GraphsDataset
 
 # use orsjon to make JSON 5-10x faster
 pio.json.config.default_engine = 'orjson'
