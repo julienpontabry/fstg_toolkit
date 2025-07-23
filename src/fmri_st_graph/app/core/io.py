@@ -19,7 +19,7 @@ class GraphsDataset:
         return {
             'filepath': str(self.filepath),
             'areas_desc': self.areas_desc.reset_index().to_dict('records'),
-            'subjects': self.subjects.reset_index().to_dict('records')
+            'subjects': self.subjects.to_dict('records')
         }
 
     @staticmethod
@@ -39,7 +39,8 @@ class GraphsDataset:
             filenames = [name.split('.json')[0] for name in zfp.namelist()
                          if name.endswith('.json')]
             factors, ids = split_factors_from_name(filenames)
-            subjects = pd.DataFrame({'Subject': filenames})
+            columns = [f"Factor{i}" for i in range(len(factors))] + ["Subject"]
+            subjects = pd.DataFrame(ids, columns=columns)
 
         return GraphsDataset(filepath=filepath,
                              areas_desc=areas_desc,

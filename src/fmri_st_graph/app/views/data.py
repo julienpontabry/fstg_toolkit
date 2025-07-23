@@ -48,6 +48,7 @@ layout = [
 
 @callback(
     Output('desc-table', 'data'),
+    Output('corr-table', 'columns'),
     Output('corr-table', 'data'),
     Input('store-dataset', 'data'),
     prevent_initial_call=True
@@ -56,7 +57,13 @@ def dataset_changed(store_dataset):
     if store_dataset is None:
         return PreventUpdate
 
-    return store_dataset['areas_desc'], store_dataset['subjects']
+    # update the columns of subjects table
+    nb_cols = len(store_dataset['subjects'][0])
+    columns = [{'name': f"Factor {i + 1}", 'id': f'Factor{i}'}
+               for i in range(nb_cols - 1)]  # -1 to account for index and subject column
+    columns.append({'name': "Subject", 'id': 'Subject'})
+
+    return store_dataset['areas_desc'], columns, store_dataset['subjects']
 
 
 # FIXME put that in an update_corr methods along with removing to avoid chained callbacks
