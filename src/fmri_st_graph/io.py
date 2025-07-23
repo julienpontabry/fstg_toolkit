@@ -312,7 +312,7 @@ class GraphsDataset:
                 areas_desc = pd.read_csv(fp, index_col='Id_Area')
 
             # get the name of the included graphs
-            filenames = [name for name in zfp.namelist()
+            filenames = [name.split('.json')[0] for name in zfp.namelist()
                          if name.endswith('.json')]
 
         return GraphsDataset(filepath=filepath,
