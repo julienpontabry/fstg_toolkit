@@ -124,7 +124,7 @@ def store_current_break_width(breakpoint_name, breakpoint_width):
     Input('url', 'pathname'),
     prevent_initial_call=True
 )
-def set_new_dataset(pathname):
+def pathname_changed(pathname):
     db = get_data_file_db()
     filepath = db.get(pathname[1:])  # remove first character, which is '/'
 
