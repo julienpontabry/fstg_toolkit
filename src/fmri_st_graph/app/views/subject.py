@@ -115,7 +115,7 @@ def selection_changed(n_clicks, subject, regions, factor_values, store_dataset):
     Input('regions-selection', 'value'),
     prevent_initial_call=True
 )
-def enable_apply_button_at_selection_changed(regions):
+def regions_selection_changed(regions):
     return regions is None or len(regions) == 0
 
 
