@@ -174,6 +174,20 @@ def load_spatio_temporal_graphs(filepath: Path | str) -> dict[str, SpatioTempora
     return graphs
 
 
+def load_single_from_graphs(filepath: Path | str, filename: str) -> SpatioTemporalGraph:
+    # TODO docstring
+    with ZipFile(str(filepath), 'r') as zfp:
+        # read areas description
+        with zfp.open('areas.csv', 'r') as fp:
+            areas = pd.read_csv(fp, index_col='Id_Area')
+
+        # read the graph
+        with zfp.open(filename, 'r') as fp:
+            graph_dict = json.load(fp, object_hook=__spatio_temporal_object_hook)
+            graph = nx.json_graph.node_link_graph(graph_dict, edges='edges')
+            return SpatioTemporalGraph(graph, areas)
+
+
 def save_spatio_temporal_graph(graph: SpatioTemporalGraph, filepath: Path | str) -> None:
     """Save a spatio-temporal graph to a zip file.
 

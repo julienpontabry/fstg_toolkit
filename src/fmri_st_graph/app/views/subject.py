@@ -69,8 +69,8 @@ def factors_changed(factor_values, store_dataset, current_selection):
 
     # filter subjects based on selected factors
     ids = [tuple(record.values()) for record in store_dataset['subjects']]
-    filtered_ids = filter(lambda k: all(f in factor_values for f in k[:-1]), ids)
-    filtered_ids = list(map(lambda k: k[-1], filtered_ids))
+    filtered_ids = filter(lambda k: all(f in factor_values for f in k[:-2]), ids)
+    filtered_ids = list(map(lambda k: k[-2], filtered_ids))
 
     # do not select a new subject in the filtered list if the old one is also in the filtered list
     selection = current_selection if current_selection in filtered_ids else next(iter(filtered_ids), None)
@@ -84,20 +84,28 @@ def factors_changed(factor_values, store_dataset, current_selection):
     Output('apply-button', 'disabled'),
     Input('apply-button', 'n_clicks'),
     Input('subject-selection', 'value'),
-    Input('store-graphs', 'data'),
     State('regions-selection', 'value'),
     State({'type': 'subject-factor', 'index': ALL}, 'value'),
+    State('store-dataset', 'data'),
     prevent_initial_call=True
 )
-def update_graph(n_clicks, subject, graphs, regions, factor_values):
-    if (n_clicks is not None and n_clicks <= 0) or graphs is None:
+def selection_changed(n_clicks, subject, regions, factor_values, store_dataset):
+    if (n_clicks is not None and n_clicks <= 0) or store_dataset is None:
         raise PreventUpdate
 
     if subject is None or len(factor_values) == 0:
         raise PreventUpdate
 
+    # check if the graph is in the dataset
     ids = tuple(factor_values + [subject])
-    figure_props = generate_subject_display_props(graphs[ids], regions)
+    dataset = GraphsDataset.deserialize(store_dataset)
+
+    if ids not in dataset:
+        raise PreventUpdate
+
+    # loads the dataset and create figure properties from the loaded graph
+    graph = dataset[ids]
+    figure_props = generate_subject_display_props(graph, regions)
 
     return build_subject_figure(figure_props), figure_props['spatial_connections'], True
 
