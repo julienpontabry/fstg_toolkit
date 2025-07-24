@@ -67,7 +67,6 @@ app.layout = dbc.Container(
         dcc.Store(id='store-desc', storage_type='session'),
         dcc.Store(id='store-factors', storage_type='session'),
         dcc.Store(id='store-corr', storage_type='session'),
-        dcc.Store(id='store-graphs', storage_type='session'),
         dcc.Store(id='store-break-width', storage_type='memory'),
 
         # setup event on window's width breakpoints
@@ -85,29 +84,6 @@ app.layout = dbc.Container(
     ],
     fluid='xxl'
 )
-
-
-@callback(
-    Input('store-desc', 'data'),
-    Input('store-corr', 'data'),
-    State('tabs', 'active_tab')
-)
-def set_tab_enabled_after_data(desc, corr, active_tab):
-    if all(e is not None for e in (desc, corr)):
-        set_props('tab-matrices', dict(disabled=False))
-        set_props('tab-model', dict(disabled=False))
-        set_props('tabs', {'active_tab': active_tab})
-
-
-@callback(
-    Input('store-graphs', 'data'),
-    State('tabs', 'active_tab')
-)
-def set_tab_enabled_after_model(graphs, active_tab):
-    if graphs is not None:
-        set_props('tab-subject', dict(disabled=False))
-        set_props('tab-population', dict(disabled=False))
-        set_props('tabs', {'active_tab': active_tab})
 
 
 @callback(
