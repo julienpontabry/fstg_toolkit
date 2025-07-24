@@ -2,7 +2,7 @@ import networkx as nx
 import numpy as np
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
-from dash_extensions.enrich import Input, Output, State, callback, dcc
+from dash import Input, Output, State, callback, dcc
 from plotly import graph_objects as go
 
 

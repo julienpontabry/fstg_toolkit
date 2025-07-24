@@ -1,5 +1,5 @@
 from dash.exceptions import PreventUpdate
-from dash_extensions.enrich import dcc
+from dash import dcc
 import dash_bootstrap_components as dbc
 
 

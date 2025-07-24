@@ -4,17 +4,7 @@ from pathlib import Path
 import dash_bootstrap_components as dbc
 import diskcache
 import plotly.io as pio
-from dash import DiskcacheManager
-from dash_extensions.enrich import (
-    DashProxy,
-    Input,
-    Output,
-    State,
-    ServersideOutputTransform,
-    callback,
-    dcc,
-    set_props,
-)
+from dash import DiskcacheManager, Dash, Input,Output, State, callback, dcc, set_props
 from dash_breakpoints import WindowBreakpoints
 
 from .views import population, data, subject, matrices
@@ -39,12 +29,11 @@ def callback_error(err):
         tb.print_tb(err_tb)
 
 # app's definition
-app = DashProxy(title="fSTView - An fMRI spatio-temporal data viewer", name="fSTView",
-                transforms=[ServersideOutputTransform()],
-                external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
-                assets_folder=str(Path(__file__).parent / 'assets'),
-                background_callback_manager=background_callback_manager,
-                on_error=callback_error)
+app = Dash(title="fSTView - An fMRI spatio-temporal data viewer", name="fSTView",
+           external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
+           assets_folder=str(Path(__file__).parent / 'assets'),
+           background_callback_manager=background_callback_manager,
+           on_error=callback_error)
 
 app.layout = dbc.Container(
     children=[

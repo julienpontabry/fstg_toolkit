@@ -1,6 +1,6 @@
 from dash.exceptions import PreventUpdate
 from dash.dependencies import ALL
-from dash_extensions.enrich import Input, Output, State, callback, dcc, html
+from dash import Input, Output, State, callback, dcc, html
 import dash_bootstrap_components as dbc
 
 from fmri_st_graph.app.figures.matrices import build_matrices_figure, break_width_to_cols
