@@ -2,10 +2,12 @@ import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 from dash import Input, Output, callback, dash_table, dcc, html
 
+
 desc_columns = [{'name': "Area id", 'id': 'Id_Area'},
                 {'name': "Area name", 'id': 'Name_Area'},
                 {'name': "Region name", 'id': 'Name_Region'}]
 corr_columns = [{'name': "Subject", 'id': 'Subject'}]
+
 
 layout = [
     dbc.Row([

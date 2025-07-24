@@ -3,8 +3,8 @@ from dash.dependencies import ALL
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, callback, dcc, html, clientside_callback, ClientsideFunction
 
-from fmri_st_graph.app.figures.subject import build_subject_figure, generate_subject_display_props
-from fmri_st_graph.app.views.common import update_factor_controls, plotly_config
+from ..figures.subject import build_subject_figure, generate_subject_display_props
+from .common import update_factor_controls, plotly_config
 from ..core.io import GraphsDataset
 
 

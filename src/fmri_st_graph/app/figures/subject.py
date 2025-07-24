@@ -3,8 +3,8 @@ from typing import Any
 import numpy as np
 from plotly import graph_objects as go
 
-from fmri_st_graph.graph import RC5
-from fmri_st_graph.visualization import __CoordinatesGenerator, _trans_color
+from ...graph import RC5
+from ...visualization import __CoordinatesGenerator, _trans_color
 
 
 def generate_subject_display_props(graph, regions: list[str]) -> dict[str, Any]:

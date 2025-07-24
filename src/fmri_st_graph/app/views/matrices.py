@@ -3,8 +3,8 @@ from dash.dependencies import ALL
 from dash import Input, Output, State, callback, dcc, html
 import dash_bootstrap_components as dbc
 
-from fmri_st_graph.app.figures.matrices import build_matrices_figure, break_width_to_cols
-from fmri_st_graph.app.views.common import update_factor_controls, plotly_config
+from ..figures.matrices import build_matrices_figure, break_width_to_cols
+from .common import update_factor_controls, plotly_config
 
 
 layout = [
