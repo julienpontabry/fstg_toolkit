@@ -75,6 +75,7 @@ def generate_subject_display_props(graph, regions: list[str]) -> dict[str, Any]:
 
 def build_subject_figure(props: dict[str, Any]) -> go.Figure:
     # TODO find a way to reduce the number of elements displayed in the figure
+    # TODO any way to improve the graphical performances (eg, WebGL)?
     nodes_trace = go.Scatter(
         x=props['nodes_x'], y=props['nodes_y'],
         mode='markers',
