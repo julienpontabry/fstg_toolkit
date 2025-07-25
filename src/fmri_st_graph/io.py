@@ -364,7 +364,7 @@ class DataSaver:
     def __save_graphs(graphs: SpatioTemporalGraphsDict, zfp: ZipFile):
         for name, graph in graphs.items():
             graph_dict = nx.json_graph.node_link_data(graph, edges='edges')
-            graph_json = json.dumps(graph_dict, indent=4, cls=_SpatioTemporalGraphEncoder)
+            graph_json = json.dumps(graph_dict, cls=_SpatioTemporalGraphEncoder)
             zfp.writestr(f'{name}.json', data=graph_json)
 
     @staticmethod
