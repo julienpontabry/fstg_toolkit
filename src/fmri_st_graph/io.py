@@ -1,6 +1,7 @@
 """Defines helpers for inputs/outputs."""
-
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional, Callable
 from zipfile import ZipFile
 import json
 
@@ -26,7 +27,7 @@ class __SpatioTemporalGraphEncoder(json.JSONEncoder):
             return super().default(obj)
 
 
-def __spatio_temporal_object_hook(obj: dict) -> dict:
+def _spatio_temporal_object_hook(obj: dict) -> dict:
     """Object hook for decoding JSON-encoded spatio-temporal graph.
 
     The values of 'areas' fields are converted from list to set (it is about areas id
@@ -51,6 +52,8 @@ def __spatio_temporal_object_hook(obj: dict) -> dict:
     return obj
 
 
+# @deprecated("Use the data loader instead")
+# TODO remove usage
 def load_spatio_temporal_graph(filepath: Path | str) -> SpatioTemporalGraph:
     """Load a spatio-temporal graph from its zip file.
 
@@ -99,7 +102,7 @@ def load_spatio_temporal_graph(filepath: Path | str) -> SpatioTemporalGraph:
     with ZipFile(str(filepath), 'r') as zfp:
         # read the graph from json file
         with zfp.open('graph.json', 'r') as fp:
-            graph_dict = json.load(fp, object_hook=__spatio_temporal_object_hook)
+            graph_dict = json.load(fp, object_hook=_spatio_temporal_object_hook)
             graph = nx.json_graph.node_link_graph(graph_dict, edges='edges')
 
         # read the areas description from csv file
@@ -109,6 +112,8 @@ def load_spatio_temporal_graph(filepath: Path | str) -> SpatioTemporalGraph:
         return SpatioTemporalGraph(graph, areas)
 
 
+# @deprecated("Use the data loader instead")
+# TODO remove usage
 def load_spatio_temporal_graphs(filepath: Path | str) -> dict[str, SpatioTemporalGraph]:
     """Load multiple spatio-temporal graphs from a zip file.
 
@@ -167,13 +172,15 @@ def load_spatio_temporal_graphs(filepath: Path | str) -> dict[str, SpatioTempora
         for name in zfp.namelist():
             if name.endswith('.json'):
                 with zfp.open(name, 'r') as fp:
-                    graph_dict = json.load(fp, object_hook=__spatio_temporal_object_hook)
+                    graph_dict = json.load(fp, object_hook=_spatio_temporal_object_hook)
                     graph = nx.json_graph.node_link_graph(graph_dict, edges='edges')
                     graphs[name.split('.json')[0]] = SpatioTemporalGraph(graph, areas)
 
     return graphs
 
 
+# @deprecated("Use the data loader instead")
+# TODO remove usage
 def load_single_from_graphs(filepath: Path | str, filename: str) -> SpatioTemporalGraph:
     # TODO docstring
     with ZipFile(str(filepath), 'r') as zfp:
@@ -183,7 +190,7 @@ def load_single_from_graphs(filepath: Path | str, filename: str) -> SpatioTempor
 
         # read the graph
         with zfp.open(filename, 'r') as fp:
-            graph_dict = json.load(fp, object_hook=__spatio_temporal_object_hook)
+            graph_dict = json.load(fp, object_hook=_spatio_temporal_object_hook)
             graph = nx.json_graph.node_link_graph(graph_dict, edges='edges')
             return SpatioTemporalGraph(graph, areas)
 
@@ -234,7 +241,7 @@ def save_spatio_temporal_graph(graph: SpatioTemporalGraph, filepath: Path | str)
         with zfp.open('areas.csv', 'w') as fp:
             graph.areas.to_csv(fp)
 
-
+# TODO refactor module to include optional elements in the archive (eg matrices)
 def save_spatio_temporal_graphs(graphs: dict[str, SpatioTemporalGraph], filepath: Path | str) -> None:
     """Save multiple spatio-temporal graphs to a zip file.
 
@@ -286,3 +293,69 @@ def save_spatio_temporal_graphs(graphs: dict[str, SpatioTemporalGraph], filepath
             areas = next(iter(graphs.values())).areas
             with zfp.open('areas.csv', 'w') as fp:
                 areas.to_csv(fp)
+
+
+type SpatioTemporalGraphsDict = dict[str, SpatioTemporalGraph]
+type SpatioTemporalGraphsFilenamesList = list[str]
+type AnySpatioTemporalGraphsStruct = SpatioTemporalGraphsDict | SpatioTemporalGraphsFilenamesList
+type GraphsLoader = Callable[[pd.DataFrame], AnySpatioTemporalGraphsStruct]
+
+
+@dataclass
+class DataLoader:
+    # TODO docstring
+    filepath: Path
+
+    @property
+    def __within_archive(self):
+        return ZipFile(str(self.filepath), 'r')
+
+    def load_areas(self) -> Optional[pd.DataFrame]:
+        with self.__within_archive as zfp:
+            with zfp.open('areas.csv', 'r') as fp:
+                return pd.read_csv(fp, index_col='Id_Area')
+
+    def load_graphs(self, areas: pd.DataFrame) -> SpatioTemporalGraphsDict:
+        graphs = {}
+
+        with self.__within_archive as zfp:
+            for name in zfp.namelist():
+                if name.endswith('.json'):
+                    with zfp.open(name, 'r') as fp:
+                        graph_dict = json.load(fp, object_hook=_spatio_temporal_object_hook)
+                        graph = nx.json_graph.node_link_graph(graph_dict, edges='edges')
+                        graphs[name.split('.json')[0]] = SpatioTemporalGraph(graph, areas)
+
+        return graphs
+
+    def lazy_load_graphs(self) -> SpatioTemporalGraphsFilenamesList:
+        with self.__within_archive as zfp:
+            return list(filter(lambda n: n.endswith('.json'), zfp.namelist()))
+
+    def load_graph(self, areas: pd.DataFrame, filename: str) -> Optional[SpatioTemporalGraph]:
+        with self.__within_archive as zfp:
+            with zfp.open(filename, 'r') as fp:
+                graph_dict = json.load(fp, object_hook=_spatio_temporal_object_hook)
+                graph = nx.json_graph.node_link_graph(graph_dict, edges='edges')
+                return SpatioTemporalGraph(graph, areas)
+
+    def __load_all_scheme(self, loader: GraphsLoader) -> Optional[tuple[pd.DataFrame, AnySpatioTemporalGraphsStruct]]:
+        areas = self.load_areas()
+
+        if areas is None:
+            return None
+
+        graphs = loader(areas)
+        return areas, graphs
+
+    def load(self) -> Optional[tuple[pd.DataFrame, SpatioTemporalGraphsDict]]:
+        return self.__load_all_scheme(self.load_graphs)
+
+    def lazy_load(self) -> Optional[tuple[pd.DataFrame, SpatioTemporalGraphsFilenamesList]]:
+        return self.__load_all_scheme(lambda a: self.lazy_load_graphs())
+
+
+@dataclass
+class DataSaver:
+    filepath: Path
+

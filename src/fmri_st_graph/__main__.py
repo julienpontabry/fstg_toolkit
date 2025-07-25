@@ -64,6 +64,7 @@ def __read_load_np(path: Path) -> list[tuple[np.ndarray, str]]:
 @click.option('-s', '--select', is_flag=True, default=False,
               help="Select the graphs to build and save using an input prompt "
                    "(only if there are multiple sets of correlation matrices).")
+# TODO add option to deactivate matrices inclusion in output
 def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], output: Path,
           corr_threshold: float, absolute_thresholding: bool, areas_column_name: str, regions_column_name: str,
           select: bool):
@@ -122,6 +123,7 @@ def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], 
     # save the graphs into a single zip file
     try:
         click.echo("Saving ST graphs...")
+        # TODO include matrices if required
         save_spatio_temporal_graphs(graphs, output)
     except OSError as ex:
         click.echo(f"Error while saving to {output}: {ex}", err=True)
