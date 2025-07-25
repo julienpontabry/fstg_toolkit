@@ -39,7 +39,7 @@ def dataset_changed(store_dataset):
         return PreventUpdate
 
     # update the columns of subjects table
-    nb_cols = len(store_dataset['subjects'][0])
+    nb_cols = len(store_dataset['subjects'][0]) - 1  # remove 1 because we do not display the filename
     columns = [{'name': f"Factor {i + 1}", 'id': f'Factor{i}'}
                for i in range(nb_cols - 1)]  # -1 to account for index and subject column
     columns.append({'name': "Subject", 'id': 'Subject'})
