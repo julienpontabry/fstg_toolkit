@@ -369,7 +369,7 @@ class DataSaver:
 
     @staticmethod
     def __save_matrices(matrices: CorrelationMatricesDict, zfp: ZipFile):
-        for name, matrix in matrices:
+        for name, matrix in matrices.items():
             with zfp.open(f'{name}.npy', 'w') as fp:
                 np.save(fp, matrix)
 

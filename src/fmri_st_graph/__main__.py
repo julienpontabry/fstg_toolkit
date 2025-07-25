@@ -25,7 +25,7 @@ def cli():
 
 ## building ###################################################################
 
-def __read_load_np(path: Path) -> list[tuple[np.ndarray, str]]:
+def __read_load_np(path: Path) -> list[tuple[str, np.ndarray]]:
     """
     Reads a numpy file (.npz or .npy) and returns a list of tuples containing the matrices and their names.
 
@@ -36,15 +36,15 @@ def __read_load_np(path: Path) -> list[tuple[np.ndarray, str]]:
 
     Returns
     -------
-    list[tuple[np.ndarray, str]]
+    list[tuple[str, np.ndarray]]
         List of tuples (matrix, name) extracted from the file.
     """
     red = np.load(path)
 
     if isinstance(red, np.lib.npyio.NpzFile):
-        return [(matrices, name) for name, matrices in red.items()]
+        return [(name, matrices) for name, matrices in red.items()]
     else:
-        return [(red, path.name)]
+        return [(path.name, red)]
 
 
 @cli.command()
@@ -61,13 +61,14 @@ def __read_load_np(path: Path) -> list[tuple[np.ndarray, str]]:
               show_default=True, help="The name of the column of areas' names in the description file.")
 @click.option('-rcn', '--regions-column-name', type=str, default='Name_Region',
               show_default=True, help="The name of the column of regions' names in the description file.")
-@click.option('-s', '--select', is_flag=True, default=False,
+@click.option('--select', is_flag=True, default=False,
               help="Select the graphs to build and save using an input prompt "
                    "(only if there are multiple sets of correlation matrices).")
-# TODO add option to deactivate matrices inclusion in output
+@click.option('--no-raw', is_flag=True, default=False,
+              help="Do not save the raw data along with the graphs.")
 def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], output: Path,
           corr_threshold: float, absolute_thresholding: bool, areas_column_name: str, regions_column_name: str,
-          select: bool):
+          select: bool, no_raw: bool):
     """Build a spatio-temporal graph from correlation matrices.
 
     The spatio-temporal graph will be saved to OUTPUT, built from the correlation matrices in CORRELATION_MATRICES_PATH and the area descriptions in AREAS_DESCRIPTION_PATH.
@@ -86,12 +87,13 @@ def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], 
         for cm in correlation_matrices_path:
             click.echo(f"\t- {cm.name}")
         matrices = list(chain.from_iterable(__read_load_np(cm) for cm in correlation_matrices_path))
+        matrices = {name: matrix for name, matrix in matrices}
     except Exception as ex:
         click.echo(f"Error while reading matrices: {ex}", err=True)
         exit(1)
 
     # select the matrices to process
-    keys = list(map(lambda x: x[1], matrices))
+    keys = list(matrices.keys())
 
     if select:
         click.echo("The following sequences of matrices are available from the file:")
@@ -101,7 +103,10 @@ def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], 
     else:
         selected = keys
 
-    matrices = list(filter(lambda x: x[1] in selected, matrices))
+    matrices = {name: matrix for name, matrix in matrices.items() if name in selected}
+
+    if not no_raw:
+        saver.add(matrices)
 
     # read input areas description
     try:
@@ -113,12 +118,12 @@ def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], 
 
     # build the graphs
     graphs = {}
-    with click.progressbar(matrices, label="Building ST graphs...", show_pos=True,
-                           item_show_func=lambda a: str(a[1]) if a is not None else None) as bar:
-        for mat, name in bar:
+    with click.progressbar(matrices.items(), label="Building ST graphs...", show_pos=True,
+                           item_show_func=lambda a: str(a[0]) if a is not None else None) as bar:
+        for name, matrix in bar:
             try:
                 graphs[name] = spatio_temporal_graph_from_corr_matrices(
-                    mat, areas, corr_thr=corr_threshold, abs_thr=absolute_thresholding,
+                    matrix, areas, corr_thr=corr_threshold, abs_thr=absolute_thresholding,
                     area_col_name=areas_column_name, region_col_name=regions_column_name)
             except Exception as ex:
                 click.echo(f"Error while processing {name}: {ex}", err=True)
@@ -128,7 +133,6 @@ def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], 
     # save the graphs into a single zip file
     try:
         click.echo("Saving dataset...")
-        # TODO include matrices if required
         saver.save(output)
     except OSError as ex:
         click.echo(f"Error while saving to {output}: {ex}", err=True)
