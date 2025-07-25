@@ -11,7 +11,7 @@ from screeninfo import get_monitors
 
 from fmri_st_graph import generate_pattern, SpatioTemporalGraphSimulator, CorrelationMatrixSequenceSimulator
 from .factory import spatio_temporal_graph_from_corr_matrices
-from .io import load_spatio_temporal_graph, save_spatio_temporal_graph, save_spatio_temporal_graphs
+from .io import load_spatio_temporal_graph, save_spatio_temporal_graph, DataSaver
 from .visualization import spatial_plot, temporal_plot, multipartite_plot, DynamicPlot
 from .app.fstview import app
 from .app.core.datafilesdb import get_data_file_db, MemoryDataFilesDB
@@ -77,6 +77,9 @@ def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], 
     The CSV file for the description of areas and regions should have the columns: `Id_Area`, `Name_Area`, and `Name_Region`.
     """
 
+    # prepare the data saver
+    saver = DataSaver()
+
     # read input matrices
     try:
         click.echo(f"Reading {len(correlation_matrices_path)} files...")
@@ -103,6 +106,7 @@ def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], 
     # read input areas description
     try:
         areas = pd.read_csv(areas_description_path, index_col='Id_Area')
+        saver.add(areas)
     except Exception as ex:
         click.echo(f"Error while reading areas description: {ex}", err=True)
         exit(1)
@@ -119,12 +123,13 @@ def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], 
             except Exception as ex:
                 click.echo(f"Error while processing {name}: {ex}", err=True)
                 continue
+    saver.add(graphs)
 
     # save the graphs into a single zip file
     try:
-        click.echo("Saving ST graphs...")
+        click.echo("Saving dataset...")
         # TODO include matrices if required
-        save_spatio_temporal_graphs(graphs, output)
+        saver.save(output)
     except OSError as ex:
         click.echo(f"Error while saving to {output}: {ex}", err=True)
         exit(1)

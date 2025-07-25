@@ -1,17 +1,18 @@
 """Defines helpers for inputs/outputs."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, Callable
+from typing import Optional, Callable, List, Tuple, Dict, LiteralString
 from zipfile import ZipFile
 import json
 
+import numpy as np
 import pandas as pd
 import networkx as nx
 
 from .graph import RC5, SpatioTemporalGraph
 
 
-class __SpatioTemporalGraphEncoder(json.JSONEncoder):
+class _SpatioTemporalGraphEncoder(json.JSONEncoder):
     """JSON encoder for spatio-temporal graph.
 
     The sets are converted to lists and the RC5 objects are converted to their
@@ -179,22 +180,6 @@ def load_spatio_temporal_graphs(filepath: Path | str) -> dict[str, SpatioTempora
     return graphs
 
 
-# @deprecated("Use the data loader instead")
-# TODO remove usage
-def load_single_from_graphs(filepath: Path | str, filename: str) -> SpatioTemporalGraph:
-    # TODO docstring
-    with ZipFile(str(filepath), 'r') as zfp:
-        # read areas description
-        with zfp.open('areas.csv', 'r') as fp:
-            areas = pd.read_csv(fp, index_col='Id_Area')
-
-        # read the graph
-        with zfp.open(filename, 'r') as fp:
-            graph_dict = json.load(fp, object_hook=_spatio_temporal_object_hook)
-            graph = nx.json_graph.node_link_graph(graph_dict, edges='edges')
-            return SpatioTemporalGraph(graph, areas)
-
-
 def save_spatio_temporal_graph(graph: SpatioTemporalGraph, filepath: Path | str) -> None:
     """Save a spatio-temporal graph to a zip file.
 
@@ -234,7 +219,7 @@ def save_spatio_temporal_graph(graph: SpatioTemporalGraph, filepath: Path | str)
     with ZipFile(str(filepath), 'w') as zfp:
         # write the graph into json file
         graph_dict = nx.json_graph.node_link_data(graph, edges='edges')
-        graph_json = json.dumps(graph_dict, indent=4, cls=__SpatioTemporalGraphEncoder)
+        graph_json = json.dumps(graph_dict, indent=4, cls=_SpatioTemporalGraphEncoder)
         zfp.writestr('graph.json', data=graph_json)  # json cannot dump to a binary file pointer
 
         # write the areas description into csv file
@@ -285,7 +270,7 @@ def save_spatio_temporal_graphs(graphs: dict[str, SpatioTemporalGraph], filepath
         # write the graphs into json file
         for name, graph in graphs.items():
             graph_dict = nx.json_graph.node_link_data(graph, edges='edges')
-            graph_json = json.dumps(graph_dict, indent=4, cls=__SpatioTemporalGraphEncoder)
+            graph_json = json.dumps(graph_dict, indent=4, cls=_SpatioTemporalGraphEncoder)
             zfp.writestr(f'{name}.json', data=graph_json)
 
         # write the areas description into csv file
@@ -295,10 +280,11 @@ def save_spatio_temporal_graphs(graphs: dict[str, SpatioTemporalGraph], filepath
                 areas.to_csv(fp)
 
 
-type SpatioTemporalGraphsDict = dict[str, SpatioTemporalGraph]
-type SpatioTemporalGraphsFilenamesList = list[str]
+type SpatioTemporalGraphsDict = Dict[LiteralString, SpatioTemporalGraph]
+type SpatioTemporalGraphsFilenamesList = List[LiteralString]
 type AnySpatioTemporalGraphsStruct = SpatioTemporalGraphsDict | SpatioTemporalGraphsFilenamesList
 type GraphsLoader = Callable[[pd.DataFrame], AnySpatioTemporalGraphsStruct]
+type CorrelationMatricesDict = Dict[LiteralString, np.ndarray]
 
 
 @dataclass
@@ -332,14 +318,14 @@ class DataLoader:
         with self.__within_archive as zfp:
             return list(filter(lambda n: n.endswith('.json'), zfp.namelist()))
 
-    def load_graph(self, areas: pd.DataFrame, filename: str) -> Optional[SpatioTemporalGraph]:
+    def load_graph(self, areas: pd.DataFrame, filename: LiteralString) -> Optional[SpatioTemporalGraph]:
         with self.__within_archive as zfp:
             with zfp.open(filename, 'r') as fp:
                 graph_dict = json.load(fp, object_hook=_spatio_temporal_object_hook)
                 graph = nx.json_graph.node_link_graph(graph_dict, edges='edges')
                 return SpatioTemporalGraph(graph, areas)
 
-    def __load_all_scheme(self, loader: GraphsLoader) -> Optional[tuple[pd.DataFrame, AnySpatioTemporalGraphsStruct]]:
+    def __load_all_scheme(self, loader: GraphsLoader) -> Optional[Tuple[pd.DataFrame, AnySpatioTemporalGraphsStruct]]:
         areas = self.load_areas()
 
         if areas is None:
@@ -348,14 +334,53 @@ class DataLoader:
         graphs = loader(areas)
         return areas, graphs
 
-    def load(self) -> Optional[tuple[pd.DataFrame, SpatioTemporalGraphsDict]]:
+    def load(self) -> Optional[Tuple[pd.DataFrame, SpatioTemporalGraphsDict]]:
         return self.__load_all_scheme(self.load_graphs)
 
-    def lazy_load(self) -> Optional[tuple[pd.DataFrame, SpatioTemporalGraphsFilenamesList]]:
+    def lazy_load(self) -> Optional[Tuple[pd.DataFrame, SpatioTemporalGraphsFilenamesList]]:
         return self.__load_all_scheme(lambda a: self.lazy_load_graphs())
+
+
+type SavableDataElement = pd.DataFrame | SpatioTemporalGraphsDict | CorrelationMatricesDict
 
 
 @dataclass
 class DataSaver:
-    filepath: Path
+    # TODO docstring
+    elements: List[SavableDataElement] = field(default_factory=lambda: [])
 
+    def add(self, element: SavableDataElement) -> None:
+        self.elements.append(element)
+
+    def clear(self) -> None:
+        self.elements.clear()
+
+    @staticmethod
+    def __save_areas(areas: pd.DataFrame, zfp: ZipFile) -> None:
+        with zfp.open('areas.csv', 'w') as fp:
+            areas.to_csv(fp)
+
+    @staticmethod
+    def __save_graphs(graphs: SpatioTemporalGraphsDict, zfp: ZipFile):
+        for name, graph in graphs.items():
+            graph_dict = nx.json_graph.node_link_data(graph, edges='edges')
+            graph_json = json.dumps(graph_dict, indent=4, cls=_SpatioTemporalGraphEncoder)
+            zfp.writestr(f'{name}.json', data=graph_json)
+
+    @staticmethod
+    def __save_matrices(matrices: CorrelationMatricesDict, zfp: ZipFile):
+        for name, matrix in matrices:
+            with zfp.open(f'{name}.npy', 'w') as fp:
+                np.save(fp, matrix)
+
+    def save(self, filepath: Path) -> None:
+        with ZipFile(str(filepath), 'w') as zfp:
+            for element in self.elements:
+                if isinstance(element, pd.DataFrame):
+                    self.__save_areas(element, zfp)
+                elif isinstance(element, dict):
+                    _, first = next(iter(element.items()))
+                    if isinstance(first, SpatioTemporalGraph):
+                        self.__save_graphs(element, zfp)
+                    elif isinstance(first, np.ndarray):
+                        self.__save_matrices(element, zfp)
