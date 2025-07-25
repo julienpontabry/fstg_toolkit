@@ -64,9 +64,12 @@ def factors_changed(factor_values, store_dataset, current_selection):
         raise PreventUpdate
 
     # filter subjects based on selected factors
+    # records contains "factors" ... "subject" "graph filename" ["matrix filename"]
+    # we are interested in the elements until the subject
+    n = len(store_dataset['factors'])
     ids = [tuple(record.values()) for record in store_dataset['subjects']]
-    filtered_ids = filter(lambda k: all(f in factor_values for f in k[:-2]), ids)
-    filtered_ids = list(map(lambda k: k[-2], filtered_ids))
+    filtered_ids = filter(lambda k: all(f in factor_values for f in k[:n]), ids)
+    filtered_ids = list(map(lambda k: k[n], filtered_ids))
 
     # do not select a new subject in the filtered list if the old one is also in the filtered list
     selection = current_selection if current_selection in filtered_ids else next(iter(filtered_ids), None)
@@ -100,7 +103,7 @@ def selection_changed(n_clicks, subject, regions, factor_values, store_dataset):
         raise PreventUpdate
 
     # loads the dataset and create figure properties from the loaded graph
-    graph = dataset[ids]
+    graph = dataset.get_graph(ids)
     figure_props = generate_subject_display_props(graph, regions)
 
     return build_subject_figure(figure_props), figure_props['spatial_connections'], True

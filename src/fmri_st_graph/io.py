@@ -281,9 +281,11 @@ def save_spatio_temporal_graphs(graphs: dict[str, SpatioTemporalGraph], filepath
 
 
 type SpatioTemporalGraphsDict = Dict[LiteralString, SpatioTemporalGraph]
-type SpatioTemporalGraphsFilenamesList = List[LiteralString]
-type AnySpatioTemporalGraphsStruct = SpatioTemporalGraphsDict | SpatioTemporalGraphsFilenamesList
+type MatricesDict = Dict[LiteralString, np.ndarray]
+type AnySpatioTemporalGraphsStruct = SpatioTemporalGraphsDict | List[LiteralString]
 type GraphsLoader = Callable[[pd.DataFrame], AnySpatioTemporalGraphsStruct]
+type AnyMatricesStruct = MatricesDict | List[LiteralString]
+type MatricesLoader = Callable[[], AnyMatricesStruct]
 type CorrelationMatricesDict = Dict[LiteralString, np.ndarray]
 
 
@@ -314,9 +316,26 @@ class DataLoader:
 
         return graphs
 
-    def lazy_load_graphs(self) -> SpatioTemporalGraphsFilenamesList:
+    def load_matrices(self) -> MatricesDict:
+        matrices = {}
+
         with self.__within_archive as zfp:
-            return list(filter(lambda n: n.endswith('.json'), zfp.namelist()))
+            for name in zfp.namelist():
+                if name.endswith('.npy'):
+                    with zfp.open(name, 'r') as fp:
+                        matrices[name.split('.npy')[0]] = np.load(fp)
+
+        return matrices
+
+    def __get_filenames(self, ext: LiteralString) -> List[LiteralString]:
+        with self.__within_archive as zfp:
+            return list(filter(lambda n: n.endswith(ext), zfp.namelist()))
+
+    def lazy_load_graphs(self) -> List[LiteralString]:
+        return self.__get_filenames('.json')
+
+    def lazy_load_matrices(self) -> List[LiteralString]:
+        return self.__get_filenames('.npy')
 
     def load_graph(self, areas: pd.DataFrame, filename: LiteralString) -> Optional[SpatioTemporalGraph]:
         with self.__within_archive as zfp:
@@ -325,20 +344,28 @@ class DataLoader:
                 graph = nx.json_graph.node_link_graph(graph_dict, edges='edges')
                 return SpatioTemporalGraph(graph, areas)
 
-    def __load_all_scheme(self, loader: GraphsLoader) -> Optional[Tuple[pd.DataFrame, AnySpatioTemporalGraphsStruct]]:
+    def load_matrix(self, filename: LiteralString) -> Optional[np.ndarray]:
+        with self.__within_archive as zfp:
+            with zfp.open(filename, 'r') as fp:
+                return np.load(fp)
+
+    def __load_all_scheme(self, graphs_loader: GraphsLoader, matrices_loader: MatricesLoader) \
+            -> Optional[Tuple[pd.DataFrame, AnySpatioTemporalGraphsStruct, AnyMatricesStruct]]:
         areas = self.load_areas()
 
         if areas is None:
             return None
 
-        graphs = loader(areas)
-        return areas, graphs
+        graphs = graphs_loader(areas)
+        matrices = matrices_loader()
 
-    def load(self) -> Optional[Tuple[pd.DataFrame, SpatioTemporalGraphsDict]]:
-        return self.__load_all_scheme(self.load_graphs)
+        return areas, graphs, matrices
 
-    def lazy_load(self) -> Optional[Tuple[pd.DataFrame, SpatioTemporalGraphsFilenamesList]]:
-        return self.__load_all_scheme(lambda a: self.lazy_load_graphs())
+    def load(self) -> Optional[Tuple[pd.DataFrame, SpatioTemporalGraphsDict, MatricesDict]]:
+        return self.__load_all_scheme(self.load_graphs, self.load_matrices)
+
+    def lazy_load(self) -> Optional[Tuple[pd.DataFrame, List[LiteralString], List[LiteralString]]]:
+        return self.__load_all_scheme(lambda a: self.lazy_load_graphs(), self.lazy_load_matrices)
 
 
 type SavableDataElement = pd.DataFrame | SpatioTemporalGraphsDict | CorrelationMatricesDict

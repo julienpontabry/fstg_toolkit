@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from .utils import split_factors_from_name
@@ -29,18 +30,23 @@ class GraphsDataset:
     def __contains__(self, ids: tuple[str, ...]) -> bool:
         return ids in self.subjects.index
 
-    def __getitem__(self, ids: tuple[str, ...]) -> SpatioTemporalGraph:
-        filename = self.subjects.loc[ids]['Filename']
+    def get_graph(self, ids: tuple[str, ...]) -> SpatioTemporalGraph:
+        filename = self.subjects.loc[ids]['Graph']
         return self.loader.load_graph(self.areas_desc, filename)
+
+    def get_matrix(self, ids: tuple[str, ...]) -> np.ndarray:
+        filename = self.subjects.loc[ids]['Matrix']
+        return self.loader.load_matrix(filename)
 
     @staticmethod
     def deserialize(data: dict[str, Any]) -> 'GraphsDataset':
         filepath = data['filepath']
+        n = len(data['factors'])
         subjects = pd.DataFrame(data['subjects'])
         return GraphsDataset(loader=DataLoader(filepath),
                              areas_desc=pd.DataFrame(data['areas_desc']).set_index('Id_Area'),
                              factors=[set(f) for f in data['factors']],
-                             subjects=subjects.set_index(list(subjects.columns[:-1])))
+                             subjects=subjects.set_index(list(subjects.columns[:n+1])))
 
     @staticmethod
     def from_filepath(filepath: Path) -> 'GraphsDataset':
@@ -50,14 +56,20 @@ class GraphsDataset:
 
         if result is None:
             raise IOError("No dataset red.")
-        areas_desc, filenames = result
+        areas_desc, graphs_filenames, matrices_filenames = result
 
-        # build the subjects from the name of the included graphs
-        filenames_without_ext = map(lambda n: n.split('.json')[0], filenames)
+        # extract factors from filename (without extension
+        filenames_without_ext = map(lambda n: n.split('.json')[0], graphs_filenames)
         factors, ids = split_factors_from_name(filenames_without_ext)
-        data = list(zip(*zip(*ids), filenames))
-        columns = [f"Factor{i}" for i in range(len(factors))] + ["Subject", "Filename"]
-        subjects = pd.DataFrame(data, columns=columns).set_index(columns[:-1])
+
+        # create a subject's table with factors as index and filenames as data
+        data = list(zip(*zip(*ids), graphs_filenames))
+        n = len(factors)
+        columns = [f'Factor{i}' for i in range(n)] + ['Subject', 'Graph']
+        subjects = pd.DataFrame(data, columns=columns).set_index(columns[:n+1])
+
+        if len(matrices_filenames) == len(graphs_filenames):
+            subjects['Matrix'] = matrices_filenames
 
         return GraphsDataset(loader=loader,
                              areas_desc=areas_desc,
