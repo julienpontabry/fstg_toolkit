@@ -14,7 +14,12 @@ layout = [
         dbc.Col(dbc.Label("Time"), width='auto'),
         dbc.Col(dcc.Slider(min=0, max=1, step=1, value=0, id='mtx-slider-time'))
     ]),
-    dbc.Row(dcc.Graph(figure={}, id='mtx-graph', config=plotly_config)),
+    dbc.Row(
+        dcc.Loading(
+            children=[dcc.Graph(figure={}, id='mtx-graph', config=plotly_config)],
+            type='circle', overlay_style={"visibility": "visible", "filter": "blur(2px)"}
+        )
+    ),
 ]
 
 
