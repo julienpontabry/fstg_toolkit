@@ -34,6 +34,9 @@ class GraphsDataset:
         filename = self.subjects.loc[ids]['Graph']
         return self.loader.load_graph(self.areas_desc, filename)
 
+    def has_matrices(self) -> bool:
+        return 'Matrix' in self.subjects.columns
+
     def get_matrix(self, ids: tuple[str, ...]) -> np.ndarray:
         filename = self.subjects.loc[ids]['Matrix']
         return self.loader.load_matrix(filename)
