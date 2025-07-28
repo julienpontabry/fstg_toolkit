@@ -59,7 +59,7 @@ class GraphsDataset:
         areas_desc, graphs_filenames, matrices_filenames = result
 
         # extract factors from filename (without extension
-        filenames_without_ext = map(lambda n: n.split('.json')[0], graphs_filenames)
+        filenames_without_ext = map(lambda name: name.split('.json')[0], graphs_filenames)
         factors, ids = split_factors_from_name(filenames_without_ext)
 
         # create a subject's table with factors as index and filenames as data
