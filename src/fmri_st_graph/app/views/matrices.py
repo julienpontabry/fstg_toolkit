@@ -5,6 +5,7 @@ import dash_bootstrap_components as dbc
 
 from ..figures.matrices import build_matrices_figure, break_width_to_cols
 from .common import update_factor_controls, plotly_config
+from ..core.io import GraphsDataset
 
 
 layout = [
@@ -19,40 +20,47 @@ layout = [
 
 @callback(
     Output('mtx-factors-block', 'children'),
-    Input('store-factors', 'data'),
+    Input('store-dataset', 'data'),
     prevent_initial_call=True,
 )
-def update_mtx_factor_controls(factors):
-    return update_factor_controls('mtx', factors, multi=True)
+def dataset_changed(store_dataset):
+    if store_dataset is None:
+        raise PreventUpdate
+
+    # update the layout of the factors' controls
+    return update_factor_controls('mtx', store_dataset['factors'], multi=True)
 
 
 @callback(
     Output('mtx-graph', 'figure'),
     Output('mtx-slider-time', 'max'),
     Output('mtx-slider-time', 'marks'),
-    Input('store-corr', 'data'),
     Input('mtx-slider-time', 'value'),
     Input({'type': 'mtx-factor', 'index': ALL}, 'value'),
     Input('store-break-width', 'data'),
-    State('store-desc', 'data'),
+    State('store-dataset', 'data'),
+    prevent_initial_call=True
 )
-def update_figure(corr, slider_value, factor_values, break_width, desc):
-    if corr is None or len(corr) == 0:
+def selection_changed(slider_value, factor_values, break_width, store_dataset):
+    if store_dataset is None:
         raise PreventUpdate
 
-    # filter the matrices based on the selected factors (if any)
-    defined_factor_values = [factor_value for factor_value in factor_values
-                             if factor_value is not None and len(factor_value) > 0]
-    corr = {key: matrix for key, matrix in corr.items()
-            if all(any(value in key for value in factor_value)
-                   for factor_value in defined_factor_values)}
+    # deserialize the dataset and filter the matrices to load
+    dataset = GraphsDataset.deserialize(store_dataset)
+
+    def_fac_vals = list(filter(lambda f: f is not None and len(f) > 0, factor_values))
+    selected = filter(lambda ids: all(any(v in ids for v in f) for f in def_fac_vals),
+                      dataset.subjects.index)
+
+    # load the selected matrices
+    corr = {ids: dataset.get_matrix(ids) for ids in selected}
 
     # set the time slider properties
     max_slider_value = len(next(iter(corr.values()))) - 1
     marks_slider = {i: str(i) for i in range(0, max_slider_value + 1, max_slider_value//10)}
 
-    # update the number of columns depending on the breakpoints width
+    # update the number of columns depending on the breakpoints width and create figure
     n_cols = break_width_to_cols(break_width['name'])
+    figure = build_matrices_figure(corr, slider_value, dataset.areas_desc, n_cols=n_cols)
 
-    # create figure
-    return build_matrices_figure(corr, slider_value, desc, n_cols=n_cols), max_slider_value, marks_slider
+    return figure, max_slider_value, marks_slider
