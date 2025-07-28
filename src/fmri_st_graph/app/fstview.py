@@ -53,9 +53,6 @@ app.layout = dbc.Container(
 
         # app's storage cache
         dcc.Store(id='store-dataset', storage_type='memory'),
-        dcc.Store(id='store-desc', storage_type='session'),
-        dcc.Store(id='store-factors', storage_type='session'),
-        dcc.Store(id='store-corr', storage_type='session'),
         dcc.Store(id='store-break-width', storage_type='memory'),
 
         # setup event on window's width breakpoints
