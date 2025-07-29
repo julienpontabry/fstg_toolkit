@@ -1,8 +1,14 @@
-if __name__ == '__main__':
-    import timeit
-    import fmri_st_graph as fg
+from pathlib import Path
+import timeit
+import fmri_st_graph as fg
+from fmri_st_graph.io import DataLoader
 
-    graph = fg.load_spatio_temporal_graph('/tmp/st_graph.zip')
+
+if __name__ == '__main__':
+    loader = DataLoader(Path('/tmp/st_graph.zip'))
+    areas = loader.load_areas()
+    filenames = loader.lazy_load_graphs()
+    graph = loader.load_graph(areas, filenames[0])
 
     timer = timeit.Timer(lambda: fg.spatial_plot(graph, 0))
     n, _ = timer.autorange()

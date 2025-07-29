@@ -10,8 +10,9 @@ from matplotlib import pyplot as plt
 from screeninfo import get_monitors
 
 from fmri_st_graph import generate_pattern, SpatioTemporalGraphSimulator, CorrelationMatrixSequenceSimulator
+from .graph import SpatioTemporalGraph
 from .factory import spatio_temporal_graph_from_corr_matrices
-from .io import load_spatio_temporal_graph, save_spatio_temporal_graph, DataSaver
+from .io import save_spatio_temporal_graph, DataSaver, DataLoader
 from .visualization import spatial_plot, temporal_plot, multipartite_plot, DynamicPlot
 from .app.fstview import app
 from .app.core.datafilesdb import get_data_file_db, MemoryDataFilesDB
@@ -21,6 +22,27 @@ from .app.core.datafilesdb import get_data_file_db, MemoryDataFilesDB
 def cli():
     """Build, plot and simulate spatio-temporal graphs for fMRI data."""
     pass
+
+
+## data utils #################################################################
+
+def __load_graph(filepath: Path) -> SpatioTemporalGraph:
+    loader = DataLoader(Path(filepath))
+    filenames = loader.lazy_load_graphs()
+
+    if (n := len(filenames)) > 0:
+        if n == 1:
+            chosen = filenames[0]
+        else:
+            click.echo("The following graphs are available from the file:")
+            click.echo(";\n".join(filenames) + ".")
+            chosen = click.prompt("Which graph to load?", default=filenames[0])
+    else:
+        click.echo("No graph found in data file.", err=True)
+        exit(1)
+
+    areas = loader.load_areas()
+    return loader.load_graph(areas, chosen)
 
 
 ## building ###################################################################
@@ -166,14 +188,14 @@ def __figure_screen_setup(res_factor: float = 0.75, size_factor: float = 0.75):
 
 
 @click.group()
-@click.argument('graph_path', type=click.Path(exists=True))
+@click.argument('graph_path', type=click.Path(exists=True, path_type=Path))
 @click.pass_context
-def plot(ctx: click.core.Context, graph_path: str):
+def plot(ctx: click.core.Context, graph_path: Path):
     """Plot a spatio-temporal graph from an archive graph file.
 
     The file GRAPH_PATH must be an archive containing the spatio-temporal graph.
     """
-    ctx.obj = load_spatio_temporal_graph(graph_path)
+    ctx.obj = __load_graph(graph_path)
 
 
 @plot.command()
@@ -422,7 +444,7 @@ def sequence(ctx: click.core.Context, patterns: tuple[Path], sequence_descriptio
 
     SEQUENCE_DESCRIPTION is a space-separated list of elements, where each element is either a pattern (p<n>, where n is the order of the pattern) or a number (d) indicating d steady states.
     """
-    pattern_graphs = {f'p{i+1}': load_spatio_temporal_graph(filepath)
+    pattern_graphs = {f'p{i+1}': __load_graph(filepath)
                       for i, filepath in enumerate(patterns)}
     simulator = SpatioTemporalGraphSimulator(**pattern_graphs)
     graph = simulator.simulate(*sequence_description)
@@ -437,7 +459,7 @@ def sequence(ctx: click.core.Context, patterns: tuple[Path], sequence_descriptio
 @click.pass_context
 def correlations(ctx: click.core.Context, graph_path: Path, threshold: float):
     """Simulate correlations matrices from a spatio-temporal graph."""
-    graph = load_spatio_temporal_graph(graph_path)
+    graph = __load_graph(graph_path)
     simulator = CorrelationMatrixSequenceSimulator(graph, threshold=threshold)
     matrices = simulator.simulate()
     np.savez_compressed(ctx.obj, simulated=matrices)
