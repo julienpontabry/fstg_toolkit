@@ -50,8 +50,11 @@ def selection_changed(slider_value, factor_values, break_width, store_dataset):
     if store_dataset is None:
         raise PreventUpdate
 
-    # deserialize the dataset and filter the matrices to load
+    # deserialize the dataset and filter the matrices to load (if any)
     dataset = GraphsDataset.deserialize(store_dataset)
+
+    if not dataset.has_matrices():
+        raise PreventUpdate
 
     def_fac_vals = list(filter(lambda f: f is not None and len(f) > 0, factor_values))
     selected = filter(lambda ids: all(any(v in ids for v in f) for f in def_fac_vals),
