@@ -226,7 +226,7 @@ def save_spatio_temporal_graph(graph: SpatioTemporalGraph, filepath: Path | str)
         with zfp.open('areas.csv', 'w') as fp:
             graph.areas.to_csv(fp)
 
-# TODO refactor module to include optional elements in the archive (eg matrices)
+
 def save_spatio_temporal_graphs(graphs: dict[str, SpatioTemporalGraph], filepath: Path | str) -> None:
     """Save multiple spatio-temporal graphs to a zip file.
 
@@ -291,7 +291,41 @@ type CorrelationMatricesDict = Dict[LiteralString, np.ndarray]
 
 @dataclass
 class DataLoader:
-    # TODO docstring
+    """Loads spatio-temporal data (graph, areas description, raw matrices) from a zip archive.
+
+    This class provides methods to load all or part of the data stored in a zip file, including:
+    - Area descriptions (as a pandas DataFrame)
+    - Spatio-temporal graphs (as SpatioTemporalGraph objects)
+    - Correlation matrices (as numpy arrays)
+
+    It supports both eager and lazy loading of graphs and matrices, and allows loading individual files by name.
+
+    Attributes
+    ----------
+    filepath: pathlib.Path
+        pathlib.Path to the zip archive containing the data.
+
+    Methods
+    -------
+    load_areas() -> Optional[pd.DataFrame]
+        Load the areas description DataFrame from the archive.
+    load_graphs(areas: pd.DataFrame) -> SpatioTemporalGraphsDict
+        Load all spatio-temporal graphs using the provided areas DataFrame.
+    load_matrices() -> MatricesDict
+        Load all matrices from the archive.
+    lazy_load_graphs() -> List[LiteralString]
+        List available graph filenames in the archive.
+    lazy_load_matrices() -> List[LiteralString]
+        List available matrix filenames in the archive.
+    load_graph(areas: pd.DataFrame, filename: LiteralString) -> Optional[SpatioTemporalGraph]
+        Load a single spatio-temporal graph by filename.
+    load_matrix(filename: LiteralString) -> Optional[np.ndarray]
+        Load a single matrix by filename.
+    load() -> Optional[Tuple[pd.DataFrame, SpatioTemporalGraphsDict, MatricesDict]]
+        Load areas, graphs, and matrices from the archive.
+    lazy_load() -> Optional[Tuple[pd.DataFrame, List[LiteralString], List[LiteralString]]]
+        Load areas and list available graph and matrix filenames.
+    """
     filepath: Path
 
     @property
@@ -299,11 +333,31 @@ class DataLoader:
         return ZipFile(str(self.filepath), 'r')
 
     def load_areas(self) -> Optional[pd.DataFrame]:
+        """Load areas description DataFrame from the archive.
+
+        Returns
+        -------
+        pandas.DataFrame or None
+            A DataFrame containing areas description with 'Id_Area' as index, or None if the file is not found.
+        """
         with self.__within_archive as zfp:
             with zfp.open('areas.csv', 'r') as fp:
                 return pd.read_csv(fp, index_col='Id_Area')
 
     def load_graphs(self, areas: pd.DataFrame) -> SpatioTemporalGraphsDict:
+        """Load all spatio-temporal graphs with the provided areas DataFrame.
+
+        Parameters
+        ----------
+        areas: pandas.DataFrame
+            A DataFrame containing areas description with 'Id_Area' as index.
+
+        Returns
+        -------
+        dict[str, SpatioTemporalGraph]
+            A dictionary of spatio-temporal graphs, where keys are graph names (filenames without '.json' extension)
+            and values are SpatioTemporalGraph objects.
+        """
         graphs = {}
 
         with self.__within_archive as zfp:
@@ -317,6 +371,14 @@ class DataLoader:
         return graphs
 
     def load_matrices(self) -> MatricesDict:
+        """Load all matrices from the archive.
+
+        Returns
+        -------
+        dict[str, numpy.ndarray]
+            A dictionary of matrices, where keys are matrix names (filenames without '.npy' extension)
+            and values are numpy arrays representing the matrices.
+        """
         matrices = {}
 
         with self.__within_archive as zfp:
@@ -332,12 +394,41 @@ class DataLoader:
             return list(filter(lambda n: n.endswith(ext), zfp.namelist()))
 
     def lazy_load_graphs(self) -> List[LiteralString]:
+        """List available graph filenames in the archive.
+
+        Returns
+        -------
+        list[str]
+            A list of filenames (with '.json' extension) of all spatio-temporal graphs.
+        """
         return self.__get_filenames('.json')
 
     def lazy_load_matrices(self) -> List[LiteralString]:
+        """List available matrix filenames in the archive.
+
+        Returns
+        -------
+        list[str]
+            A list of filenames (with '.npy' extension) of all matrices.
+        """
         return self.__get_filenames('.npy')
 
     def load_graph(self, areas: pd.DataFrame, filename: LiteralString) -> Optional[SpatioTemporalGraph]:
+        """Load a single spatio-temporal graph by filename.
+
+        Parameters
+        ----------
+        areas: pandas.DataFrame
+            A DataFrame containing areas description with 'Id_Area' as index.
+        filename: str
+            The name of the file (with '.json' extension) to load the graph from.
+
+        Returns
+        -------
+        SpatioTemporalGraph or None
+            A SpatioTemporalGraph object if the file is found and loaded successfully,
+            or None if the file does not exist in the archive.
+        """
         with self.__within_archive as zfp:
             with zfp.open(filename, 'r') as fp:
                 graph_dict = json.load(fp, object_hook=_spatio_temporal_object_hook)
@@ -345,6 +436,19 @@ class DataLoader:
                 return SpatioTemporalGraph(graph, areas)
 
     def load_matrix(self, filename: LiteralString) -> Optional[np.ndarray]:
+        """Load a single matrix by filename.
+
+        Parameters
+        ----------
+        filename: str
+            The name of the file (with '.npy' extension) to load the matrix from
+
+        Returns
+        -------
+        numpy.ndarray or None
+            A numpy array representing the matrix if the file is found and loaded successfully,
+            or None if the file does not exist in the archive.
+        """
         with self.__within_archive as zfp:
             with zfp.open(filename, 'r') as fp:
                 return np.load(fp)
@@ -362,10 +466,30 @@ class DataLoader:
         return areas, graphs, matrices
 
     def load(self) -> Optional[Tuple[pd.DataFrame, SpatioTemporalGraphsDict, MatricesDict]]:
+        """Load areas, graphs, and matrices from the archive.
+
+        Returns
+        -------
+        tuple[pandas.DataFrame, dict[str, SpatioTemporalGraphs], dict[str, numpy.ndarray]] or None
+            A tuple containing:
+            - A DataFrame with areas description (index: 'Id_Area').
+            - A dictionary of spatio-temporal graphs (keys: graph names, values: SpatioTemporalGraph objects).
+            - A dictionary of matrices (keys: matrix names, values: numpy arrays).
+        """
         return self.__load_all_scheme(self.load_graphs, self.load_matrices)
 
     def lazy_load(self) -> Optional[Tuple[pd.DataFrame, List[LiteralString], List[LiteralString]]]:
-        return self.__load_all_scheme(lambda a: self.lazy_load_graphs(), self.lazy_load_matrices)
+        """Load areas and list available graph and matrix filenames.
+
+        Returns
+        -------
+        tuple[pandas.DataFrame, list[str], list[str]]
+            A tuple containing:
+            - A DataFrame with areas description (index: 'Id_Area').
+            - A list of filenames (with '.json' extension) of all spatio-temporal graphs.
+            - A list of filenames (with '.npy' extension) of all matrices.
+        """
+        return self.__load_all_scheme(lambda _: self.lazy_load_graphs(), self.lazy_load_matrices)
 
 
 type SavableDataElement = pd.DataFrame | SpatioTemporalGraphsDict | CorrelationMatricesDict
@@ -373,13 +497,38 @@ type SavableDataElement = pd.DataFrame | SpatioTemporalGraphsDict | CorrelationM
 
 @dataclass
 class DataSaver:
-    # TODO docstring
+    """DataSaver accumulates and saves spatio-temporal data elements (areas, graphs, matrices) to a zip archive.
+
+    Attributes
+    ----------
+    elements : list of SavableDataElement
+        List of data elements to be saved. Each element can be a pandas DataFrame (areas),
+        a dictionary of SpatioTemporalGraph objects, or a dictionary of correlation matrices.
+
+    Methods
+    -------
+    add(element: SavableDataElement) -> None
+        Add a data element to the list for saving.
+    clear() -> None
+        Clear all accumulated data elements.
+    save(filepath: Path) -> None
+        Save all accumulated data elements to the specified zip archive.
+    """
     elements: List[SavableDataElement] = field(default_factory=lambda: [])
 
     def add(self, element: SavableDataElement) -> None:
+        """Add a data element to the list for saving.
+
+        Parameters
+        ----------
+        element : SavableDataElement
+            The data element to add. Can be a pandas DataFrame, a dictionary of SpatioTemporalGraph objects,
+            or a dictionary of correlation matrices.
+        """
         self.elements.append(element)
 
     def clear(self) -> None:
+        """Clear the list of all accumulated data elements for saving."""
         self.elements.clear()
 
     @staticmethod
@@ -401,6 +550,13 @@ class DataSaver:
                 np.save(fp, matrix)
 
     def save(self, filepath: Path) -> None:
+        """Save all accumulated data elements to the specified zip archive.
+
+        Parameters
+        ----------
+        filepath : Path
+            The path to the zip archive where the data will be saved.
+        """
         with ZipFile(str(filepath), 'w') as zfp:
             for element in self.elements:
                 if isinstance(element, pd.DataFrame):
