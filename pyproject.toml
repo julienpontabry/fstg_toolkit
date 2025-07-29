@@ -19,6 +19,7 @@ dependencies = [
     "dash-bootstrap-components (>=2.0.0,<3.0.0)",
     "dash-daq (>=0.6.0,<0.7.0)",
     "dash-breakpoints (>=0.1.0,<0.2.0)",
+    "dash-cytoscape (>=1.0.2,<2.0.0)",
 ]
 
 

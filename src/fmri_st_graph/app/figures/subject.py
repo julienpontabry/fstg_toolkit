@@ -2,6 +2,7 @@ from typing import Any
 
 import numpy as np
 from plotly import graph_objects as go
+import dash_cytoscape as cyto
 
 from ...graph import RC5
 from ...visualization import __CoordinatesGenerator, _trans_color
@@ -112,4 +113,46 @@ def build_subject_figure(props: dict[str, Any]) -> go.Figure:
                                   gridcolor='lightgray'),
                        range=[-1.5, props['height']+1.5])
         )
+    )
+
+
+def build_cyto_figure(props: dict[str, Any]) -> cyto.Cytoscape:
+    nodes = [
+        {'data': {'id': f'{x}-{y}', 'size': 6 * size**5, 'color': color},
+         'position': {'x': x * 100, 'y': y * 100},
+         'selectable': False,
+         'locked': True}
+        for x, y, size, color in zip(props['nodes_x'], props['nodes_y'],
+                                     props['nodes_sizes'], props['nodes_color'])
+    ]
+
+    edges = [
+        {'data': {'source': f'{x1}-{y1}', 'target': f'{x2}-{y2}', 'color': color}}
+        for (x1, x2), (y1, y2), color in zip(props['edges_x'], props['edges_y'], props['edges_colors'])
+    ]
+
+    return cyto.Cytoscape(
+        layout={"name": "preset", "fit": True},
+        style={"width": "100%", "height": f"{21*(props['height']+2)}px"},
+        elements=nodes + edges,
+        stylesheet=[
+            {
+                'selector': 'node',
+                'style': {
+                    'background-color': 'mapData(color, -1, 1, blue, red)',
+                    'line-color': 'mapData(color, -1, 1, blue, red)',
+                    'width': 'mapData(size, 0, 6, 1, 50)',
+                    'height': 'mapData(size, 0, 6, 1, 50)',
+                },
+            },
+            {
+                'selector': 'edge',
+                'style': {
+                    'background-color': 'data(color)',
+                    'line-color': 'data(color)',
+                }
+            }
+        ],
+        # responsive=True,
+        zoom=0.1
     )
