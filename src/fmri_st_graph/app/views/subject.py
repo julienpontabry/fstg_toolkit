@@ -116,3 +116,13 @@ def selection_changed(n_clicks, subject, regions, factor_values, store_dataset):
 )
 def regions_selection_changed(regions):
     return regions is None or len(regions) == 0
+
+
+@callback(
+    Output('subject-cyto', 'elements'),
+    Input('subject-cyto', 'mouseoverNodeData'),
+    prevent_initial_call=True
+)
+def node_hovered(hover_node):
+    print(hover_node)
+    raise PreventUpdate

@@ -75,8 +75,16 @@ def generate_subject_display_props(graph, regions: list[str]) -> dict[str, Any]:
 
 
 def build_cyto_figure(props: dict[str, Any]) -> cyto.Cytoscape:
+    regions = [
+        # {'data': {'id': 'insula', 'label': 'Insula'}, 'classes': 'regions'},
+        # {'data': {'id': 'midbrain', 'label': 'Midbrain'}, 'classes': 'regions'}
+
+        # {'data': {'id': region}, 'classes': 'regions'}
+        # for region in props['regions']
+    ]
+
     nodes = [
-        {'data': {'id': f'{x}-{y}', 'size': 6 * size**5, 'color': color},
+        {'data': {'id': f'{x}-{y}', 'size': 6 * size**5, 'color': color, 'parent': 'insula' if y < 10 else 'midbrain'},
          'position': {'x': x * 100, 'y': y * 100},
          'selectable': False,
          'locked': True}
@@ -90,9 +98,10 @@ def build_cyto_figure(props: dict[str, Any]) -> cyto.Cytoscape:
     ]
 
     return cyto.Cytoscape(
-        layout={"name": "preset", "fit": True},
-        style={"width": "100%", "height": f"{21*(props['height']+2)}px"},
-        elements=nodes + edges,
+        id='subject-cyto',
+        layout={'name': 'preset', 'fit': True},
+        style={'width': '100%', 'height': f'{21*(props['height']+2)}px'},
+        elements=regions + nodes + edges,
         stylesheet=[
             {
                 'selector': 'node',
@@ -104,6 +113,12 @@ def build_cyto_figure(props: dict[str, Any]) -> cyto.Cytoscape:
                 },
             },
             {
+                'selector': '.regions',
+                'style': {
+                    'content': 'data(label)'
+                }
+            },
+            {
                 'selector': 'edge',
                 'style': {
                     'background-color': 'data(color)',
@@ -113,3 +128,7 @@ def build_cyto_figure(props: dict[str, Any]) -> cyto.Cytoscape:
         ],
         zoom=0.1
     )
+
+# TODO test grouping the nodes per regions => slowdown / impractical to design (CSS)
+# TODO test user mouse interactions => id not found but still capture event / not easy to update color without updating everything
+# TODO global drawing (time axis, viewport, etc.) => not possible natively
