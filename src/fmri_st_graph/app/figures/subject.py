@@ -83,7 +83,10 @@ def build_subject_figure(props: dict[str, Any]) -> go.Figure:
         marker=dict(size=6*np.power(props['nodes_sizes'], 5),
                     color=props['nodes_color'],
                     cmin=-1, cmid=0, cmax=1, line_width=0,
-                    colorscale='RdBu_r', showscale=True)
+                    colorscale='RdBu_r', showscale=True,
+                    colorbar=dict(
+                        title=dict(text="Internal strength", side='right')
+                    ))
     )
 
     edges_traces = []
