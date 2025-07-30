@@ -96,6 +96,9 @@ def build_subject_figure(props: dict[str, Any]) -> go.Figure:
         )
         edges_traces.append(edges_trace)
 
+    multi_lines_regions = [r.replace(' ', '<br>') for r in props['regions']]
+    centered_ticks = [(l1+l2)/2-1 for l1, l2 in zip(props['levels'][:-1], props['levels'][1:])]
+
     return go.Figure(
         data=[*edges_traces, nodes_trace],
         layout=go.Layout(
@@ -106,7 +109,7 @@ def build_subject_figure(props: dict[str, Any]) -> go.Figure:
             hoverlabel=dict(bgcolor='white'),
             xaxis=dict(showgrid=False, zeroline=False, title="Time"),
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=True,
-                       tickvals=props['levels'][:-1], ticktext=props['regions'],
+                       tickvals=centered_ticks, ticktext=multi_lines_regions,
                        minor=dict(tickvals=np.subtract(props['levels'][1:-1], 1),
                                   showgrid=True, gridwidth=2, griddash='dash',
                                   gridcolor='lightgray'),
