@@ -18,17 +18,20 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
             const point = hoverData.points[0];
             const x = point['x'];
             const y = point['y'];
-            const coord = storeHoverGraph[x][y];
+            const props = storeHoverGraph[x][y]; // contains y coordinates and weights
 
-            if (!coord || coord.length !== 2) {
+            if (!props || props.length !== 2) {
                 return window.dash_clientside.no_update;
             }
             
             // define properties of new points
-            const xs = [x, ...coord[0]];
-            const ys = [y, ...coord[1]];
-            const colors = Array(xs.length + 1).fill('green');
-            colors[0] = 'red'; // Highlight the hovered point
+            const size = 10
+            const min_size = 1
+            const max_size = size * 2 - 1
+            const ys = [y, ...props[0]];
+            const ws = [size, ...props[1].map((w) => w*max_size + min_size)];
+            const xs = Array(ys.length + 1).fill(x);
+            const colors = ['red', ...props[1].map((w) => `hsl(120, ${w*100}%, 50%)`)]
             
             // check last trace if it contains already some hovering points
             const n = figure.data.length;
@@ -43,7 +46,7 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
                     name: 'hover-spatial-connections',
                     hoverinfo: 'skip',
                     marker: {
-                        size: 10,
+                        size: ws,
                         color: colors,
                         line: {'width': 0},
                         symbol: 'square',
@@ -60,6 +63,7 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
                         x: [xs],
                         y: [ys],
                         'marker.color': [colors],
+                        'marker.size': [ws],
                     }, n-1);        
             }
             
