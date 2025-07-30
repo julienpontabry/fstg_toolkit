@@ -3,8 +3,8 @@ from dash.dependencies import ALL
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, callback, dcc, html, clientside_callback, ClientsideFunction
 
-from ..figures.subject import build_subject_figure, generate_subject_display_props, build_cyto_figure
-from .common import update_factor_controls, plotly_config
+from ..figures.subject import generate_subject_display_props, build_cyto_figure
+from .common import update_factor_controls
 from ..core.io import GraphsDataset
 
 
@@ -20,10 +20,8 @@ layout = [
     ], className='g-0'),
     dbc.Row(
         dcc.Loading(
-            # children=[dcc.Graph(figure={}, id='st-graph', config=plotly_config)],
-            children=None,
-            id='st-graph',
-            type='circle', overlay_style={"visibility": "visible", "filter": "blur(2px)"}
+            children=None, id='st-graph', type='circle',
+            overlay_style={"visibility": "visible", "filter": "blur(2px)"}
         )
     ),
 
@@ -108,7 +106,6 @@ def selection_changed(n_clicks, subject, regions, factor_values, store_dataset):
     graph = dataset.get_graph(ids)
     figure_props = generate_subject_display_props(graph, regions)
 
-    # return build_subject_figure(figure_props), figure_props['spatial_connections'], True
     return build_cyto_figure(figure_props), figure_props['spatial_connections'], True
 
 
@@ -119,15 +116,3 @@ def selection_changed(n_clicks, subject, regions, factor_values, store_dataset):
 )
 def regions_selection_changed(regions):
     return regions is None or len(regions) == 0
-
-
-# clientside_callback(
-#     ClientsideFunction(
-#         namespace='clientside',
-#         function_name='subject_node_hover',
-#     ),
-#     Output('st-graph', 'style'), # NOTE this is a workaround to ensure the clientside callback is registered
-#     Input('st-graph', 'hoverData'),
-#     State('store-spatial-connections', 'data'),
-#     prevent_initial_call=True
-# )

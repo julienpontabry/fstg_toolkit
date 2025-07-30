@@ -74,48 +74,6 @@ def generate_subject_display_props(graph, regions: list[str]) -> dict[str, Any]:
     }
 
 
-def build_subject_figure(props: dict[str, Any]) -> go.Figure:
-    # TODO find a way to reduce the number of elements displayed in the figure
-    # TODO any way to improve the graphical performances (eg, WebGL)?
-    nodes_trace = go.Scatter(
-        x=props['nodes_x'], y=props['nodes_y'],
-        mode='markers',
-        hoverinfo='none',
-        marker=dict(size=6*np.power(props['nodes_sizes'], 5),
-                    color=props['nodes_color'],
-                    cmin=-1, cmid=0, cmax=1, line_width=0,
-                    colorscale='RdBu_r', showscale=True)
-    )
-
-    edges_traces = []
-    for x, y, c in zip(props['edges_x'], props['edges_y'], props['edges_colors']):
-        edges_trace = go.Scatter(
-            x=x, y=y,
-            mode='lines',
-            hoverinfo='skip',
-            line=dict(width=0.5, color=c)
-        )
-        edges_traces.append(edges_trace)
-
-    return go.Figure(
-        data=[*edges_traces, nodes_trace],
-        layout=go.Layout(
-            height=21*(props['height']+2)+126,
-            margin=dict(t=40),
-            showlegend=False,
-            hovermode='closest',
-            hoverlabel=dict(bgcolor='white'),
-            xaxis=dict(showgrid=False, zeroline=False, title="Time"),
-            yaxis=dict(showgrid=False, zeroline=False, showticklabels=True,
-                       tickvals=props['levels'][:-1], ticktext=props['regions'],
-                       minor=dict(tickvals=np.subtract(props['levels'][1:-1], 1),
-                                  showgrid=True, gridwidth=2, griddash='dash',
-                                  gridcolor='lightgray'),
-                       range=[-1.5, props['height']+1.5])
-        )
-    )
-
-
 def build_cyto_figure(props: dict[str, Any]) -> cyto.Cytoscape:
     nodes = [
         {'data': {'id': f'{x}-{y}', 'size': 6 * size**5, 'color': color},
@@ -153,6 +111,5 @@ def build_cyto_figure(props: dict[str, Any]) -> cyto.Cytoscape:
                 }
             }
         ],
-        # responsive=True,
         zoom=0.1
     )
