@@ -23,15 +23,20 @@ class DataFilesDB(ABC):
         Lists all token-file path pairs in the database.
     """
 
-    def __init__(self, token_nb_bytes: int = 3):
+    def __init__(self, token_nb_bytes: int = 3, debug: bool = False):
         self.__token_nb_bytes = token_nb_bytes
+
+        if debug:
+            self.__generate_token_impl = lambda: "debug-mode-token"
+        else:
+            self.__generate_token_impl = lambda: secrets.token_urlsafe(nbytes=self.__token_nb_bytes)
 
     @abstractmethod
     def _add_data_file_to_db(self, token: str, file_path: Path) -> None:
         raise NotImplementedError("Abstract class not meant to be used directly")
 
     def __generate_token(self) -> str:
-        return secrets.token_urlsafe(nbytes=self.__token_nb_bytes)
+        return self.__generate_token_impl()
 
     def add(self, file_path: Path) -> str:
         """Adds a data file to the database and returns its unique token.
@@ -141,7 +146,7 @@ class SQLiteDataFilesDB(DataFilesDB):
 singleton_data_files_db: Optional[DataFilesDB] = None
 
 
-def get_data_file_db(requested_type: Optional[Type[DataFilesDB]] = None) -> DataFilesDB:
+def get_data_file_db(requested_type: Optional[Type[DataFilesDB]] = None, **kwargs) -> DataFilesDB:
     """Returns the singleton instance of the data files database.
 
     If the singleton instance does not exist, it is created using the specified type
@@ -167,7 +172,7 @@ def get_data_file_db(requested_type: Optional[Type[DataFilesDB]] = None) -> Data
 
     if singleton_data_files_db is None:
         db_type = requested_type or SQLiteDataFilesDB
-        singleton_data_files_db = db_type()
+        singleton_data_files_db = db_type(**kwargs)
     elif requested_type is not None and not isinstance(singleton_data_files_db, requested_type):
         raise RuntimeError(f"Unable to get a data file db of type {requested_type}! "
                            f"A DB already exists with type {type(singleton_data_files_db)}")

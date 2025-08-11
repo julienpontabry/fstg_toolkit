@@ -479,7 +479,7 @@ def correlations(ctx: click.core.Context, graph_path: Path, threshold: float):
 def show(graphs_data: Path, debug: bool, port: int, no_browser: bool):
     """Show a dashboard for visualizing spatio-temporal graphs."""
 
-    db = get_data_file_db(requested_type=MemoryDataFilesDB)
+    db = get_data_file_db(requested_type=MemoryDataFilesDB, debug=debug)
     token = db.add(graphs_data)
 
     if not no_browser:
