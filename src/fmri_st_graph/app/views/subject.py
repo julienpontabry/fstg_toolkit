@@ -20,7 +20,7 @@ layout = [
     ], className='g-0'),
     dbc.Row(
         dcc.Loading(
-            children=[dcc.Graph(figure={}, id='st-graph', config=plotly_config)],
+            children=[dcc.Graph(figure={}, id='st-graph', config=plotly_config, style={'onUnhover': 'this.dispatchEven(new CustomEvent("plotly_unhover"))'})],
             type='circle', overlay_style={"visibility": "visible", "filter": "blur(2px)"}
         )
     ),
@@ -119,12 +119,17 @@ def regions_selection_changed(regions):
 
 
 clientside_callback(
-    ClientsideFunction(
-        namespace='clientside',
-        function_name='subject_node_hover',
-    ),
+    ClientsideFunction(namespace='clientside', function_name='subject_node_hover'),
     Output('st-graph', 'style'), # NOTE this is a workaround to ensure the clientside callback is registered
     Input('st-graph', 'hoverData'),
     State('store-spatial-connections', 'data'),
     prevent_initial_call=True
+)
+
+
+# NOTE workaround to remove the hover elements on the graph when the mouse gets out of the figure
+clientside_callback(
+    ClientsideFunction(namespace='clientside', function_name='subject_clear_out'),
+    Output('st-graph', 'id'),
+    Input('st-graph', 'id')
 )

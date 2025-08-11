@@ -69,6 +69,36 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
             
             // no update are needed in any case
             return window.dash_clientside.no_update;
+        },
+
+        subject_clear_out: function(id) {
+            setTimeout(() => {
+                graph = document.querySelector(`#${id} > .js-plotly-plot`);
+
+                graph.on('plotly_unhover', (eventData) => {
+                    if (!eventData || !eventData.event || eventData.event.type !== 'mouseout') {
+                        return window.dash_clientside.no_update;
+                    }
+
+                    // check for a graph figure with specified id
+                    const graphDiv = document.getElementById('st-graph');
+                    const figure = graphDiv.querySelector('.js-plotly-plot');
+
+                    if (!figure || !figure.data) {
+                        return window.dash_clientside.no_update;
+                    }
+
+                    // check last trace if it contains already some hovering points
+                    const n = figure.data.length;
+                    const trace = figure.data[n-1];
+
+                    if (trace.name || trace.name === 'hover-spatial-connections') {
+                        Plotly.deleteTraces(figure, n-1);
+                    }
+                })
+            }, 300);
+
+            return window.dash_clientside.no_update;
         }
     }
 });
