@@ -20,7 +20,7 @@ layout = [
     ], className='g-0'),
     dbc.Row(
         dcc.Loading(
-            children=[dcc.Graph(figure={}, id='st-graph', config=plotly_config, style={'onUnhover': 'this.dispatchEven(new CustomEvent("plotly_unhover"))'})],
+            children=[dcc.Graph(figure={}, id='st-graph', config=plotly_config)],
             type='circle', overlay_style={"visibility": "visible", "filter": "blur(2px)"}
         )
     ),
