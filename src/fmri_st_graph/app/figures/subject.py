@@ -55,7 +55,7 @@ def generate_subject_display_props(graph, regions: list[str]) -> dict[str, Any]:
         # NOTE use double key x/y and list to get it JSON serializable
         candidates = filter(lambda sn: graph.adj[n][sn]['type'] == 'spatial', graph.adj[n])
         candidates = filter(lambda sn: sn in all_coord, candidates)
-        con_coord = map(lambda sn: [all_coord[sn][1], abs(graph[n][sn]['correlation'])], candidates)
+        con_coord = map(lambda sn: [all_coord[sn][1], graph[n][sn]['correlation']], candidates)
         spat_conn[x][y] = list(zip(*con_coord))  # prepare two elements for y coordinates and edge correlation/weight
 
     return {

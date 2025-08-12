@@ -29,9 +29,9 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
             const min_size = 1
             const max_size = size * 2 - 1
             const ys = [y, ...props[0]];
-            const ws = [size, ...props[1].map((w) => w*max_size + min_size)];
+            const ws = [size, ...props[1].map((w) => Math.abs(w)*max_size + min_size)];
             const xs = Array(ys.length + 1).fill(x);
-            const colors = ['red', ...props[1].map((w) => `hsl(120, ${w*100}%, 50%)`)]
+            const colors = ['red', ...props[1].map((w) => `hsl(${w < 0 ? 240 : 0}, ${Math.abs(w)*100}%, 50%)`)]
             
             // check last trace if it contains already some hovering points
             const n = figure.data.length;
@@ -50,7 +50,7 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
                         color: colors,
                         line: {'width': 0},
                         symbol: 'square',
-                        opacity: 0.5
+                        opacity: 1.0
                     },
                     line: {
                         width: 1.0,
