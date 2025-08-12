@@ -3,7 +3,7 @@ from dash.dependencies import ALL
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, callback, dcc, html, clientside_callback, ClientsideFunction
 
-from ..figures.subject import build_subject_figure, generate_subject_display_props
+from ..figures.subject import build_subject_figure, generate_subject_display_props, build_spatial_figure
 from .common import update_factor_controls, plotly_config
 from ..core.io import GraphsDataset
 
@@ -24,6 +24,10 @@ layout = [
             type='circle', overlay_style={"visibility": "visible", "filter": "blur(2px)"}
         )
     ),
+    dbc.Modal([
+        dbc.ModalHeader(dbc.ModalTitle("Spatial view", id='modal-sp-title')),
+        dbc.ModalBody(dcc.Graph(figure={}, id='sp-graph', config=plotly_config))
+    ], id='modal-sp-graph', size='xl', centered=True, is_open=False),
 
     dcc.Store(id='store-spatial-connections', storage_type='memory'),
 ]
@@ -133,3 +137,21 @@ clientside_callback(
     Output('st-graph', 'id'),
     Input('st-graph', 'id')
 )
+
+
+@callback(
+    Output('sp-graph', 'figure'),
+    Output('modal-sp-graph', 'is_open'),
+    Output('modal-sp-title', 'children'),
+    Input('st-graph', 'clickData'),
+    State('store-dataset', 'data'),
+    prevent_initial_call=True,
+)
+def graph_clicked(click_data, store_dataset):
+    if store_dataset is None or click_data is None:
+        raise PreventUpdate
+
+    dataset = GraphsDataset.deserialize(store_dataset)
+    t = click_data['points'][0]['x']
+
+    return build_spatial_figure(dataset.areas_desc), True, f"Spatial view at t={t}"
