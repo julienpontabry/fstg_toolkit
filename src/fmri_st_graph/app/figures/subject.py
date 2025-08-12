@@ -105,6 +105,7 @@ def build_subject_figure(props: dict[str, Any]) -> go.Figure:
     return go.Figure(
         data=[*edges_traces, nodes_trace],
         layout=go.Layout(
+            plot_bgcolor='white',
             height=21*(props['height']+2)+126,
             margin=dict(t=40),
             showlegend=False,
