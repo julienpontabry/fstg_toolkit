@@ -1,10 +1,13 @@
 from typing import Any
 
 import numpy as np
+import pandas as pd
 from plotly import graph_objects as go
 
 from ...graph import RC5
 from ...visualization import __CoordinatesGenerator, _trans_color
+from ..core.color import HueInterpolator
+from ..core.geometry import Arc, ArcShape
 
 
 def generate_subject_display_props(graph, regions: list[str]) -> dict[str, Any]:
@@ -120,3 +123,61 @@ def build_subject_figure(props: dict[str, Any]) -> go.Figure:
                        range=[-1.5, props['height']+1.5])
         )
     )
+
+
+def __create_path_props(path: str, line_color: str, fill_color: str):
+    return dict(
+        line=dict(color=line_color, width=0.45),
+        path=path,
+        type='path',
+        fillcolor=fill_color,
+        layer='below')
+
+
+def build_spatial_figure(areas: pd.DataFrame, gap_size: float = 0.005, fig_size: int = 500, regions_thickness: float = 0.1) -> go.Figure:
+    # get regions and their areas count
+    areas_sorted = areas.sort_values(by='Name_Region')
+    regions = areas_sorted.groupby(by='Name_Region').count()
+
+    # create region arcs
+    proportions = regions['Name_Area'] / regions['Name_Area'].sum()
+    arcs = Arc.from_proportions(proportions.to_list(), gap_size)
+
+    # create the displayed elements for region arcs
+    colors = HueInterpolator().sample(len(arcs))
+    labels = regions.index.to_list()
+    arcs_lines = []
+    shapes = []
+
+    for label, arc, color in zip(labels, arcs, colors):
+        # create a shape from the arc
+        arc_shape = ArcShape(arc, regions_thickness, 1.0)
+
+        # add the arc line to the scatter plot
+        arc_line = go.Scatter(x=arc_shape.exterior_edge.real,
+                              y=arc_shape.exterior_edge.imag,
+                              mode='lines',
+                              line=dict(color=f'rgb{color}', shape='spline', width=0.25),
+                              text=label,
+                              hoverinfo='text')
+        arcs_lines.append(arc_line)
+
+        # add the shape of the path to the plate
+        path = arc_shape.to_path()
+        shapes.append(__create_path_props(path.to_svg(), 'gray', f'rgb{color}'))
+
+    # build the figure object
+    axis = dict(showline=False, zeroline=False, showgrid=False, showticklabels=False, title="")
+
+    return go.Figure(
+        data=arcs_lines,
+        layout=go.Layout(
+            plot_bgcolor='white',
+            xaxis=dict(axis),
+            yaxis=dict(axis),
+            showlegend=False,
+            width=fig_size,
+            height=fig_size,
+            margin=dict(t=25, b=25, l=25, r=25),
+            hovermode='closest',
+            shapes=shapes))
