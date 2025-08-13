@@ -113,7 +113,8 @@ def selection_changed(n_clicks, subject, regions, factor_values, store_dataset):
     graph = dataset.get_graph(ids)
     figure_props = generate_subject_display_props(graph, regions)
 
-    return build_subject_figure(figure_props), figure_props['spatial_connections'], True
+    areas = dataset.areas_desc['Name_Area']
+    return build_subject_figure(figure_props, areas), figure_props['spatial_connections'], True
 
 
 @callback(

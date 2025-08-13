@@ -20,6 +20,7 @@ def generate_subject_display_props(graph, regions: list[str]) -> dict[str, Any]:
     nodes_y = []
     nodes_color = []
     nodes_sizes = []
+    nodes_areas = []
     levels = [0]
     all_coord = {}
 
@@ -29,6 +30,7 @@ def generate_subject_display_props(graph, regions: list[str]) -> dict[str, Any]:
         x, y = tuple(zip(*coord.values()))
         nodes_color += [graph.nodes[n]['internal_strength'] for n in coord.keys()]
         nodes_sizes += [graph.nodes[n]['efficiency'] for n in coord.keys()]
+        nodes_areas += [graph.nodes[n]['areas'] for n in coord.keys()]
 
         levels.append(max(y) + 2)
 
@@ -66,6 +68,7 @@ def generate_subject_display_props(graph, regions: list[str]) -> dict[str, Any]:
         'nodes_y': nodes_y,
         'nodes_color': nodes_color,
         'nodes_sizes': nodes_sizes,
+        'nodes_areas': nodes_areas,
         'edges_x': edges_x,
         'edges_y': edges_y,
         'edges_colors': edges_colors,
@@ -76,13 +79,13 @@ def generate_subject_display_props(graph, regions: list[str]) -> dict[str, Any]:
     }
 
 
-def build_subject_figure(props: dict[str, Any]) -> go.Figure:
-    # TODO find a way to reduce the number of elements displayed in the figure
-    # TODO any way to improve the graphical performances (eg, WebGL)?
+def build_subject_figure(props: dict[str, Any], areas: pd.Series) -> go.Figure:
     nodes_trace = go.Scatter(
         x=props['nodes_x'], y=props['nodes_y'],
         mode='markers',
-        hoverinfo='none',
+        hoverinfo='text',
+        hovertext=["<br>".join(map(lambda i: areas.loc[i], s))
+                   for s in props['nodes_areas']],
         marker=dict(size=6*np.power(props['nodes_sizes'], 5),
                     color=props['nodes_color'],
                     cmin=-1, cmid=0, cmax=1, line_width=0,
