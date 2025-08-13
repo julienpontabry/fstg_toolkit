@@ -41,12 +41,35 @@ class Line:
     orientation: float
     origin: tuple[float, float] = (0, 0)
 
+    @cached_property
+    def terminus(self) -> tuple[float, float]:
+        x = self.length * cos(self.orientation) + self.origin[0]
+        y = self.length * sin(self.orientation) + self.origin[1]
+        return x, y
+
     def sample(self, offset: float = 0) -> np.ndarray:
+        # FIXME precalculate cos and sin
         ox = -offset * sin(self.orientation) + self.origin[0]
         oy =  offset * cos(self.orientation) + self.origin[1]
         x = self.length * cos(self.orientation) - offset * sin(self.orientation) + self.origin[0]
         y = self.length * sin(self.orientation) + offset * cos(self.orientation) + self.origin[1]
         return np.array([(ox, oy), (x, y)])
+
+    @staticmethod
+    def from_proportions(proportions: list[float], total_length: float, orientation: float,
+                         origin: tuple[float, float] = (0, 0), gap_size: float = 0.005) -> list['Line']:
+        lines = []
+        gap_length = total_length * gap_size
+        usable_length = total_length - gap_length * (len(proportions) - 1)
+        terminus = origin
+
+        for prop in proportions:
+            line = Line(prop * usable_length, orientation, origin=terminus)
+            lines.append(line)
+            gap = Line(gap_length, orientation, origin=line.terminus)
+            terminus = gap.terminus
+
+        return lines
 
 
 @dataclass(frozen=True)
