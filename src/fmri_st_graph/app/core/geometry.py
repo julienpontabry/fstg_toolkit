@@ -60,9 +60,8 @@ class Line:
 
     @staticmethod
     def from_proportions(proportions: list[float], total_length: float, orientation: float,
-                         origin: tuple[float, float] = (0, 0), gap_size: float = 0.005) -> list['Line']:
+                         origin: tuple[float, float] = (0, 0), gap_length: float = 0.25) -> list['Line']:
         lines = []
-        gap_length = total_length * gap_size
         usable_length = total_length - gap_length * (len(proportions) - 1)
         terminus = origin
 
