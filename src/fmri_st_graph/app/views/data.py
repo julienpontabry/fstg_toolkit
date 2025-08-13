@@ -14,13 +14,17 @@ layout = [
         dbc.Col([
             html.H2("Description of regions/areas"),
             dcc.Loading(
-                children=dash_table.DataTable(columns=desc_columns, page_size=15, id='desc-table'),
+                children=dash_table.DataTable(
+                    columns=desc_columns, page_size=15, id='desc-table',
+                    sort_action='native', filter_action='native'),
                 type='circle', overlay_style={'visibility': 'visible', 'filter': 'blur(2px)'})
         ]),
         dbc.Col([
             html.H2("Subjects"),
             dcc.Loading(
-                children=dash_table.DataTable(columns=corr_columns, page_size=15, id='corr-table'),
+                children=dash_table.DataTable(
+                    columns=corr_columns, page_size=15, id='corr-table',
+                    sort_action='native', filter_action='native'),
                 type='circle', overlay_style={"visibility": "visible", "filter": "blur(2px)"})
         ])
     ]),
