@@ -26,7 +26,10 @@ layout = [
     ),
     dbc.Modal([
         dbc.ModalHeader(dbc.ModalTitle("Spatial view", id='modal-sp-title')),
-        dbc.ModalBody(dcc.Graph(figure={}, id='sp-graph', config=plotly_config))
+        dbc.ModalBody(dcc.Graph(figure={}, id='sp-graph',
+                                config=dict(**plotly_config,
+                                            modeBarButtonsToRemove=['zoom', 'pan', 'zoomIn', 'zoomOut',
+                                                                    'autoScale', 'resetScale']))),
     ], id='modal-sp-graph', size='xl', centered=True, is_open=False),
 
     dcc.Store(id='store-spatial-connections', storage_type='memory'),
