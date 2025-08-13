@@ -141,9 +141,10 @@ def __create_path_props(path: str, line_color: str, fill_color: str):
         layer='below')
 
 
-def build_spatial_figure(areas: pd.DataFrame, gap_size: float = 0.005, fig_size: int = 500, regions_thickness: float = 0.1) -> go.Figure:
+def build_spatial_figure(areas: pd.DataFrame, selected_regions: list[str], gap_size: float = 0.005,
+                         fig_size: int = 500, regions_thickness: float = 0.1) -> go.Figure:
     # get regions and their areas count
-    areas_sorted = areas.sort_values(by='Name_Region')
+    areas_sorted = areas[areas['Name_Region'].isin(selected_regions)].sort_values(by='Name_Region')
     regions = areas_sorted.groupby(by='Name_Region').count()
 
     # create region arcs

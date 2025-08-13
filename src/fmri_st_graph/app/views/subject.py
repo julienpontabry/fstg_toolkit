@@ -145,13 +145,14 @@ clientside_callback(
     Output('modal-sp-title', 'children'),
     Input('st-graph', 'clickData'),
     State('store-dataset', 'data'),
+    State('regions-selection', 'value'),
     prevent_initial_call=True,
 )
-def graph_clicked(click_data, store_dataset):
+def graph_clicked(click_data, store_dataset, regions):
     if store_dataset is None or click_data is None:
         raise PreventUpdate
 
     dataset = GraphsDataset.deserialize(store_dataset)
     t = click_data['points'][0]['x']
 
-    return build_spatial_figure(dataset.areas_desc), True, f"Spatial view at t={t}"
+    return build_spatial_figure(dataset.areas_desc, regions), True, f"Spatial view at t={t}"
