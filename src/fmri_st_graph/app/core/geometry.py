@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
-from functools import cached_property, cache
+from abc import ABC, abstractmethod
+from functools import cached_property
+from math import cos, sin
 
 import numpy as np
 from numpy import pi
@@ -34,6 +36,20 @@ class Arc:
 
 
 @dataclass(frozen=True)
+class Line:
+    length: float
+    orientation: float
+    origin: tuple[float, float] = (0, 0)
+
+    def sample(self, offset: float = 0) -> np.ndarray:
+        ox = -offset * sin(self.orientation) + self.origin[0]
+        oy =  offset * cos(self.orientation) + self.origin[1]
+        x = self.length * cos(self.orientation) - offset * sin(self.orientation) + self.origin[0]
+        y = self.length * sin(self.orientation) + offset * cos(self.orientation) + self.origin[1]
+        return np.array([(ox, oy), (x, y)])
+
+
+@dataclass(frozen=True)
 class Path:
     points: list[tuple[float, float]] = field(default_factory=lambda: [])
 
@@ -50,7 +66,14 @@ class Path:
 
 
 @dataclass(frozen=True)
-class ArcShape:
+class Shape(ABC):
+    @abstractmethod
+    def to_path(self) -> Path:
+        raise RuntimeError("Not meant to be instantiated")
+
+
+@dataclass(frozen=True)
+class ArcShape(Shape):
     arc: Arc
     thickness: float
     radius: float
@@ -66,4 +89,28 @@ class ArcShape:
     def to_path(self) -> Path:
         x = self.exterior_edge.real.tolist() + self.interior_edge.real.tolist()[::-1]
         y = self.exterior_edge.imag.tolist() + self.interior_edge.imag.tolist()[::-1]
+        return Path.from_components(x, y)
+
+@dataclass(frozen=True)
+class LineShape(Shape):
+    line: Line
+    thickness: float
+
+    @cached_property
+    def __half_thickness(self) -> float:
+        return self.thickness / 2
+
+    @cached_property
+    def left_edge(self) -> np.ndarray:
+        return self.line.sample(-self.__half_thickness)
+
+    @cached_property
+    def right_edge(self) -> np.ndarray:
+        return self.line.sample(self.__half_thickness)
+
+    def to_path(self) -> Path:
+        x_left, y_left = self.left_edge.T
+        x_right, y_right = self.right_edge.T
+        x = x_left.tolist() + x_right.tolist()[::-1]
+        y = y_left.tolist() + y_right.tolist()[::-1]
         return Path.from_components(x, y)
