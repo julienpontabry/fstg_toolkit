@@ -7,7 +7,7 @@ from plotly import graph_objects as go
 from ...graph import RC5
 from ...visualization import __CoordinatesGenerator, _trans_color
 from ..core.color import HueInterpolator
-from ..core.geometry import Arc, ArcShape
+from ..core.geometry import Arc, ArcShape, Line, LineShape
 
 
 def generate_subject_display_props(graph, regions: list[str]) -> dict[str, Any]:
@@ -102,8 +102,17 @@ def build_subject_figure(props: dict[str, Any]) -> go.Figure:
         )
         edges_traces.append(edges_trace)
 
+    # ticks for region labels
     multi_lines_regions = [r.replace(' ', '<br>') for r in props['regions']]
     centered_ticks = [(l1+l2)/2-1 for l1, l2 in zip(props['levels'][:-1], props['levels'][1:])]
+
+    # colors bars to encompass region elements
+    regions_lengths = np.diff(props['levels']).astype(float)
+    region_lines = Line.from_proportions(regions_lengths/regions_lengths.sum(), total_length=props['levels'][-1],
+                                         orientation=np.pi/2, origin=(-20, -1))
+    region_line_paths = [LineShape(line, 5).to_path() for line in region_lines]
+    shapes = [__create_path_props(path.to_svg(), 'gray', f'rgb{color}')
+              for path, color in zip(region_line_paths, HueInterpolator().sample(len(region_line_paths)))]
 
     return go.Figure(
         data=[*edges_traces, nodes_trace],
@@ -117,10 +126,8 @@ def build_subject_figure(props: dict[str, Any]) -> go.Figure:
             xaxis=dict(showgrid=False, zeroline=False, title="Time"),
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=True,
                        tickvals=centered_ticks, ticktext=multi_lines_regions,
-                       minor=dict(tickvals=np.subtract(props['levels'][1:-1], 1),
-                                  showgrid=True, gridwidth=2, griddash='dash',
-                                  gridcolor='lightgray'),
-                       range=[-1.5, props['height']+1.5])
+                       range=[-1.5, props['height']+1.5]),
+            shapes=shapes
         )
     )
 
