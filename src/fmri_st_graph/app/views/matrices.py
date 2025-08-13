@@ -57,8 +57,8 @@ def selection_changed(slider_value, factor_values, break_width, store_dataset):
         raise PreventUpdate
 
     def_fac_vals = list(filter(lambda f: f is not None and len(f) > 0, factor_values))
-    selected = filter(lambda ids: all(any(v in ids for v in f) for f in def_fac_vals),
-                      dataset.subjects.index)
+    selected = sorted(filter(lambda ids: all(any(v in ids for v in f) for f in def_fac_vals),
+                      dataset.subjects.index))
 
     # load the selected matrices
     corr = {ids: dataset.get_matrix(ids) for ids in selected}

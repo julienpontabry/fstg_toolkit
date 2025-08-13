@@ -73,7 +73,7 @@ def factors_changed(factor_values, store_dataset, current_selection):
     n = len(store_dataset['factors'])
     ids = [tuple(record.values()) for record in store_dataset['subjects']]
     filtered_ids = filter(lambda k: all(f in factor_values for f in k[:n]), ids)
-    filtered_ids = list(map(lambda k: k[n], filtered_ids))
+    filtered_ids = sorted(map(lambda k: k[n], filtered_ids))
 
     # do not select a new subject in the filtered list if the old one is also in the filtered list
     selection = current_selection if current_selection in filtered_ids else next(iter(filtered_ids), None)
