@@ -48,11 +48,14 @@ class Line:
         return x, y
 
     def sample(self, offset: float = 0) -> np.ndarray:
-        # FIXME precalculate cos and sin
-        ox = -offset * sin(self.orientation) + self.origin[0]
-        oy =  offset * cos(self.orientation) + self.origin[1]
-        x = self.length * cos(self.orientation) - offset * sin(self.orientation) + self.origin[0]
-        y = self.length * sin(self.orientation) + offset * cos(self.orientation) + self.origin[1]
+        cos_theta = cos(self.orientation)
+        sin_theta = sin(self.orientation)
+
+        ox = -offset * sin_theta + self.origin[0]
+        oy = offset * cos_theta + self.origin[1]
+        x = self.length * cos_theta - offset * sin_theta + self.origin[0]
+        y = self.length * sin_theta + offset * cos_theta + self.origin[1]
+
         return np.array([(ox, oy), (x, y)])
 
     @staticmethod
