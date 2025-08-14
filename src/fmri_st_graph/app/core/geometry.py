@@ -40,6 +40,43 @@ class Arc:
 
 
 @dataclass(frozen=True)
+class Ribbon:
+    begin: float
+    end: float
+
+    @staticmethod
+    def __pol2cart(theta: float) -> np.complex128:
+        return np.exp(1j * theta)
+
+    @cached_property
+    def __begin_cart(self) -> np.complex128:
+        return self.__pol2cart(self.begin)
+
+    @cached_property
+    def __end_cart(self) -> np.complex128:
+        return self.__pol2cart(self.end)
+
+    @cached_property
+    def __middle(self) -> np.complex128:
+        return (self.__begin_cart + self.__end_cart) / 2
+
+    @staticmethod
+    def __bezier_quad(a: np.complex128, b: np.complex128, c: np.complex128, t: np.ndarray) -> np.ndarray:
+        x = (1-t)**2 * a.real + 2*(1-t)*t * c.real + t**2 * b.real
+        y = (1 - t) ** 2 * a.imag + 2 * (1 - t) * t * c.imag + t**2 * b.imag
+        return np.array([x, y])
+
+    def sample(self, radius: float = 1.0, origin: tuple[float, float] = (0, 0),
+               strength: float = 0.3, nb_points: int = 50) -> np.ndarray:
+        origin = origin[0] + 1j*origin[1]
+        return self.__bezier_quad(
+            self.__begin_cart * radius + origin,
+            self.__end_cart * radius + origin,
+            self.__middle * strength + origin,
+            np.linspace(0, 1, nb_points))
+
+
+@dataclass(frozen=True)
 class Line:
     length: float
     orientation: float

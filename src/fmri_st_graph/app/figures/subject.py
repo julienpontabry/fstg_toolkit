@@ -152,6 +152,8 @@ def generate_spatial_graph_props(graph: SpatioTemporalGraph, areas_desc: pd.Data
     nodes_proportions = map(lambda l: [c/sum(l) for c in l], nodes_areas_count)
     nodes_areas_labels = map(lambda l: [[areas_desc["Name_Area"].loc[n] for n in s] for s in l], nodes_areas)
 
+    # TODO create ribbons properties for spatial edges
+
     return {
         'region_labels': regions.index.to_list(),
         'region_proportion': region_proportions.tolist(),
