@@ -160,7 +160,7 @@ def generate_spatial_graph_props(graph: SpatioTemporalGraph, areas_desc: pd.Data
     }
 
 
-def __create_path_props(path: str, line_color: str, fill_color: str):
+def __create_path_props(path: str, line_color: str, fill_color: str) -> dict[str, Any]:
     return dict(
         line=dict(color=line_color, width=0.45),
         path=path,
@@ -169,33 +169,42 @@ def __create_path_props(path: str, line_color: str, fill_color: str):
         layer='below')
 
 
+def __create_arc_elements(arc: Arc, thickness: float, radius: float, label: str, fill_color: str, line_color: str = 'gray') -> tuple[go.Scatter, dict[str, Any]]:
+    # create a shape from the arc
+    arc_shape = ArcShape(arc, thickness, radius)
+
+    # create scatter plot from the arc shape
+    arc_line = go.Scatter(x=arc_shape.exterior_edge.real,
+                          y=arc_shape.exterior_edge.imag,
+                          mode='lines',
+                          line=dict(color=fill_color, shape='spline', width=0.25),
+                          text=label,
+                          hoverinfo='text')
+
+    # add the shape of the path to the plate
+    path = arc_shape.to_path()
+    path_props = __create_path_props(path.to_svg(), line_color, fill_color)
+
+    return arc_line, path_props
+
+
 def build_spatial_figure(props: dict[str, Any], gap_size: float = 0.005,
                          fig_size: int = 500, regions_thickness: float = 0.1) -> go.Figure:
     # create region arcs
-    arcs = Arc.from_proportions(props['region_proportion'], gap_size)
+    region_arcs = Arc.from_proportions(props['region_proportion'], gap_size)
+    nodes_arcs = [Arc.from_proportions(region_props, begin=arc.begin, length=arc.angle)
+                  for arc, region_props in zip(region_arcs, props['nodes_proportions'])]
 
     # create the displayed elements for region arcs
-    colors = HueInterpolator().sample(len(arcs))
+    colors = HueInterpolator().sample(len(region_arcs))
     labels = props['region_labels']
     arcs_lines = []
     shapes = []
 
-    for label, arc, color in zip(labels, arcs, colors):
-        # create a shape from the arc
-        arc_shape = ArcShape(arc, regions_thickness, 1.0)
-
-        # add the arc line to the scatter plot
-        arc_line = go.Scatter(x=arc_shape.exterior_edge.real,
-                              y=arc_shape.exterior_edge.imag,
-                              mode='lines',
-                              line=dict(color=f'rgb{color}', shape='spline', width=0.25),
-                              text=label,
-                              hoverinfo='text')
-        arcs_lines.append(arc_line)
-
-        # add the shape of the path to the plate
-        path = arc_shape.to_path()
-        shapes.append(__create_path_props(path.to_svg(), 'gray', f'rgb{color}'))
+    for label, arc, color, subarcs in zip(labels, region_arcs, colors, nodes_arcs):
+        region_arc_line, region_arc_path = __create_arc_elements(arc, regions_thickness, 1.0, label, f'rgb{color}')
+        arcs_lines.append(region_arc_line)
+        shapes.append(region_arc_path)
 
     # build the figure object
     axis = dict(showline=False, zeroline=False, showgrid=False, showticklabels=False, title="")
