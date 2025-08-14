@@ -22,13 +22,13 @@ class Arc:
         return radius * np.exp(1j * theta)
 
     @staticmethod
-    def from_proportions(proportions: list[float], gap_size: float = 0.005) -> list['Arc']:
+    def from_proportions(proportions: list[float], begin: float = 0, length: float = 2*pi,
+                         gap_size: float = 0.005) -> list['Arc']:
         gap = 2 * pi * gap_size
         arcs = []
-        begin = 0
 
         for prop in proportions:
-            end = begin + prop * 2*pi - gap
+            end = begin + prop * length - gap
             arcs.append(Arc(begin, end))
             begin = end + gap
 
