@@ -3,7 +3,7 @@ from dash.dependencies import ALL
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, callback, dcc, html, clientside_callback, ClientsideFunction
 
-from ..figures.subject import build_subject_figure, generate_subject_display_props, build_spatial_figure
+from ..figures.subject import build_subject_figure, generate_temporal_graph_props, build_spatial_figure, generate_spatial_graph_props
 from .common import update_factor_controls, plotly_config
 from ..core.io import GraphsDataset
 
@@ -111,7 +111,7 @@ def selection_changed(n_clicks, subject, regions, factor_values, store_dataset):
 
     # loads the dataset and create figure properties from the loaded graph
     graph = dataset.get_graph(ids)
-    figure_props = generate_subject_display_props(graph, regions)
+    figure_props = generate_temporal_graph_props(graph, regions)
 
     areas = dataset.areas_desc['Name_Area']
     return build_subject_figure(figure_props, areas), figure_props['spatial_connections'], True
@@ -150,13 +150,26 @@ clientside_callback(
     Input('st-graph', 'clickData'),
     State('store-dataset', 'data'),
     State('regions-selection', 'value'),
+    State({'type': 'subject-factor', 'index': ALL}, 'value'),
+    State('subject-selection', 'value'),
     prevent_initial_call=True,
 )
-def graph_clicked(click_data, store_dataset, regions):
+def graph_clicked(click_data, store_dataset, regions, factor_values, subject):
     if store_dataset is None or click_data is None:
         raise PreventUpdate
 
-    dataset = GraphsDataset.deserialize(store_dataset)
+    # get time point value
     t = click_data['points'][0]['x']
 
-    return build_spatial_figure(dataset.areas_desc, regions), True, f"Spatial view at t={t}"
+    # check if the graph is in the dataset
+    ids = tuple(factor_values + [subject])
+    dataset = GraphsDataset.deserialize(store_dataset)
+
+    if ids not in dataset:
+        raise PreventUpdate
+
+    # loads the dataset and create figure properties from the loaded graph
+    graph = dataset.get_graph(ids)
+    figure_props = generate_spatial_graph_props(graph.conditional_subgraph(t=t), dataset.areas_desc, regions)
+
+    return build_spatial_figure(figure_props), True, f"Spatial view at t={t}"

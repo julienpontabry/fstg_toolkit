@@ -10,7 +10,7 @@ from ..core.color import HueInterpolator
 from ..core.geometry import Arc, ArcShape, Line, LineShape
 
 
-def generate_subject_display_props(graph, regions: list[str]) -> dict[str, Any]:
+def generate_temporal_graph_props(graph, regions: list[str]) -> dict[str, Any]:
     start_graph = graph.conditional_subgraph(t=0)
 
     # define nodes' properties
@@ -135,6 +135,20 @@ def build_subject_figure(props: dict[str, Any], areas: pd.Series) -> go.Figure:
     )
 
 
+def generate_spatial_graph_props(graph, areas_desc: pd.DataFrame, regions: list[str]) -> dict[str, Any]:
+    # get regions and their areas count
+    areas_sorted = areas_desc[areas_desc["Name_Region"].isin(regions)].sort_values(by="Name_Region")
+    regions = areas_sorted.groupby(by="Name_Region").count()
+
+    # calculate arc proportions for regions
+    proportions = regions["Name_Area"] / regions["Name_Area"].sum()
+
+    return {
+        'region_labels': regions.index.to_list(),
+        'region_proportion': proportions.tolist()
+    }
+
+
 def __create_path_props(path: str, line_color: str, fill_color: str):
     return dict(
         line=dict(color=line_color, width=0.45),
@@ -144,19 +158,14 @@ def __create_path_props(path: str, line_color: str, fill_color: str):
         layer='below')
 
 
-def build_spatial_figure(areas: pd.DataFrame, selected_regions: list[str], gap_size: float = 0.005,
+def build_spatial_figure(props: dict[str, Any], gap_size: float = 0.005,
                          fig_size: int = 500, regions_thickness: float = 0.1) -> go.Figure:
-    # get regions and their areas count
-    areas_sorted = areas[areas['Name_Region'].isin(selected_regions)].sort_values(by='Name_Region')
-    regions = areas_sorted.groupby(by='Name_Region').count()
-
     # create region arcs
-    proportions = regions['Name_Area'] / regions['Name_Area'].sum()
-    arcs = Arc.from_proportions(proportions.to_list(), gap_size)
+    arcs = Arc.from_proportions(props['region_proportion'], gap_size)
 
     # create the displayed elements for region arcs
     colors = HueInterpolator().sample(len(arcs))
-    labels = regions.index.to_list()
+    labels = props['region_labels']
     arcs_lines = []
     shapes = []
 
