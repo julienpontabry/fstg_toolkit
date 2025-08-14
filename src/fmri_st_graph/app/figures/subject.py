@@ -189,22 +189,32 @@ def __create_arc_elements(arc: Arc, thickness: float, radius: float, label: str,
 
 
 def build_spatial_figure(props: dict[str, Any], gap_size: float = 0.005,
-                         fig_size: int = 500, regions_thickness: float = 0.1) -> go.Figure:
+                         fig_size: int = 500, thickness: float = 0.1, radius: float = 1.0) -> go.Figure:
     # create region arcs
     region_arcs = Arc.from_proportions(props['region_proportion'], gap_size)
     nodes_arcs = [Arc.from_proportions(region_props, begin=arc.begin, length=arc.angle)
                   for arc, region_props in zip(region_arcs, props['nodes_proportions'])]
 
-    # create the displayed elements for region arcs
+    # create the displayed elements for arcs
     colors = HueInterpolator().sample(len(region_arcs))
-    labels = props['region_labels']
     arcs_lines = []
     shapes = []
 
-    for label, arc, color, subarcs in zip(labels, region_arcs, colors, nodes_arcs):
-        region_arc_line, region_arc_path = __create_arc_elements(arc, regions_thickness, 1.0, label, f'rgb{color}')
+    for reg_label, arc, color, subarcs, subarcs_labels in zip(
+            props["region_labels"], region_arcs, colors, nodes_arcs, props["nodes_labels"]):
+        # display region arcs
+        region_arc_line, region_arc_path = __create_arc_elements(
+            arc, thickness, radius, reg_label, f'rgb{color}')
         arcs_lines.append(region_arc_line)
         shapes.append(region_arc_path)
+
+        # display nodes arcs
+        for subarc, subarc_label in zip(subarcs, subarcs_labels):
+            subarc_label = "<br>".join(subarc_label)
+            node_arc_line, node_arc_path = __create_arc_elements(
+                subarc, thickness, radius - thickness, subarc_label, 'lightgray')
+            arcs_lines.append(node_arc_line)
+            shapes.append(node_arc_path)
 
     # build the figure object
     axis = dict(showline=False, zeroline=False, showgrid=False, showticklabels=False, title="")
