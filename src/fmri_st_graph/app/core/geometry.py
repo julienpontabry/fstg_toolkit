@@ -157,6 +157,20 @@ class ArcShape(Shape):
         y = self.exterior_edge.imag.tolist() + self.interior_edge.imag.tolist()[::-1]
         return Path.from_components(x, y)
 
+
+@dataclass(frozen=True)
+class RibbonShape(Shape):
+    left_ribbon: Ribbon
+    right_ribbon: Ribbon
+    radius: float
+    strength: float
+
+    # TODO the ribbon should have two edges
+
+    def to_path(self) -> Path:
+        pass
+
+
 @dataclass(frozen=True)
 class LineShape(Shape):
     line: Line
