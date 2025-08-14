@@ -4,13 +4,14 @@ import numpy as np
 import pandas as pd
 from plotly import graph_objects as go
 
+from ... import SpatioTemporalGraph
 from ...graph import RC5
 from ...visualization import __CoordinatesGenerator, _trans_color
 from ..core.color import HueInterpolator
 from ..core.geometry import Arc, ArcShape, Line, LineShape
 
 
-def generate_temporal_graph_props(graph, regions: list[str]) -> dict[str, Any]:
+def generate_temporal_graph_props(graph: SpatioTemporalGraph, regions: list[str]) -> dict[str, Any]:
     start_graph = graph.conditional_subgraph(t=0)
 
     # define nodes' properties
@@ -135,17 +136,27 @@ def build_subject_figure(props: dict[str, Any], areas: pd.Series) -> go.Figure:
     )
 
 
-def generate_spatial_graph_props(graph, areas_desc: pd.DataFrame, regions: list[str]) -> dict[str, Any]:
+def generate_spatial_graph_props(graph: SpatioTemporalGraph, areas_desc: pd.DataFrame, regions: list[str]) -> dict[str, Any]:
     # get regions and their areas count
     areas_sorted = areas_desc[areas_desc["Name_Region"].isin(regions)].sort_values(by="Name_Region")
     regions = areas_sorted.groupby(by="Name_Region").count()
 
     # calculate arc proportions for regions
-    proportions = regions["Name_Area"] / regions["Name_Area"].sum()
+    region_proportions = regions["Name_Area"] / regions["Name_Area"].sum()
+
+    # calculate arc proportions for all nodes within regions
+    nodes_areas = [[d['areas']
+                    for _, d in graph.conditional_subgraph(region=region).nodes.items()]
+                   for region in regions.index]
+    nodes_areas_count = map(lambda l: [len(s) for s in l], nodes_areas)
+    nodes_proportions = map(lambda l: [c/sum(l) for c in l], nodes_areas_count)
+    nodes_areas_labels = map(lambda l: [[areas_desc["Name_Area"].loc[n] for n in s] for s in l], nodes_areas)
 
     return {
         'region_labels': regions.index.to_list(),
-        'region_proportion': proportions.tolist()
+        'region_proportion': region_proportions.tolist(),
+        'nodes_labels': list(nodes_areas_labels),
+        'nodes_proportions': list(nodes_proportions)
     }
 
 
