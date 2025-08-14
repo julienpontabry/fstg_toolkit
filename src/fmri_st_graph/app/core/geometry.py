@@ -24,7 +24,11 @@ class Arc:
     @staticmethod
     def from_proportions(proportions: list[float], begin: float = 0, length: float = 2*pi,
                          gap_size: float = 0.005) -> list['Arc']:
-        gap = 2 * pi * gap_size
+        gap = 2*pi * gap_size
+
+        if length < 2*pi:
+            length += gap
+
         arcs = []
 
         for prop in proportions:
