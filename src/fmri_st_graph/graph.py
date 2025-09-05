@@ -141,8 +141,8 @@ class SpatioTemporalGraph(nx.DiGraph):
         return nx.utils.graphs_equal(self, other) and self.areas.equals(other.areas)
 
     def __str__(self) -> str:
-        return f"SpatioTemporalGraph(#areas={len(self.areas)}, #regions={len(set(self.areas['Name_Region']))}"\
-                    f"#nodes={len(self.nodes)}, #spatial edges={len([_ for _, _, d in self.edges(data=True) if d['type'] == 'spatial'])},"\
+        return f"SpatioTemporalGraph(#areas={len(self.areas)}, #regions={len(set(self.areas['Name_Region']))}, "\
+                    f"#nodes={len(self.nodes)}, #spatial edges={len([_ for _, _, d in self.edges(data=True) if d['type'] == 'spatial'])}, "\
                     f"#temporal edges={len([_ for _, _, d in self.edges(data=True) if d['type'] == 'temporal'])})"
 
     def __repr__(self) -> str:
