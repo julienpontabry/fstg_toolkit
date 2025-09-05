@@ -121,7 +121,7 @@ def subgraph(graph: nx.Graph, **conditions: any) -> nx.Graph:
 
 
 class SpatioTemporalGraph(nx.DiGraph):
-    def __init__(self, graph: nx.DiGraph = None, areas: pd.DataFrame = None) -> None:
+    def __init__(self, graph: nx.Graph = None, areas: pd.DataFrame = None) -> None:
         super().__init__(graph)
         self.areas = areas
 
