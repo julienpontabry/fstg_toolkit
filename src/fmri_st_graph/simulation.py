@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from networkx.classes.reportviews import NodeView
 
-from .graph import RC5, SpatioTemporalGraph, subgraph
+from .graph import RC5, SpatioTemporalGraph, subgraph_nodes
 
 
 def _fill_matrix(connections, correlations, matrix):
@@ -349,7 +349,7 @@ class SpatioTemporalGraphSimulator:
 
         for next_pattern in patterns[1:]:
             last_t = g.graph['max_time']
-            last_out = subgraph(g, t=last_t)
+            last_out = subgraph_nodes(g, t=last_t)
 
             if isinstance(next_pattern, int):
                 for i in range(next_pattern):
@@ -378,7 +378,7 @@ class SpatioTemporalGraphSimulator:
                 g.graph['max_time'] += next_pattern.graph['max_time'] + 1
 
                 # make the connection between last pattern and next one
-                next_in = subgraph(next_pattern, t=next_pattern.graph['min_time'])
+                next_in = subgraph_nodes(next_pattern, t=next_pattern.graph['min_time'])
 
                 for nout, nin in zip(sorted(last_out.nodes), sorted(next_in.nodes)):
                     g.add_edge(nout, nin + k, transition=RC5.EQ, type='temporal')

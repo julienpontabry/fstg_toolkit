@@ -73,7 +73,17 @@ class RC5(Enum):
             raise ValueError(f"Unable to find a transition named \"{name}\"!")
 
 
-def subgraph(graph: nx.Graph, **conditions: Any) -> nx.Graph:
+def __check_data(data: dict[str, Any], key: str, value: Any) -> bool:
+    if key not in data:
+        return True
+
+    if isinstance(value, Iterable):
+        return data[key] in value
+    else:
+        return data[key] == value
+
+
+def subgraph_nodes(graph: nx.Graph, **conditions: Any) -> nx.Graph:
     """Take the subgraph that matches the conditions on the nodes.
 
     Parameters
@@ -94,30 +104,28 @@ def subgraph(graph: nx.Graph, **conditions: Any) -> nx.Graph:
     >>> G = nx.Graph()
     >>> G.add_nodes_from([(1, dict(a=0, b=1)), (2, dict(a=2, b=1)), (3, dict(a=2, b=2)), (4, dict(a=2, b=1))])
     >>> G.add_edges_from([(1, 2), (3, 4), (1, 4)])
-    >>> subgraph(G).nodes
+    >>> subgraph_nodes(G).nodes
     NodeView((1, 2, 3, 4))
-    >>> subgraph(G, a=0).nodes
+    >>> subgraph_nodes(G, a=0).nodes
     NodeView((1,))
-    >>> subgraph(G, b=1).nodes
+    >>> subgraph_nodes(G, b=1).nodes
     NodeView((1, 2, 4))
-    >>> subgraph(G, a=2).nodes
+    >>> subgraph_nodes(G, a=2).nodes
     NodeView((2, 3, 4))
-    >>> subgraph(G, a=2, b=2).nodes
+    >>> subgraph_nodes(G, a=2, b=2).nodes
     NodeView((3,))
-    >>> subgraph(G, b=(1, 2), a=2).nodes
+    >>> subgraph_nodes(G, b=(1, 2), a=2).nodes
     NodeView((2, 3, 4))
-    >>> subgraph(G, b=range(1, 3)).nodes
+    >>> subgraph_nodes(G, b=range(1, 3)).nodes
     NodeView((1, 2, 3, 4))
     """
-    def __process(d: Any, v: Any):
-        if isinstance(v, Iterable):
-            return d in v
-        else:
-            return d == v
+    return graph.subgraph([n for n, d in graph.nodes(data=True)
+                           if all([__check_data(d, k, v) for k, v in conditions.items()])])
 
-    return graph.subgraph([node
-                           for node, data in graph.nodes.items()
-                           if all([__process(data[k], v) for k, v in conditions.items()])])
+
+def subgraph_edges(graph: nx.Graph, **conditions: Any) -> nx.Graph:
+    return graph.edge_subgraph([(n1, n2) for n1, n2, d in graph.edges(data=True)
+                                if all([__check_data(d, k, v) for k, v in conditions.items()])])
 
 
 class SpatioTemporalGraph(nx.DiGraph):
@@ -135,7 +143,31 @@ class SpatioTemporalGraph(nx.DiGraph):
 
         See :func:`~graph.subgraph` for the arguments.
         """
-        return SpatioTemporalGraph(subgraph(self, **conditions), self.areas)
+        def __split(c: dict) -> tuple[dict, dict]:
+            nc = {}
+            ec = {}
+
+            for key, value in c.items():
+                if key in {'t', 'areas', 'region'}:
+                    nc[key] = value
+                elif key in {'type', 'transition'}:
+                    ec[key] = value
+
+            if 'transition' in ec:
+                ec['type'] = 'temporal'
+
+            return nc, ec
+
+        cond_nodes, cond_edges = __split(conditions)
+        graph = self
+
+        if cond_nodes:
+            graph = subgraph_nodes(graph, **cond_nodes)
+
+        if cond_edges:
+            graph = subgraph_edges(graph, **cond_edges)
+
+        return SpatioTemporalGraph(graph, self.areas)
 
     def __eq__(self, other: 'SpatioTemporalGraph') -> 'SpatioTemporalGraph':
         return nx.utils.graphs_equal(self, other) and self.areas.equals(other.areas)
