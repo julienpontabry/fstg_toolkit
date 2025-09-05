@@ -169,6 +169,12 @@ class SpatioTemporalGraph(nx.DiGraph):
 
         return SpatioTemporalGraph(graph, self.areas)
 
+    def sub_spatial(self) -> 'SpatioTemporalGraph':
+        return self.sub(type='spatial')
+
+    def sub_temporal(self) -> 'SpatioTemporalGraph':
+        return self.sub(type='temporal')
+
     def __eq__(self, other: 'SpatioTemporalGraph') -> 'SpatioTemporalGraph':
         return nx.utils.graphs_equal(self, other) and self.areas.equals(other.areas)
 
