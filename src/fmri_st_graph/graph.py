@@ -3,9 +3,9 @@ from collections.abc import Iterable
 from enum import Enum, auto, unique
 from math import isclose
 from numbers import Number
+from typing import Any
 
 import networkx as nx
-import numpy as np
 import pandas as pd
 
 
@@ -73,7 +73,7 @@ class RC5(Enum):
             raise ValueError(f"Unable to find a transition named \"{name}\"!")
 
 
-def subgraph(graph: nx.Graph, **conditions: any) -> nx.Graph:
+def subgraph(graph: nx.Graph, **conditions: Any) -> nx.Graph:
     """Take the subgraph that matches the conditions on the nodes.
 
     Parameters
@@ -109,7 +109,7 @@ def subgraph(graph: nx.Graph, **conditions: any) -> nx.Graph:
     >>> subgraph(G, b=range(1, 3)).nodes
     NodeView((1, 2, 3, 4))
     """
-    def __process(d: any, v: any):
+    def __process(d: Any, v: Any):
         if isinstance(v, Iterable):
             return d in v
         else:
