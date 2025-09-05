@@ -42,7 +42,7 @@ def __time_multipartite_layout(g: SpatioTemporalGraph, dist: float = 1.0) -> dic
 
     for t in range(g.graph['min_time'],
                    g.graph['max_time'] + 1):
-        sub_g = g.conditional_subgraph(t=t)
+        sub_g = g.sub(t=t)
         nodes = sorted(sub_g.nodes)
         half_height = dist * (len(nodes) - 1) / 2
         heights = np.linspace(-half_height, half_height, len(nodes))
@@ -260,7 +260,7 @@ def _spatial_plot_artists(graph: SpatioTemporalGraph, t: float,
     edges_patches: list[FancyArrowPatch]
         The patches representing the edges between the networks.
     """
-    sub_g = graph.conditional_subgraph(t=t)
+    sub_g = graph.sub(t=t)
 
     rels, angles, x_areas, y_areas = __areas_positions(graph)
     n = len(rels)
@@ -559,7 +559,7 @@ def temporal_plot(graph: SpatioTemporalGraph, ax: Axes = None) -> tuple[dict[int
 
     # draw dynamic (nodes + transitions)
     cmap = cm.get_cmap('coolwarm')
-    sub_g = graph.conditional_subgraph(t=0)
+    sub_g = graph.sub(t=0)
     heights = []
     y = 0
     gen = __CoordinatesGenerator(graph)

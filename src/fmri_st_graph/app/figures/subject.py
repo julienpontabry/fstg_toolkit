@@ -12,7 +12,7 @@ from ..core.geometry import Arc, ArcShape, Line, LineShape
 
 
 def generate_temporal_graph_props(graph: SpatioTemporalGraph, regions: list[str]) -> dict[str, Any]:
-    start_graph = graph.conditional_subgraph(t=0)
+    start_graph = graph.sub(t=0)
 
     # define nodes' properties
     nodes_coord_gen = __CoordinatesGenerator(graph)
@@ -146,7 +146,7 @@ def generate_spatial_graph_props(graph: SpatioTemporalGraph, areas_desc: pd.Data
 
     # calculate arc proportions for all nodes within regions
     nodes_areas = [[d['areas']
-                    for _, d in graph.conditional_subgraph(region=region).nodes.items()]
+                    for _, d in graph.sub(region=region).nodes.items()]
                    for region in regions.index]
     nodes_areas_count = map(lambda l: [len(s) for s in l], nodes_areas)
     nodes_proportions = map(lambda l: [c/sum(l) for c in l], nodes_areas_count)

@@ -130,7 +130,7 @@ class SpatioTemporalGraph(nx.DiGraph):
         """Get the time range covered by the spatio-temporal graph."""
         return range(self.graph['max_time']+1)
 
-    def conditional_subgraph(self, **conditions) -> 'SpatioTemporalGraph':
+    def sub(self, **conditions) -> 'SpatioTemporalGraph':
         """Helper to take the subgraph of the spatio-temporal graph matching the specified conditions.
 
         See :func:`~graph.subgraph` for the arguments.

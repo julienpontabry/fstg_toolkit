@@ -170,6 +170,6 @@ def graph_clicked(click_data, store_dataset, regions, factor_values, subject):
 
     # loads the dataset and create figure properties from the loaded graph
     graph = dataset.get_graph(ids)
-    figure_props = generate_spatial_graph_props(graph.conditional_subgraph(t=t), dataset.areas_desc, regions)
+    figure_props = generate_spatial_graph_props(graph.sub(t=t), dataset.areas_desc, regions)
 
     return build_spatial_figure(figure_props), True, f"Spatial view at t={t}"

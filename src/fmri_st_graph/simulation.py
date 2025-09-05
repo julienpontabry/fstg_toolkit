@@ -189,7 +189,7 @@ class CorrelationMatrixSequenceSimulator:
         numpy.array
             A 3D-shaped array that contains the correlations matrices for each time.
         """
-        return np.array([self.__simulate_corr_matrix(self.graph.conditional_subgraph(t=t))
+        return np.array([self.__simulate_corr_matrix(self.graph.sub(t=t))
                          for t in self.graph.time_range])
 
 

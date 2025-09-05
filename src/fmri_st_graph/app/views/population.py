@@ -8,9 +8,9 @@ from plotly import graph_objects as go
 
 def get_measures(measure_name, g):
     if measure_name == 'Density':
-        return [nx.density(g.conditional_subgraph(t=t)) for t in g.time_range]
+        return [nx.density(g.sub(t=t)) for t in g.time_range]
     elif measure_name == 'Assortativity':
-        return [nx.degree_assortativity_coefficient(g.conditional_subgraph(t=t)) for t in g.time_range]
+        return [nx.degree_assortativity_coefficient(g.sub(t=t)) for t in g.time_range]
     else:
         raise ValueError(f"Unknown measure: {measure_name}")
 
