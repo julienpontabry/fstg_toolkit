@@ -5,6 +5,7 @@ from math import isclose
 from numbers import Number
 
 import networkx as nx
+import numpy as np
 import pandas as pd
 
 
@@ -138,6 +139,14 @@ class SpatioTemporalGraph(nx.DiGraph):
 
     def __eq__(self, other: 'SpatioTemporalGraph') -> 'SpatioTemporalGraph':
         return nx.utils.graphs_equal(self, other) and self.areas.equals(other.areas)
+
+    def __str__(self) -> str:
+        return f"SpatioTemporalGraph(#areas={len(self.areas)}, #regions={len(set(self.areas['Name_Region']))}"\
+                    f"#nodes={len(self.nodes)}, #spatial edges={len([_ for _, _, d in self.edges(data=True) if d['type'] == 'spatial'])},"\
+                    f"#temporal edges={len([_ for _, _, d in self.edges(data=True) if d['type'] == 'temporal'])})"
+
+    def __repr__(self) -> str:
+        return str(self)
 
 
 def __data_almost_equal(data1: dict[str, any], data2: dict[str, any],
