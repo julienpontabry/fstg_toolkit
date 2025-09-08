@@ -84,6 +84,7 @@ def store_current_break_width(breakpoint_name, breakpoint_width):
 @callback(
     Output('store-dataset', 'data'),
     Output('tab-matrices', 'disabled'),
+    Output('tab-population', 'disabled'),
     Input('url', 'pathname'),
     prevent_initial_call=True
 )
@@ -94,5 +95,6 @@ def pathname_changed(pathname):
     # load lazily the dataset and enable tabs accordingly
     dataset = GraphsDataset.from_filepath(filepath)
     disable_matrices_view = not dataset.has_matrices()
+    disable_metrics_view = not dataset.has_metrics()
 
-    return dataset.serialize(), disable_matrices_view
+    return dataset.serialize(), disable_matrices_view, disable_metrics_view

@@ -129,6 +129,13 @@ class GraphsDataset:
         filename = self.subjects.loc[ids]['Matrix']
         return self.loader.load_matrix(filename)
 
+    def has_metrics(self) -> bool:
+        return self.loader.load_metrics() is not None
+
+    def get_metrics(self) -> Optional[pd.DataFrame]:
+        metrics = self.loader.load_metrics()
+        return metrics.set_index(list(metrics.columns[range(len(self.factors)+1)]))
+
     @staticmethod
     def deserialize(data: Dict[str, Any]) -> 'GraphsDataset':
         """Deserializes a dataset from a dictionary format.
