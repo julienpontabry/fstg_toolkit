@@ -10,6 +10,7 @@ from .graph import SpatioTemporalGraph, RC5
 
 type MeasureOutput = float | list[float]
 type MeasureFunction = Callable[[SpatioTemporalGraph], MeasureOutput]
+type MeasureRecord = dict[str, MeasureOutput]
 
 
 @dataclass(frozen=True)
@@ -49,7 +50,7 @@ def get_temporal_measures_registry() -> MeasuresRegistry:
 
 
 
-def calculate_spatial_measures(graph: SpatioTemporalGraph) -> pd.DataFrame:
+def calculate_spatial_measures(graph: SpatioTemporalGraph) -> list[MeasureRecord]:
     registry = get_spatial_measures_registry()
     records = []
 
@@ -62,18 +63,18 @@ def calculate_spatial_measures(graph: SpatioTemporalGraph) -> pd.DataFrame:
 
         records.append(record)
 
-    return pd.DataFrame.from_records(records)
+    return records
 
 
-def calculate_temporal_measures(graph: SpatioTemporalGraph) -> pd.DataFrame:
+def calculate_temporal_measures(graph: SpatioTemporalGraph) -> list[MeasureRecord]:
     registry = get_temporal_measures_registry()
-    record: dict[str, MeasureOutput] = {}
+    record: MeasureRecord = {}
     g = graph.sub_temporal()
 
     for name, func in registry:
         record[name] = func(g)
 
-    return pd.DataFrame.from_records([record])
+    return [record]
 
 
 def spatial_measure(name):
