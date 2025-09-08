@@ -7,74 +7,86 @@ import pandas as pd
 
 from .graph import SpatioTemporalGraph, RC5
 
-type MeasureFunction = Callable[[SpatioTemporalGraph], float|list[float]]
+
+type MeasureOutput = float | list[float]
+type MeasureFunction = Callable[[SpatioTemporalGraph], MeasureOutput]
 
 
 @dataclass(frozen=True)
-class MeasuresCalculator:
-    __spatial_measures_registry: dict[str, MeasureFunction] = field(default_factory=lambda: {})
-    __temporal_measures_registry: dict[str, MeasureFunction] = field(default_factory=lambda: {})
+class MeasuresRegistry:
+    __registry: dict[str, MeasureFunction] = field(default_factory=lambda: {})
 
-    def add_spatial(self, name: str, func: MeasureFunction) -> None:
-        self.__spatial_measures_registry[name] = func
+    def add(self, name: str, func: MeasureFunction) -> None:
+        self.__registry[name] = func
 
-    def remove_spatial(self, name: str) -> None:
-        del self.__spatial_measures_registry[name]
+    def remove(self, name: str) -> None:
+        del self.__registry[name]
 
-    def list_spatial(self) -> list[str]:
-        return list(self.__spatial_measures_registry.keys())
-
-    def calculate_spatial_measures(self, graph: SpatioTemporalGraph) -> pd.DataFrame:
-        records = []
-        # FIXME also include idx in the records
-
-        for t in graph.time_range:
-            g = SpatioTemporalGraph(nx.Graph(graph.sub(t=t)), graph.areas)
-            record: dict[str, Any] = {'t': t}
-            for name, func in self.__spatial_measures_registry.items():
-                record[name] = func(g)
-            records.append(record)
-
-        return pd.DataFrame.from_records(records)
-
-    def add_temporal(self, name: str, func: MeasureFunction) -> None:
-        self.__temporal_measures_registry[name] = func
-
-    def remove_temporal(self, name: str) -> None:
-        del self.__temporal_measures_registry[name]
-
-    def list_temporal(self) -> list[str]:
-        return list(self.__temporal_measures_registry.keys())
-
-    def calculate_temporal_measures(self, graph: SpatioTemporalGraph) -> pd.DataFrame:
-        g = graph.sub_temporal()
-        pass  # TODO implement
+    def __iter__(self):
+        return iter(self.__registry)
 
 
-singleton_measure_calculator: Optional[MeasuresCalculator] = None
+spatial_measures_registry: Optional[MeasuresRegistry] = None
+temporal_measures_registry: Optional[MeasuresRegistry] = None
 
 
-def get_measures_calculator() -> MeasuresCalculator:
-    global singleton_measure_calculator
+def get_spatial_measures_registry() -> MeasuresRegistry:
+    global spatial_measures_registry
 
-    if singleton_measure_calculator is None:
-        singleton_measure_calculator = MeasuresCalculator()
+    if spatial_measures_registry is None:
+        spatial_measures_registry = MeasuresRegistry()
 
-    return singleton_measure_calculator
+    return spatial_measures_registry
+
+
+def get_temporal_measures_registry() -> MeasuresRegistry:
+    global temporal_measures_registry
+
+    if temporal_measures_registry is None:
+        temporal_measures_registry = MeasuresRegistry()
+
+    return temporal_measures_registry
+
+
+
+def calculate_spatial_measures(graph: SpatioTemporalGraph) -> pd.DataFrame:
+    registry = get_spatial_measures_registry()
+    records = []
+
+    for t in graph.time_range:
+        g = SpatioTemporalGraph(nx.Graph(graph.sub(t=t)), graph.areas)
+        record: dict[str, MeasureOutput] = {'t': t}
+
+        for name, func in registry:
+            record[name] = func(g)
+
+        records.append(record)
+
+    return pd.DataFrame.from_records(records)
+
+
+def calculate_temporal_measures(graph: SpatioTemporalGraph) -> pd.DataFrame:
+    registry = get_temporal_measures_registry()
+    record: dict[str, MeasureOutput] = {}
+
+    for name, func in registry:
+        record[name] = func(graph)
+
+    return pd.DataFrame.from_records([record])
 
 
 def spatial_measure(name):
     def decorator(func):
-        calculator = get_measures_calculator()
-        calculator.add_spatial(name, func)
+        calculator = get_spatial_measures_registry()
+        calculator.add(name, func)
         return func
     return decorator
 
 
 def temporal_measure(name):
     def decorator(func):
-        calculator = get_measures_calculator()
-        calculator.add_temporal(name, func)
+        calculator = get_temporal_measures_registry()
+        calculator.add(name, func)
         return func
     return decorator
 
