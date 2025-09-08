@@ -184,6 +184,7 @@ def metrics(dataset_path: Path):
                 continue
 
         spatial_df = pd.DataFrame.from_records(all_records)
+        spatial_df.set_index(list(spatial_df.columns[range(len(dataset.factors)+1)]), inplace=True)
 
     # calculate temporal metrics
     with click.progressbar(dataset.subjects.index, label="Calculating temporal metrics...", show_pos=True,
@@ -200,11 +201,13 @@ def metrics(dataset_path: Path):
                 continue
 
         temporal_df = pd.DataFrame.from_records(all_records)
+        temporal_df.set_index(list(temporal_df.columns[range(len(dataset.factors)+1)]), inplace=True)
 
     # TODO modify the data saver to accepts those files
     with zipfile.ZipFile(dataset_path, 'a') as zfp:
         try:
             click.echo("Saving spatial metrics...")
+            # TODO handle already present files
             with zfp.open('metrics_spatial.csv', 'w') as fp:
                 spatial_df.to_csv(fp)
         except OSError as ex:
@@ -212,6 +215,7 @@ def metrics(dataset_path: Path):
 
         try:
             click.echo("Saving temporal metrics...")
+            # TODO handle already present files
             with zfp.open('metrics_temporal.csv', 'w') as fp:
                 temporal_df.to_csv(fp)
         except OSError as ex:
