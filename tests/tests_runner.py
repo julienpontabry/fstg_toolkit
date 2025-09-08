@@ -2,6 +2,7 @@ import unittest
 
 from test_factory import SpatioTemporalGraphFactoryTestCase
 from test_simulation import CorrelationMatrixSimulationTestCase, SpatioTemporalGraphSimulationTestCase
+from test_measures import MeasuresCalculationTestCase
 
 
 def simulation_suite():
@@ -15,12 +16,17 @@ def factory_suite():
     suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(SpatioTemporalGraphFactoryTestCase))
     return suite
 
+def measures_suite():
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(MeasuresCalculationTestCase))
+    return suite
+
 if __name__ == '__main__':
     runner = unittest.TextTestRunner()
 
     total_failed = 0
 
-    for suite in (simulation_suite(), factory_suite()):
+    for suite in (simulation_suite(), factory_suite(), measures_suite()):
         result = runner.run(suite)
         total_failed += len(result.failures)
 
