@@ -1,4 +1,5 @@
 import re
+import zipfile
 from pathlib import Path
 from typing import Optional
 from itertools import chain
@@ -16,6 +17,8 @@ from .io import save_spatio_temporal_graph, DataSaver, DataLoader
 from .visualization import spatial_plot, temporal_plot, multipartite_plot, DynamicPlot
 from .app.fstview import app
 from .app.core.datafilesdb import get_data_file_db, MemoryDataFilesDB
+from .measures import calculate_spatial_measures, calculate_temporal_measures
+from .app.core.io import GraphsDataset
 
 
 @click.group()
@@ -45,7 +48,7 @@ def __load_graph(filepath: Path) -> SpatioTemporalGraph:
     return loader.load_graph(areas, chosen)
 
 
-## building ###################################################################
+## building and computing #####################################################
 
 def __read_load_np(path: Path) -> list[tuple[str, np.ndarray]]:
     """
@@ -159,6 +162,60 @@ def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], 
     except OSError as ex:
         click.echo(f"Error while saving to {output}: {ex}", err=True)
         exit(1)
+
+
+@cli.command
+@click.argument('dataset_path', type=click.Path(exists=True, dir_okay=False, path_type=Path))
+def metrics(dataset_path: Path):
+    dataset = GraphsDataset.from_filepath(dataset_path)
+
+    # calculate spatial metrics
+    with click.progressbar(dataset.subjects.index, label="Calculating spatial metrics...", show_pos=True,
+                           item_show_func=lambda a: '/'.join(a) if a is not None else None) as bar:
+        all_records = []
+
+        for idx in bar:
+            try:
+                idx_info = {f'factor{i+1}': idx[i] for i in range(len(dataset.factors))} | {'id': idx[-1]}
+                records = calculate_spatial_measures(dataset.get_graph(idx))
+                all_records += [idx_info | record for record in records]
+            except Exception as ex:
+                click.echo(f"Error while calculating metrics for {idx}: {ex}", err=True)
+                continue
+
+        spatial_df = pd.DataFrame.from_records(all_records)
+
+    # calculate temporal metrics
+    with click.progressbar(dataset.subjects.index, label="Calculating temporal metrics...", show_pos=True,
+                           item_show_func=lambda a: '/'.join(a) if a is not None else None) as bar:
+        all_records = []
+
+        for idx in bar:
+            try:
+                idx_info = {f'factor{i+1}': idx[i] for i in range(len(dataset.factors))} | {'id': idx[-1]}
+                records = calculate_temporal_measures(dataset.get_graph(idx))
+                all_records += [idx_info | record for record in records]
+            except Exception as ex:
+                click.echo(f"Error while calculating metrics for {idx}: {ex}", err=True)
+                continue
+
+        temporal_df = pd.DataFrame.from_records(all_records)
+
+    # TODO modify the data saver to accepts those files
+    with zipfile.ZipFile(dataset_path, 'a') as zfp:
+        try:
+            click.echo("Saving spatial metrics...")
+            with zfp.open('metrics_spatial.csv', 'w') as fp:
+                spatial_df.to_csv(fp)
+        except OSError as ex:
+            click.echo(f"Error while saving spatial metrics to {dataset_path}: {ex}", err=True)
+
+        try:
+            click.echo("Saving temporal metrics...")
+            with zfp.open('metrics_temporal.csv', 'w') as fp:
+                temporal_df.to_csv(fp)
+        except OSError as ex:
+            click.echo(f"Error while saving temporal metrics to {dataset_path}: {ex}", err=True)
 
 
 ## plotting ###################################################################
