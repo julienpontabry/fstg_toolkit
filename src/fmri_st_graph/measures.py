@@ -144,12 +144,34 @@ def reorg_rate(graph: SpatioTemporalGraph) -> float:
     return nb_temp_noeq_edges / nb_temp_edges
 
 
-def __interevent(graph: SpatioTemporalGraph):
+class __EventException(Exception):
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class __NoEventException(__EventException):
+    def __init__(self):
+        super().__init__("No event detected!")
+
+
+class __NotEnoughEventException(__EventException):
+    def __init__(self):
+        super().__init__("Not enough event!")
+
+
+def __interevent(graph: SpatioTemporalGraph) -> tuple[np.ndarray, np.ndarray]:
     non_eq_edges = [(n1, n2) for n1, n2, d in graph.edges(data=True)
                     if d['transition'] != RC5.EQ]
     event_times = [graph.nodes[n]['t'] for n, _ in non_eq_edges]
 
+    if len(event_times) == 0:
+        raise __NoEventException()
+
     t, counts = np.unique(event_times, return_counts=True)
+
+    if len(t) <= 2:
+        raise __NotEnoughEventException()
+
     intervals = np.diff(t)
     weights = counts[1:]
 
@@ -158,22 +180,30 @@ def __interevent(graph: SpatioTemporalGraph):
 
 @temporal_measure("Burstiness")
 def burstiness(graph: SpatioTemporalGraph) -> float:
-    intervals, weights = __interevent(graph)
-    mean = float(np.average(intervals, weights=weights))
-    std = float(np.sqrt(np.average((intervals-mean)**2, weights=weights)))
-    return (std - mean) / (std + mean)
+    try:
+        intervals, weights = __interevent(graph)
+        mean = float(np.average(intervals, weights=weights))
+        std = float(np.sqrt(np.average((intervals-mean)**2, weights=weights)))
+        return (std - mean) / (std + mean)
+    except __NoEventException:
+        return -1
+    except __NotEnoughEventException:
+        return 0
 
 
 @temporal_measure("Memory")
 def memory(graph: SpatioTemporalGraph) -> float:
-    intervals, weights = __interevent(graph)
+    try:
+        intervals, weights = __interevent(graph)
 
-    ti = intervals[:-1]
-    mean1 = np.average(ti, weights=weights[:-1])
-    std1 = np.sqrt(np.average((ti-mean1)**2, weights=weights[:-1]))
+        ti = intervals[:-1]
+        mean1 = np.average(ti, weights=weights[:-1])
+        std1 = np.sqrt(np.average((ti-mean1)**2, weights=weights[:-1]))
 
-    tip1 = intervals[1:]
-    mean2 = np.average(tip1, weights=weights[1:])
-    std2 = np.sqrt(np.average((tip1-mean2)**2, weights=weights[1:]))
+        tip1 = intervals[1:]
+        mean2 = np.average(tip1, weights=weights[1:])
+        std2 = np.sqrt(np.average((tip1-mean2)**2, weights=weights[1:]))
 
-    return np.mean((ti-mean1) * (tip1-mean2)) / (std1 * std2)
+        return np.mean((ti-mean1) * (tip1-mean2)) / (std1 * std2)
+    except __EventException:
+        return 0
