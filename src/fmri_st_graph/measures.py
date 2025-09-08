@@ -23,7 +23,7 @@ class MeasuresRegistry:
         del self.__registry[name]
 
     def __iter__(self):
-        return iter(self.__registry)
+        return iter(self.__registry.items())
 
 
 spatial_measures_registry: Optional[MeasuresRegistry] = None
