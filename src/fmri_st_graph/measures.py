@@ -109,7 +109,7 @@ def clustering(graph: SpatioTemporalGraph) -> float:
 
 @spatial_measure("Global efficiency")
 def global_efficiency(graph: SpatioTemporalGraph) -> float:
-    return nx.global_efficiency(graph)
+    return nx.global_efficiency(nx.Graph(graph))
 
 
 @spatial_measure("Density")
