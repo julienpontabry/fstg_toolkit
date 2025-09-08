@@ -7,7 +7,7 @@ import plotly.io as pio
 from dash import DiskcacheManager, Dash, Input,Output, State, callback, dcc, set_props
 from dash_breakpoints import WindowBreakpoints
 
-from .views import population, data, subject, matrices
+from .views import metrics, data, subject, matrices
 from .core.datafilesdb import get_data_file_db
 from .core.io import GraphsDataset
 
@@ -47,8 +47,8 @@ app.layout = dbc.Container(
                     children=matrices.layout, disabled=True),
             dbc.Tab(label="Subject", id='tab-subject', tab_id='tab-subject',
                     children=subject.layout, disabled=False),
-            dbc.Tab(label="Population", id='tab-population', tab_id='tab-population',
-                    children=population.layout, disabled=True),
+            dbc.Tab(label="Metrics", id='tab-population', tab_id='tab-population',
+                    children=metrics.layout, disabled=True),
         ], id='tabs'),
 
         # app's storage cache

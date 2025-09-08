@@ -7,19 +7,9 @@ from plotly import graph_objects as go
 from ..core.io import GraphsDataset
 
 
-def get_measures(measure_name, g):
-    if measure_name == 'Density':
-        return [nx.density(g.sub(t=t)) for t in g.time_range]
-    elif measure_name == 'Assortativity':
-        return [nx.degree_assortativity_coefficient(g.sub(t=t)) for t in g.time_range]
-    else:
-        raise ValueError(f"Unknown measure: {measure_name}")
-
-
 layout = [
     dbc.Row(
-        dcc.Dropdown(['Density', 'Assortativity'], value='Density', clearable=False,
-                     id='metrics-selection')
+        dcc.Dropdown([], value='', clearable=False, id='metrics-selection')
     ),
     dbc.Row(
         dcc.Loading(
