@@ -204,6 +204,6 @@ def memory(graph: SpatioTemporalGraph) -> float:
         mean2 = np.average(tip1, weights=weights[1:])
         std2 = np.sqrt(np.average((tip1-mean2)**2, weights=weights[1:]))
 
-        return np.mean((ti-mean1) * (tip1-mean2)) / (std1 * std2)
+        return float(np.mean((ti-mean1) * (tip1-mean2)) / (std1 * std2))
     except __EventException:
         return 0
