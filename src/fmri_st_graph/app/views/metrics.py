@@ -1,11 +1,10 @@
-import networkx as nx
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, callback, dcc
-from plotly import graph_objects as go
 
+from .common import plotly_config
 from ..core.io import GraphsDataset
-
+from ..figures.metrics import build_metrics_plot
 
 layout = [
     dbc.Row(
@@ -13,7 +12,7 @@ layout = [
     ),
     dbc.Row(
         dcc.Loading(
-            children=[dcc.Graph(figure={}, id='temporal-measures-graph')],
+            children=[dcc.Graph(figure={}, id='metrics-graph', config=plotly_config)],
             type='circle', overlay_style={"visibility": "visible", "filter": "blur(2px)"}
         )
     )
@@ -36,3 +35,19 @@ def dataset_changed(store_dataset):
     default = columns[0] if len(columns) > 0 else ''
 
     return columns, default
+
+
+@callback(
+    Output('metrics-graph', 'figure'),
+    Input('metrics-selection', 'value'),
+    State('store-dataset', 'data'),
+    prevent_initial_call=True
+)
+def metric_selection_changed(selection, store_dataset):
+    if store_dataset is None:
+        raise PreventUpdate
+
+    dataset = GraphsDataset.deserialize(store_dataset)
+    metrics = dataset.get_metrics().reset_index()
+
+    return build_metrics_plot(metrics, selection)
