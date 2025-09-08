@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, Callable, Any
+from typing import Optional, Callable
 
 import networkx as nx
 import numpy as np
@@ -68,9 +68,10 @@ def calculate_spatial_measures(graph: SpatioTemporalGraph) -> pd.DataFrame:
 def calculate_temporal_measures(graph: SpatioTemporalGraph) -> pd.DataFrame:
     registry = get_temporal_measures_registry()
     record: dict[str, MeasureOutput] = {}
+    g = graph.sub_temporal()
 
     for name, func in registry:
-        record[name] = func(graph)
+        record[name] = func(g)
 
     return pd.DataFrame.from_records([record])
 
@@ -130,15 +131,49 @@ def mean_areas(graph: SpatioTemporalGraph) -> list[float]:
 
 @temporal_measure("Transitions distribution")
 def transitions_distribution(graph: SpatioTemporalGraph) -> list[float]:
-    pass  # TODO implement
+    # TODO add distribution per region
+    return [len([_ for _, _, d in graph.edges(data=True) if d['transition'] == trans])
+            for trans in list(RC5)]
+
 
 @temporal_measure("Reorganisation rate")
 def reorg_rate(graph: SpatioTemporalGraph) -> float:
-    pass  # TODO implement
+    # TODO add reorganisation rate per region
+    nb_temp_edges = len([_ for _, _, d in graph.edges(data=True)])
+    nb_temp_noeq_edges = len([_ for _, _, d in graph.edges(data=True) if d['transition'] != RC5.EQ])
+    return nb_temp_noeq_edges / nb_temp_edges
 
-@temporal_measure("Burstiness and memory")
-def burstiness_memory(graph: SpatioTemporalGraph) -> list[float]:
+
+def __interevent(graph: SpatioTemporalGraph):
     non_eq_edges = [(n1, n2) for n1, n2, d in graph.edges(data=True)
                     if d['transition'] != RC5.EQ]
     event_times = [graph.nodes[n]['t'] for n, _ in non_eq_edges]
-    return []  # TODO implement
+
+    t, counts = np.unique(event_times, return_counts=True)
+    intervals = np.diff(t)
+    weights = counts[1:]
+
+    return intervals, weights
+
+
+@temporal_measure("Burstiness")
+def burstiness(graph: SpatioTemporalGraph) -> float:
+    intervals, weights = __interevent(graph)
+    mean = float(np.average(intervals, weights=weights))
+    std = float(np.sqrt(np.average((intervals-mean)**2, weights=weights)))
+    return (std - mean) / (std + mean)
+
+
+@temporal_measure("Memory")
+def memory(graph: SpatioTemporalGraph) -> float:
+    intervals, weights = __interevent(graph)
+
+    ti = intervals[:-1]
+    mean1 = np.average(ti, weights=weights[:-1])
+    std1 = np.sqrt(np.average((ti-mean1)**2, weights=weights[:-1]))
+
+    tip1 = intervals[1:]
+    mean2 = np.average(tip1, weights=weights[1:])
+    std2 = np.sqrt(np.average((tip1-mean2)**2, weights=weights[1:]))
+
+    return np.mean((ti-mean1) * (tip1-mean2)) / (std1 * std2)
