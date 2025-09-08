@@ -125,7 +125,7 @@ def modularity(graph: SpatioTemporalGraph) -> float:
 
 @spatial_measure("Mean number of areas")
 def mean_areas(graph: SpatioTemporalGraph) -> list[float]:
-    return [float(np.mean([len(d['areas']) for _, d in graph.sub(region=region)]))
+    return [float(np.mean([len(d['areas']) for _, d in graph.sub(region=region).nodes(data=True)]))
             for region in np.unique(graph.areas['Name_Region'])]
 
 
