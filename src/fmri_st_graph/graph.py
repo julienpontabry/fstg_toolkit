@@ -46,11 +46,11 @@ class RC5(Enum):
         >>> for transition in RC5:
         ...     print(transition)
         ...
-        RC5.EQ
-        RC5.PP
-        RC5.PPi
-        RC5.PO
-        RC5.DC
+        EQ
+        PP
+        PPi
+        PO
+        DC
 
         When only the transition name is available, the transition itself can be retrieved
         from it with the `from_name` static method.
