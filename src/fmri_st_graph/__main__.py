@@ -17,7 +17,7 @@ from .io import save_spatio_temporal_graph, DataSaver, DataLoader
 from .visualization import spatial_plot, temporal_plot, multipartite_plot, DynamicPlot
 from .app.fstview import app
 from .app.core.datafilesdb import get_data_file_db, MemoryDataFilesDB
-from .measures import calculate_spatial_measures, calculate_temporal_measures, gather_metrics
+from .metrics import calculate_spatial_metrics, calculate_temporal_metrics, gather_metrics
 from .app.core.io import GraphsDataset
 
 
@@ -172,12 +172,12 @@ def metrics(dataset_path: Path):
     # calculate spatial metrics
     with click.progressbar(dataset.subjects.index, label="Calculating spatial metrics...", show_pos=True,
                            item_show_func=lambda a: '/'.join(a) if a is not None else None) as bar:
-        spatial_df = gather_metrics(dataset, bar, calculate_spatial_measures)
+        spatial_df = gather_metrics(dataset, bar, calculate_spatial_metrics)
 
     # calculate temporal metrics
     with click.progressbar(dataset.subjects.index, label="Calculating temporal metrics...", show_pos=True,
                            item_show_func=lambda a: '/'.join(a) if a is not None else None) as bar:
-        temporal_df = gather_metrics(dataset, bar, calculate_temporal_measures)
+        temporal_df = gather_metrics(dataset, bar, calculate_temporal_metrics)
 
     # TODO modify the data saver to accepts those files
     # save the metrics into the dataset

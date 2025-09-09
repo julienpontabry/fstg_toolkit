@@ -2,7 +2,7 @@ import unittest
 
 from test_factory import SpatioTemporalGraphFactoryTestCase
 from test_simulation import CorrelationMatrixSimulationTestCase, SpatioTemporalGraphSimulationTestCase
-from test_measures import MeasuresCalculationTestCase
+from test_metrics import MetricsCalculationTestCase
 
 
 def simulation_suite():
@@ -18,7 +18,7 @@ def factory_suite():
 
 def measures_suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(MeasuresCalculationTestCase))
+    suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(MetricsCalculationTestCase))
     return suite
 
 if __name__ == '__main__':

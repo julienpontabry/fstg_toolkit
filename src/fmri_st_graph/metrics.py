@@ -9,17 +9,17 @@ from .graph import SpatioTemporalGraph, RC5
 from .app.core.io import GraphsDataset
 
 
-type MeasureOutput = float | list[float] | dict[str, int]
-type MeasureFunction = Callable[[SpatioTemporalGraph], MeasureOutput]
-type MeasureRecord = dict[str, MeasureOutput]
-type MetricsCalculator = Callable[[SpatioTemporalGraph], list[MeasureRecord]]
+type MetricType = float | list[float] | dict[str, int]
+type MetricFunction = Callable[[SpatioTemporalGraph], MetricType]
+type MetricRecord = dict[str, MetricType]
+type MetricsCalculator = Callable[[SpatioTemporalGraph], list[MetricRecord]]
 
 
 @dataclass(frozen=True)
-class MeasuresRegistry:
-    __registry: dict[str, MeasureFunction] = field(default_factory=lambda: {})
+class MetricsRegistry:
+    __registry: dict[str, MetricFunction] = field(default_factory=lambda: {})
 
-    def add(self, name: str, func: MeasureFunction) -> None:
+    def add(self, name: str, func: MetricFunction) -> None:
         self.__registry[name] = func
 
     def remove(self, name: str) -> None:
@@ -29,36 +29,36 @@ class MeasuresRegistry:
         return iter(self.__registry.items())
 
 
-spatial_measures_registry: Optional[MeasuresRegistry] = None
-temporal_measures_registry: Optional[MeasuresRegistry] = None
+spatial_metrics_registry: Optional[MetricsRegistry] = None
+temporal_metrics_registry: Optional[MetricsRegistry] = None
 
 
-def get_spatial_measures_registry() -> MeasuresRegistry:
-    global spatial_measures_registry
+def get_spatial_metrics_registry() -> MetricsRegistry:
+    global spatial_metrics_registry
 
-    if spatial_measures_registry is None:
-        spatial_measures_registry = MeasuresRegistry()
+    if spatial_metrics_registry is None:
+        spatial_metrics_registry = MetricsRegistry()
 
-    return spatial_measures_registry
-
-
-def get_temporal_measures_registry() -> MeasuresRegistry:
-    global temporal_measures_registry
-
-    if temporal_measures_registry is None:
-        temporal_measures_registry = MeasuresRegistry()
-
-    return temporal_measures_registry
+    return spatial_metrics_registry
 
 
+def get_temporal_metrics_registry() -> MetricsRegistry:
+    global temporal_metrics_registry
 
-def calculate_spatial_measures(graph: SpatioTemporalGraph) -> list[MeasureRecord]:
-    registry = get_spatial_measures_registry()
+    if temporal_metrics_registry is None:
+        temporal_metrics_registry = MetricsRegistry()
+
+    return temporal_metrics_registry
+
+
+
+def calculate_spatial_metrics(graph: SpatioTemporalGraph) -> list[MetricRecord]:
+    registry = get_spatial_metrics_registry()
     records = []
 
     for t in graph.time_range:
         g = SpatioTemporalGraph(nx.Graph(graph.sub(t=t)), graph.areas)
-        record: dict[str, MeasureOutput] = {'t': t}
+        record: dict[str, MetricType] = {'t': t}
 
         for name, func in registry:
             record[name] = func(g)
@@ -68,9 +68,9 @@ def calculate_spatial_measures(graph: SpatioTemporalGraph) -> list[MeasureRecord
     return records
 
 
-def calculate_temporal_measures(graph: SpatioTemporalGraph) -> list[MeasureRecord]:
-    registry = get_temporal_measures_registry()
-    record: MeasureRecord = {}
+def calculate_temporal_metrics(graph: SpatioTemporalGraph) -> list[MetricRecord]:
+    registry = get_temporal_metrics_registry()
+    record: MetricRecord = {}
     g = graph.sub_temporal()
 
     for name, func in registry:
@@ -102,67 +102,67 @@ def gather_metrics(dataset: GraphsDataset, selection: Iterable[tuple[str, ...]],
     return df
 
 
-def spatial_measure(name):
+def spatial_metric(name):
     def decorator(func):
-        calculator = get_spatial_measures_registry()
+        calculator = get_spatial_metrics_registry()
         calculator.add(name, func)
         return func
     return decorator
 
 
-def temporal_measure(name):
+def temporal_metric(name):
     def decorator(func):
-        calculator = get_temporal_measures_registry()
+        calculator = get_temporal_metrics_registry()
         calculator.add(name, func)
         return func
     return decorator
 
 
-@spatial_measure("Average degree")
+@spatial_metric("Average degree")
 def average_degree(graph: SpatioTemporalGraph) -> float:
     return np.mean(nx.degree_histogram(graph))
 
 
-@spatial_measure("Assortativity")
+@spatial_metric("Assortativity")
 def assortativity(graph: SpatioTemporalGraph) -> float:
     return nx.degree_assortativity_coefficient(graph)
 
 
-@spatial_measure("Clustering coefficient")
+@spatial_metric("Clustering coefficient")
 def clustering(graph: SpatioTemporalGraph) -> float:
     return nx.average_clustering(graph)
 
 
-@spatial_measure("Global efficiency")
+@spatial_metric("Global efficiency")
 def global_efficiency(graph: SpatioTemporalGraph) -> float:
     return nx.global_efficiency(nx.Graph(graph))
 
 
-@spatial_measure("Density")
+@spatial_metric("Density")
 def density(graph: SpatioTemporalGraph) -> float:
     return nx.density(graph)
 
 
-@spatial_measure("Modularity")
+@spatial_metric("Modularity")
 def modularity(graph: SpatioTemporalGraph) -> float:
     communities = nx.community.greedy_modularity_communities(graph)
     return nx.community.modularity(graph, communities)
 
 
-@spatial_measure("Mean number of areas")
+@spatial_metric("Mean number of areas")
 def mean_areas(graph: SpatioTemporalGraph) -> dict[str, float]:
     return {region: float(np.mean([len(d['areas']) for _, d in graph.sub(region=region).nodes(data=True)]))
             for region in np.unique(graph.areas['Name_Region'])}
 
 
-@temporal_measure("Transitions distribution")
+@temporal_metric("Transitions distribution")
 def transitions_distribution(graph: SpatioTemporalGraph) -> dict[str, int]:
     # TODO add distribution per region
     return {trans: len([_ for _, _, d in graph.edges(data=True) if d['transition'] == trans])
             for trans in list(RC5) if trans != RC5.DC}
 
 
-@temporal_measure("Reorganisation rate")
+@temporal_metric("Reorganisation rate")
 def reorg_rate(graph: SpatioTemporalGraph) -> float:
     # TODO add reorganisation rate per region
     nb_temp_edges = len([_ for _, _, d in graph.edges(data=True)])
@@ -204,7 +204,7 @@ def __interevent(graph: SpatioTemporalGraph) -> tuple[np.ndarray, np.ndarray]:
     return intervals, weights
 
 
-@temporal_measure("Burstiness")
+@temporal_metric("Burstiness")
 def burstiness(graph: SpatioTemporalGraph) -> float:
     try:
         intervals, weights = __interevent(graph)
@@ -217,7 +217,7 @@ def burstiness(graph: SpatioTemporalGraph) -> float:
         return 0
 
 
-@temporal_measure("Memory")
+@temporal_metric("Memory")
 def memory(graph: SpatioTemporalGraph) -> float:
     try:
         intervals, weights = __interevent(graph)
