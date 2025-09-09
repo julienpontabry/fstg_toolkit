@@ -72,6 +72,9 @@ class RC5(Enum):
         else:
             raise ValueError(f"Unable to find a transition named \"{name}\"!")
 
+    def __str__(self) -> str:
+        return self.name
+
 
 def __check_data(data: dict[str, Any], key: str, value: Any) -> bool:
     if key not in data:
