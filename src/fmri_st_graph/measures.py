@@ -88,16 +88,16 @@ def gather_metrics(dataset: GraphsDataset, selection: Iterable[tuple[str, ...]],
     for subject in selection:
         records = calculator(dataset.get_graph(subject))
         all_records += records
-        all_idx.append(subject)
+        all_idx += [subject] * len(records)
 
     df = pd.json_normalize(all_records)
     idx = pd.MultiIndex.from_tuples(all_idx, names=[f'factor{i + 1}' for i in range(n_factors)] + ['id'])
     df.set_index(idx, inplace=True)
 
-    multi_cols = [tuple(c.split(".")) if "." in c else (c,) for c in df.columns]
+    multi_cols = [tuple(c.split('.')) if '.' in c else (c,) for c in df.columns]
     if max([len(e) for e in multi_cols]) > 1:
         df.columns = pd.MultiIndex.from_tuples(multi_cols)
-        df.rename(columns={np.nan: ""}, inplace=True)
+        df.rename(columns={np.nan: ''}, inplace=True)
 
     return df
 
