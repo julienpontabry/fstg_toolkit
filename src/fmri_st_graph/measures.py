@@ -157,7 +157,7 @@ def mean_areas(graph: SpatioTemporalGraph) -> list[float]:
 def transitions_distribution(graph: SpatioTemporalGraph) -> dict[str, int]:
     # TODO add distribution per region
     return {trans: len([_ for _, _, d in graph.edges(data=True) if d['transition'] == trans])
-            for trans in list(RC5)}
+            for trans in list(RC5) if trans != RC5.DC}
 
 
 @temporal_measure("Reorganisation rate")
