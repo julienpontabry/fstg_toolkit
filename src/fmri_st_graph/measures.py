@@ -1,15 +1,18 @@
 from dataclasses import dataclass, field
-from typing import Optional, Callable
+from typing import Optional, Callable, Iterable
 
 import networkx as nx
 import numpy as np
+import pandas as pd
 
 from .graph import SpatioTemporalGraph, RC5
+from .app.core.io import GraphsDataset
 
 
 type MeasureOutput = float | list[float] | dict[str, int]
 type MeasureFunction = Callable[[SpatioTemporalGraph], MeasureOutput]
 type MeasureRecord = dict[str, MeasureOutput]
+type MetricsCalculator = Callable[[SpatioTemporalGraph], list[MeasureRecord]]
 
 
 @dataclass(frozen=True)
@@ -74,6 +77,27 @@ def calculate_temporal_measures(graph: SpatioTemporalGraph) -> list[MeasureRecor
         record[name] = func(g)
 
     return [record]
+
+
+def gather_metrics(dataset: GraphsDataset, selection: Iterable[tuple[str, ...]],
+                   calculator: MetricsCalculator) -> pd.DataFrame:
+    n_factors = len(dataset.factors)
+    all_records = []
+
+    for subject in selection:
+        idx = {f'factor{i+1}': subject[i] for i in range(n_factors)} | {'id': subject[-1]}
+        records = calculator(dataset.get_graph(subject))
+        all_records += [idx | record for record in records]
+
+    df = pd.json_normalize(all_records)
+    df.set_index(list(df.columns[range(n_factors + 1)]), inplace=True)
+
+    multi_cols = [tuple(c.split(".")) if "." in c else (c,) for c in df.columns]
+    if max([len(e) for e in multi_cols]) > 1:
+        df.columns = pd.MultiIndex.from_tuples(multi_cols)
+        df.rename(columns={np.nan: ""}, inplace=True)
+
+    return df
 
 
 def spatial_measure(name):
