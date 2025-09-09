@@ -3,12 +3,11 @@ from typing import Optional, Callable
 
 import networkx as nx
 import numpy as np
-import pandas as pd
 
 from .graph import SpatioTemporalGraph, RC5
 
 
-type MeasureOutput = float | list[float]
+type MeasureOutput = float | list[float] | dict[str, int]
 type MeasureFunction = Callable[[SpatioTemporalGraph], MeasureOutput]
 type MeasureRecord = dict[str, MeasureOutput]
 
@@ -131,10 +130,10 @@ def mean_areas(graph: SpatioTemporalGraph) -> list[float]:
 
 
 @temporal_measure("Transitions distribution")
-def transitions_distribution(graph: SpatioTemporalGraph) -> list[float]:
+def transitions_distribution(graph: SpatioTemporalGraph) -> dict[str, int]:
     # TODO add distribution per region
-    return [len([_ for _, _, d in graph.edges(data=True) if d['transition'] == trans])
-            for trans in list(RC5)]
+    return {trans: len([_ for _, _, d in graph.edges(data=True) if d['transition'] == trans])
+            for trans in list(RC5)}
 
 
 @temporal_measure("Reorganisation rate")
