@@ -13,7 +13,7 @@ from screeninfo import get_monitors
 from fmri_st_graph import generate_pattern, SpatioTemporalGraphSimulator, CorrelationMatrixSequenceSimulator
 from .graph import SpatioTemporalGraph
 from .factory import spatio_temporal_graph_from_corr_matrices
-from .io import save_spatio_temporal_graph, DataSaver, DataLoader
+from .io import save_spatio_temporal_graph, DataSaver, DataLoader, save_metrics
 from .visualization import spatial_plot, temporal_plot, multipartite_plot, DynamicPlot
 from .app.fstview import app
 from .app.core.datafilesdb import get_data_file_db, MemoryDataFilesDB
@@ -186,7 +186,7 @@ def metrics(dataset_path: Path):
             click.echo("Saving spatial metrics...")
             # TODO handle already present files
             with zfp.open('metrics_spatial.csv', 'w') as fp:
-                spatial_df.to_csv(fp)
+                save_metrics(fp, spatial_df)
         except OSError as ex:
             click.echo(f"Error while saving spatial metrics to {dataset_path}: {ex}", err=True)
 
@@ -194,7 +194,7 @@ def metrics(dataset_path: Path):
             click.echo("Saving temporal metrics...")
             # TODO handle already present files
             with zfp.open('metrics_temporal.csv', 'w') as fp:
-                temporal_df.to_csv(fp)
+                save_metrics(fp, temporal_df)
         except OSError as ex:
             click.echo(f"Error while saving temporal metrics to {dataset_path}: {ex}", err=True)
 

@@ -1,7 +1,7 @@
 """Defines helpers for inputs/outputs."""
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, Callable, List, Tuple, Dict, LiteralString
+from typing import Optional, Callable, List, Tuple, Dict, LiteralString, IO
 from zipfile import ZipFile
 import json
 
@@ -153,6 +153,31 @@ def save_spatio_temporal_graph(graph: SpatioTemporalGraph, filepath: Path | str)
     saver.add(graph.areas)
     saver.add({'graph.json': graph})
     saver.save(filepath)
+
+
+def save_metrics(path_or_buf: str | Path | IO[bytes], metrics: pd.DataFrame) -> None:
+    df: pd.DataFrame = metrics.copy()
+
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = ['.'.join(tuple(c)) for c in df.columns]
+
+    if isinstance(df.index, pd.MultiIndex):
+        df.index = pd.Index(['.'.join(tuple(idx)) for idx in df.index], name='.'.join(df.index.names))
+
+    df.to_csv(path_or_buf)
+
+
+def load_metrics(path_or_buf: str | Path | IO[bytes]) -> pd.DataFrame:
+    df = pd.read_csv(path_or_buf, index_col=0)
+
+    if '.' in df.index.name and all('.' in idx for idx in df.index):
+        df.index = pd.MultiIndex.from_tuples([idx.split('.') for idx in df.index],
+                                             names=df.index.name.split('.'))
+
+    if all('.' in c for c in df.columns):
+        df.columns = pd.MultiIndex.from_tuples([tuple(c.split('.')) for c in df.columns])
+
+    return df
 
 
 type SpatioTemporalGraphsDict = Dict[LiteralString, SpatioTemporalGraph]
@@ -369,7 +394,7 @@ class DataLoader:
     def load_metrics(self) -> Optional[pd.DataFrame]:
         with self.__within_archive as zfp:
             with zfp.open('metrics_temporal.csv', 'r') as fp:
-                return pd.read_csv(fp)
+                return load_metrics(fp)
 
 
 type SavableDataElement = pd.DataFrame | SpatioTemporalGraphsDict | CorrelationMatricesDict

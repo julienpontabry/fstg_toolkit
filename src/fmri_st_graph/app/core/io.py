@@ -133,8 +133,7 @@ class GraphsDataset:
         return self.loader.load_metrics() is not None
 
     def get_metrics(self) -> Optional[pd.DataFrame]:
-        metrics = self.loader.load_metrics()
-        return metrics.set_index(list(metrics.columns[range(len(self.factors)+1)]))
+        return self.loader.load_metrics()
 
     @staticmethod
     def deserialize(data: Dict[str, Any]) -> 'GraphsDataset':
