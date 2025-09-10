@@ -32,7 +32,7 @@ def dataset_changed(store_dataset):
         raise PreventUpdate
 
     dataset = GraphsDataset.deserialize(store_dataset)
-    metrics = dataset.get_metrics()
+    metrics = dataset.get_metrics('temporal')
 
     if isinstance(metrics.columns, pd.MultiIndex):
         columns = list(metrics.columns.levels[0])
@@ -59,6 +59,6 @@ def metric_factors_selection_changed(metric_selection, factors_selection, store_
         raise PreventUpdate
 
     dataset = GraphsDataset.deserialize(store_dataset)
-    metrics = dataset.get_metrics()
+    metrics = dataset.get_metrics('temporal')
 
     return build_metrics_plot(metrics[metric_selection], factors_selection)

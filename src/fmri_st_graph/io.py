@@ -391,10 +391,14 @@ class DataLoader:
         """
         return self.__load_all_scheme(lambda _: self.lazy_load_graphs(), self.lazy_load_matrices)
 
-    def load_metrics(self) -> Optional[pd.DataFrame]:
+    def lazy_load_metrics(self) -> List[LiteralString]:
+        return [filename for filename in self.__get_filenames('.csv') if filename.startswith('metrics_')]
+
+    def load_metrics(self, name: str) -> Optional[pd.DataFrame]:
         with self.__within_archive as zfp:
-            with zfp.open('metrics_temporal.csv', 'r') as fp:
+            with zfp.open(f'metrics_{name}.csv', 'r') as fp:
                 return load_metrics(fp)
+
 
 
 type SavableDataElement = pd.DataFrame | SpatioTemporalGraphsDict | CorrelationMatricesDict

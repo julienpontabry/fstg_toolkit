@@ -129,11 +129,12 @@ class GraphsDataset:
         filename = self.subjects.loc[ids]['Matrix']
         return self.loader.load_matrix(filename)
 
-    def has_metrics(self) -> bool:
-        return self.loader.load_metrics() is not None
+    def has_metrics(self, name: Optional[str] = None) -> bool:
+        available_metrics = self.loader.lazy_load_metrics()
+        return name and name in available_metrics or len(available_metrics) > 0
 
-    def get_metrics(self) -> Optional[pd.DataFrame]:
-        return self.loader.load_metrics()
+    def get_metrics(self, name: str) -> Optional[pd.DataFrame]:
+        return self.loader.load_metrics(name)
 
     @staticmethod
     def deserialize(data: Dict[str, Any]) -> 'GraphsDataset':
