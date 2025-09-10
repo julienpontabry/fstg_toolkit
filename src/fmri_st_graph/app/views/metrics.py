@@ -56,4 +56,4 @@ def metric_selection_changed(selection, store_dataset):
     dataset = GraphsDataset.deserialize(store_dataset)
     metrics = dataset.get_metrics()
 
-    return build_metrics_plot(metrics, selection)
+    return build_metrics_plot(metrics[selection])

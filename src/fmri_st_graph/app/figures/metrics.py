@@ -9,13 +9,11 @@ def __check_object_types(series: pd.DataFrame, dtype: Type):
     return series.apply(lambda e: isinstance(e, dtype)).all()
 
 
-def build_metrics_plot(metrics: pd.DataFrame, selection: str):
-    selected = metrics[selection]
-
-    if isinstance(selected, pd.Series):
-        return build_scalar_comparison_plot(selected)
-    elif isinstance(selected, pd.DataFrame) and selected.columns.nlevels == 1:
-        return build_distribution_comparison_plot(selected)
+def build_metrics_plot(metric: pd.DataFrame | pd.Series):
+    if isinstance(metric, pd.Series):
+        return build_scalar_comparison_plot(metric)
+    elif isinstance(metric, pd.DataFrame) and metric.columns.nlevels == 1:
+        return build_distribution_comparison_plot(metric)
     else:
         return {}
 
@@ -25,10 +23,10 @@ def build_scalar_comparison_plot(metric: pd.Series):
                      y=metric.name, box=True, points='all')
 
 
-def build_distribution_comparison_plot(metrics: pd.DataFrame):
+def build_distribution_comparison_plot(metric: pd.DataFrame):
     factor = 'factor1'
 
-    percentages = metrics.divide(metrics.sum(axis='columns'), axis='index') * 100
+    percentages = metric.divide(metric.sum(axis='columns'), axis='index') * 100
     values = percentages.groupby(factor).mean().T
 
     fig = go.Figure(data=[
