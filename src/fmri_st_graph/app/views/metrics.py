@@ -1,3 +1,4 @@
+import pandas as pd
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, callback, dcc
@@ -31,7 +32,12 @@ def dataset_changed(store_dataset):
 
     dataset = GraphsDataset.deserialize(store_dataset)
     metrics = dataset.get_metrics()
-    columns = list(metrics.columns)
+
+    if isinstance(metrics.columns, pd.MultiIndex):
+        columns = list(metrics.columns.levels[0])
+    else:
+        columns = list(metrics.columns)
+
     default = columns[0] if len(columns) > 0 else ''
 
     return columns, default
