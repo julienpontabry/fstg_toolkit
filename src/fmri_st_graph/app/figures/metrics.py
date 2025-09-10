@@ -1,12 +1,6 @@
-from typing import Type
-
 import pandas as pd
 import plotly.express as px
 from plotly import graph_objects as go
-
-
-def __check_object_types(series: pd.DataFrame, dtype: Type):
-    return series.apply(lambda e: isinstance(e, dtype)).all()
 
 
 def build_metrics_plot(metric: pd.DataFrame | pd.Series):
