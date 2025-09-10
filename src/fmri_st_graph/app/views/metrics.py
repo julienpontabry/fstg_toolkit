@@ -54,6 +54,6 @@ def metric_selection_changed(selection, store_dataset):
         raise PreventUpdate
 
     dataset = GraphsDataset.deserialize(store_dataset)
-    metrics = dataset.get_metrics().reset_index()
+    metrics = dataset.get_metrics()
 
     return build_metrics_plot(metrics, selection)
