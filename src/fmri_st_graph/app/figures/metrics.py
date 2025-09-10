@@ -3,35 +3,41 @@ import plotly.express as px
 from plotly import graph_objects as go
 
 
-def build_metrics_plot(metric: pd.DataFrame | pd.Series):
+def build_metrics_plot(metric: pd.DataFrame | pd.Series, factors: list[str]):
     if isinstance(metric, pd.Series):
-        return build_scalar_comparison_plot(metric)
+        return build_scalar_comparison_plot(metric, factors)
     elif isinstance(metric, pd.DataFrame) and metric.columns.nlevels == 1:
-        return build_distribution_comparison_plot(metric)
+        return build_distribution_comparison_plot(metric, factors)
     else:
         return {}
 
 
-def build_scalar_comparison_plot(metric: pd.Series):
-    return px.violin(metric.reset_index(), x='factor2', color='factor1',
-                     y=metric.name, box=True, points='all')
+def build_scalar_comparison_plot(metric: pd.Series, factors: list[str]):
+    params = {param: factor for param, factor in zip(('x', 'color'), factors)}
+    return px.violin(metric.reset_index(), y=metric.name, box=True, points='all', **params)
 
 
-def build_distribution_comparison_plot(metric: pd.DataFrame):
-    factor = 'factor1'
-
+def build_distribution_comparison_plot(metric: pd.DataFrame, factors: list[str]):
     percentages = metric.divide(metric.sum(axis='columns'), axis='index') * 100
-    values = percentages.groupby(factor).mean().T
+
+    if len(factors) > 0:
+        values = percentages.groupby(factors[0]).mean().T
+        labels = list(values.columns)
+        x_label = factors[0]
+    else:
+        values = pd.DataFrame(percentages.mean())
+        labels = ["all"]
+        x_label = ""
 
     fig = go.Figure(data=[
-        go.Bar(name=idx, x=values.columns, y=values.loc[idx].values)
+        go.Bar(name=idx, x=labels, y=values.loc[idx])
         for idx in values.index
     ])
 
     fig.update_layout(
         barmode='stack',
         yaxis_type='log',
-        xaxis_title=factor,
+        xaxis_title=x_label,
         yaxis_title="Percentage",
     )
 
