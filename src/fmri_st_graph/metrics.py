@@ -159,7 +159,7 @@ def modularity(graph: SpatioTemporalGraph) -> float:
     return nx.community.modularity(graph, communities)
 
 
-@spatial_metric("Mean number of areas")
+# @spatial_metric("Mean number of areas")
 def mean_areas(graph: SpatioTemporalGraph) -> dict[str, float]:
     return {region: float(np.mean([len(d['areas']) for _, d in graph.sub(region=region).nodes(data=True)]))
             for region in np.unique(graph.areas['Name_Region'])}
