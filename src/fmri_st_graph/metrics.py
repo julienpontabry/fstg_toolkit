@@ -58,14 +58,14 @@ def metrics_index_columns(index_columns: Optional[list[str]]):
     return decorator
 
 
-@metrics_index_columns(['t'])
+@metrics_index_columns(['Time'])
 def calculate_spatial_metrics(graph: SpatioTemporalGraph) -> list[MetricRecord]:
     registry = get_spatial_metrics_registry()
     records = []
 
     for t in graph.time_range:
         g = SpatioTemporalGraph(nx.Graph(graph.sub(t=t)), graph.areas)
-        record: dict[str, MetricType] = {'t': t}
+        record: dict[str, MetricType] = {'Time': t}
 
         for name, func in registry:
             record[name] = func(g)

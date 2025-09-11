@@ -5,7 +5,7 @@ from plotly import graph_objects as go
 
 def build_metrics_plot(metric: pd.DataFrame | pd.Series, factors: list[str]):
     if isinstance(metric, pd.Series):
-        if 't' in metric.index.names:
+        if 'Time' in metric.index.names:
             return build_longitudinal_scalar_comparison_plot(metric, factors)
         else:
             return build_scalar_comparison_plot(metric, factors)
@@ -16,11 +16,11 @@ def build_metrics_plot(metric: pd.DataFrame | pd.Series, factors: list[str]):
 
 
 def build_longitudinal_scalar_comparison_plot(metric: pd.Series, factors: list[str]):
-    group = metric.groupby(['t'] + factors)
+    group = metric.groupby(['Time'] + factors)
     df = pd.DataFrame(group.mean())
     df['std'] = group.std()
     params = {param: factor for param, factor in zip(('color', 'facet_row', 'facet_col'), factors)}
-    return px.line(df.reset_index(), x='t', y=metric.name, **params)
+    return px.line(df.reset_index(), x='Time', y=metric.name, **params)
 
 
 def build_scalar_comparison_plot(metric: pd.Series, factors: list[str]):
