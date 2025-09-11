@@ -129,8 +129,11 @@ class GraphsDataset:
         filename = self.subjects.loc[ids]['Matrix']
         return self.loader.load_matrix(filename)
 
+    def get_available_metrics(self) -> list[str]:
+        return [filename.removeprefix('metrics_').split('.csv')[0] for filename in self.loader.lazy_load_metrics()]
+
     def has_metrics(self, name: Optional[str] = None) -> bool:
-        available_metrics = self.loader.lazy_load_metrics()
+        available_metrics = self.get_available_metrics()
         return name and name in available_metrics or len(available_metrics) > 0
 
     def get_metrics(self, name: str) -> Optional[pd.DataFrame]:
