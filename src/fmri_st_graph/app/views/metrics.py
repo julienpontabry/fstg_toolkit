@@ -14,7 +14,7 @@ layout = [
     dbc.Row(
         dcc.Loading(
             children=[dcc.Graph(figure={}, id='metrics-graph', config=plotly_config)],
-            type='circle', overlay_style={"visibility": "visible", "filter": "blur(2px)"}
+            type='circle', overlay_style={'visibility': 'visible', 'filter': 'blur(2px)'}
         )
     )
 ]
@@ -69,10 +69,10 @@ def metrics_type_changed(metrics_type, store_dataset):
 
 
 @callback(
-    Output("metrics-graph", "figure"),
-    Input("metrics-selection", "value"),
-    Input("metrics-factors", "value"),
-    State("store-dataset", "data"),
+    Output('metrics-graph', 'figure'),
+    Input('metrics-selection', 'value'),
+    Input('metrics-factors', 'value'),
+    State('store-dataset', 'data'),
     prevent_initial_call=True,
 )
 def metric_factors_selection_changed(metric_selection, factors_selection, store_dataset):
