@@ -19,12 +19,12 @@ def build_longitudinal_scalar_comparison_plot(metric: pd.Series, factors: list[s
     group = metric.groupby(['t'] + factors)
     df = pd.DataFrame(group.mean())
     df['std'] = group.std()
-    params = {param: factor for param, factor in zip(('color', 'facet_col'), factors)}
+    params = {param: factor for param, factor in zip(('color', 'facet_row', 'facet_col'), factors)}
     return px.line(df.reset_index(), x='t', y=metric.name, **params)
 
 
 def build_scalar_comparison_plot(metric: pd.Series, factors: list[str]):
-    params = {param: factor for param, factor in zip(('x', 'color'), factors)}
+    params = {param: factor for param, factor in zip(('x', 'color', 'facet_row', 'facet_col'), factors)}
     return px.violin(metric.reset_index(), y=metric.name, box=True, points='all', **params)
 
 
