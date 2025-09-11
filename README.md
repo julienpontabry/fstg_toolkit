@@ -1,6 +1,6 @@
 [![pipeline status](https://git.unistra.fr/jpontabry/mos-t_fmri/badges/main/pipeline.svg)](https://git.unistra.fr/jpontabry/mos-t_fmri/-/commits/main)
 
-# MoS-T_fMRI
+# fSTG Toolkit: an Open-Source Software for Spatio-Temporal Graph Analysis of fMRI data
 
 This package allows you to build, plot, and simulate spatio-temporal graphs for fMRI data. This README provides a brief overview of the CLI tool usage, including installation instructions, usage examples, and detailed examples.
 

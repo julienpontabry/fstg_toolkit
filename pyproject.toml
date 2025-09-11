@@ -1,7 +1,7 @@
 [project]
-name = "fmri-st-graph"
-version = "0.1.0"
-description = "fMRI data visualized as spatio-temporal graphs."
+name = "fSTG-Toolkit"
+version = "0.8.0"
+description = "Aan Open-Source Software for Spatio-Temporal Graph Analysis of fMRI data."
 authors = [
     {name = "Julien PONTABRY",email = "jpontabry@unistra.fr"}
 ]
