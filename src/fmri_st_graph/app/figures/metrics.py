@@ -41,7 +41,7 @@ def build_distribution_comparison_plot(metric: pd.DataFrame, factors: list[str])
         x_label = ""
 
     fig = go.Figure(data=[
-        go.Bar(name=idx, x=labels, y=values.loc[idx])
+        go.Bar(name=idx, x=labels, y=values.loc[idx], hovertemplate="%{y:.2f}%")
         for idx in values.index
     ])
 
