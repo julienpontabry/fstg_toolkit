@@ -55,7 +55,6 @@ def metrics_type_changed(metrics_type, store_dataset):
         raise PreventUpdate
 
     dataset = GraphsDataset.deserialize(store_dataset)
-
     metrics = dataset.get_metrics(metrics_type.lower())
 
     if isinstance(metrics.columns, pd.MultiIndex):

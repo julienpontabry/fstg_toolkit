@@ -51,7 +51,14 @@ def get_temporal_metrics_registry() -> MetricsRegistry:
     return temporal_metrics_registry
 
 
+def metrics_index_columns(index_columns: Optional[list[str]]):
+    def decorator(func):
+        func.index_columns = index_columns
+        return func
+    return decorator
 
+
+@metrics_index_columns(['t'])
 def calculate_spatial_metrics(graph: SpatioTemporalGraph) -> list[MetricRecord]:
     registry = get_spatial_metrics_registry()
     records = []
@@ -93,6 +100,9 @@ def gather_metrics(dataset: GraphsDataset, selection: Iterable[tuple[str, ...]],
     df = pd.json_normalize(all_records)
     idx = pd.MultiIndex.from_tuples(all_idx, names=[f'factor{i + 1}' for i in range(n_factors)] + ['id'])
     df.set_index(idx, inplace=True)
+
+    if hasattr(calculator, 'index_columns'):
+        df.set_index(calculator.index_columns, append=True, inplace=True)
 
     multi_cols = [tuple(c.split('.')) if '.' in c else (c,) for c in df.columns]
     if max([len(e) for e in multi_cols]) > 1:

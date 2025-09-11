@@ -159,10 +159,11 @@ def save_metrics(path_or_buf: str | Path | IO[bytes], metrics: pd.DataFrame) -> 
     df: pd.DataFrame = metrics.copy()
 
     if isinstance(df.columns, pd.MultiIndex):
-        df.columns = ['.'.join(tuple(c)) for c in df.columns]
+        df.columns = ['.'.join(c) for c in df.columns]
 
+    # NOTE not compatible with floating points index elements
     if isinstance(df.index, pd.MultiIndex):
-        df.index = pd.Index(['.'.join(tuple(idx)) for idx in df.index], name='.'.join(df.index.names))
+        df.index = pd.Index(['.'.join([str(e) for e in idx]) for idx in df.index], name='.'.join(df.index.names))
 
     df.to_csv(path_or_buf)
 
@@ -171,7 +172,8 @@ def load_metrics(path_or_buf: str | Path | IO[bytes]) -> pd.DataFrame:
     df = pd.read_csv(path_or_buf, index_col=0)
 
     if '.' in df.index.name and all('.' in idx for idx in df.index):
-        df.index = pd.MultiIndex.from_tuples([idx.split('.') for idx in df.index],
+        df.index = pd.MultiIndex.from_tuples([[int(i) if i.isdigit() else i for i in idx.split('.')]
+                                              for idx in df.index],
                                              names=df.index.name.split('.'))
 
     if all('.' in c for c in df.columns):
