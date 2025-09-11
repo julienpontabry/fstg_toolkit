@@ -73,13 +73,14 @@ def metrics_type_changed(metrics_type, store_dataset):
     Input('metrics-selection', 'value'),
     Input('metrics-factors', 'value'),
     State('store-dataset', 'data'),
+    State('metrics-type', 'value'),
     prevent_initial_call=True,
 )
-def metric_factors_selection_changed(metric_selection, factors_selection, store_dataset):
-    if store_dataset is None:
+def metric_factors_selection_changed(metric_selection, factors_selection, store_dataset, metrics_type):
+    if store_dataset is None and metrics_type == '':
         raise PreventUpdate
 
     dataset = GraphsDataset.deserialize(store_dataset)
-    metrics = dataset.get_metrics('temporal')
+    metrics = dataset.get_metrics(metrics_type.lower())
 
     return build_metrics_plot(metrics[metric_selection], factors_selection)
