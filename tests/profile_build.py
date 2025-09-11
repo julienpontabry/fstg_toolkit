@@ -6,7 +6,7 @@ if __name__ == '__main__':
     import timeit
     import numpy as np
     import pandas as pd
-    import fmri_st_graph as fg
+    import fstg_toolkit as fg
 
     correlation_matrices_path = "/home/jpontabry/Documents/projets/visualisation graphes spatio-temporels/data/list_of_corr_matrices_13months.zip"
     matrices = np.load(correlation_matrices_path)

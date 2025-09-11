@@ -1,8 +1,8 @@
 if __name__ == '__main__':
     import doctest
 
-    from fmri_st_graph import graph, factory, io, simulation
-    from fmri_st_graph.app.core import utils
+    from fstg_toolkit import graph, factory, io, simulation
+    from fstg_toolkit.app.core import utils
 
     total_failed = 0
 

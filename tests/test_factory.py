@@ -1,8 +1,8 @@
 import unittest
 
-from fmri_st_graph import load_spatio_temporal_graph, CorrelationMatrixSequenceSimulator, \
+from fstg_toolkit import load_spatio_temporal_graph, CorrelationMatrixSequenceSimulator, \
     spatio_temporal_graph_from_corr_matrices
-from fmri_st_graph.graph import are_st_graphs_close
+from fstg_toolkit.graph import are_st_graphs_close
 from test_common import graph_path
 
 

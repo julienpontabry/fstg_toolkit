@@ -50,7 +50,7 @@ Id_Area,Name_Area,Name_Region
 To build a spatio-temporal graph from the inputs and save the graph to the archive file `my_graph.zip`, use the command:
 
 ```sh
-python -m fmri_st_graph build matrices.npz areas.csv -o my_graph.zip
+python -m fstg_toolkit build matrices.npz areas.csv -o my_graph.zip
 ```
 
 ### Plot a Graph
@@ -58,7 +58,7 @@ python -m fmri_st_graph build matrices.npz areas.csv -o my_graph.zip
 To plot a graph stored in the file `my_graph.zip` to a dynamic plot, use the command:
 
 ```sh
-python -m fmri_st_graph plot my_graph.zip dynamic
+python -m fstg_toolkit plot my_graph.zip dynamic
 ```
 
 Other available plot types include `spatial`, `command`, and `multipartite` (avoid this last one for large graphs due to memory issues).
@@ -80,7 +80,7 @@ The syntax for a single temporal edge is `network_id_range,network_id_range`, wh
 Example command:
 
 ```sh
-python -m fmri_st_graph simulate -o pattern.zip pattern "1:3,1,0.8 4:5,2,-0.8 / 1:2,1,0.7 3,1,1 4:5,2,-0.8" "1,2,0.6 3,5,0.5" "1,3-4 2,5"
+python -m fstg_toolkit simulate -o pattern.zip pattern "1:3,1,0.8 4:5,2,-0.8 / 1:2,1,0.7 3,1,1 4:5,2,-0.8" "1,2,0.6 3,5,0.5" "1,3-4 2,5"
 ```
 
 This creates the pattern depicted in the following multipartite plot:
@@ -94,7 +94,7 @@ A graph can be simulated from a sequence of pre-generated patterns. The sequence
 Example command:
 
 ```sh
-python -m fmri_st_graph simulate -o sequence.zip sequence pattern1.zip pattern2.zip pattern3.zip "p2 10 p3 5 p1"
+python -m fstg_toolkit simulate -o sequence.zip sequence pattern1.zip pattern2.zip pattern3.zip "p2 10 p3 5 p1"
 ```
 
 ### Simulate Correlations
@@ -102,7 +102,7 @@ python -m fmri_st_graph simulate -o sequence.zip sequence pattern1.zip pattern2.
 To simulate a timeseries of correlation matrices from a spatio-temporal graph stored in `my_graph.zip` with a correlation threshold of 0.5, use the command:
 
 ```sh
-python -m fmri_st_graph simulate -o correlations.npz correlations my_graph.zip -t 0.5
+python -m fstg_toolkit simulate -o correlations.npz correlations my_graph.zip -t 0.5
 ```
 
 The output timeseries matrices will be saved in a numpy-compatible format. Use the `-o` option to set the output path.

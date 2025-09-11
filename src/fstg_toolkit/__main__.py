@@ -10,7 +10,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from screeninfo import get_monitors
 
-from fmri_st_graph import generate_pattern, SpatioTemporalGraphSimulator, CorrelationMatrixSequenceSimulator
+from fstg_toolkit import generate_pattern, SpatioTemporalGraphSimulator, CorrelationMatrixSequenceSimulator
 from .graph import SpatioTemporalGraph
 from .factory import spatio_temporal_graph_from_corr_matrices
 from .io import save_spatio_temporal_graph, DataSaver, DataLoader, save_metrics

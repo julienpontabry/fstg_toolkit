@@ -5,10 +5,10 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-from fmri_st_graph import SpatioTemporalGraph, load_spatio_temporal_graph, generate_pattern, \
+from fstg_toolkit import SpatioTemporalGraph, load_spatio_temporal_graph, generate_pattern, \
     SpatioTemporalGraphSimulator
-from fmri_st_graph.graph import RC5
-from fmri_st_graph.simulation import CorrelationMatrixSequenceSimulator
+from fstg_toolkit.graph import RC5
+from fstg_toolkit.simulation import CorrelationMatrixSequenceSimulator
 from test_common import matrices_path, graph_path, patterns_path
 
 

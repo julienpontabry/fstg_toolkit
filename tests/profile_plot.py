@@ -1,7 +1,7 @@
 from pathlib import Path
 import timeit
-import fmri_st_graph as fg
-from fmri_st_graph.io import DataLoader
+import fstg_toolkit as fg
+from fstg_toolkit.io import DataLoader
 
 
 if __name__ == '__main__':

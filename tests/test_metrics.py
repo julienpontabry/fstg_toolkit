@@ -2,9 +2,9 @@ import unittest
 
 import pandas as pd
 
-from fmri_st_graph.metrics import calculate_spatial_metrics, calculate_temporal_metrics
-from fmri_st_graph.metrics import get_spatial_metrics_registry, get_temporal_metrics_registry
-from fmri_st_graph.io import load_spatio_temporal_graph
+from fstg_toolkit.metrics import calculate_spatial_metrics, calculate_temporal_metrics
+from fstg_toolkit.metrics import get_spatial_metrics_registry, get_temporal_metrics_registry
+from fstg_toolkit.io import load_spatio_temporal_graph
 from test_common import graph_path
 
 
