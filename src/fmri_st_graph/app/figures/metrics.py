@@ -5,11 +5,22 @@ from plotly import graph_objects as go
 
 def build_metrics_plot(metric: pd.DataFrame | pd.Series, factors: list[str]):
     if isinstance(metric, pd.Series):
-        return build_scalar_comparison_plot(metric, factors)
+        if 't' in metric.index.names:
+            return build_longitudinal_scalar_comparison_plot(metric, factors)
+        else:
+            return build_scalar_comparison_plot(metric, factors)
     elif isinstance(metric, pd.DataFrame) and metric.columns.nlevels == 1:
         return build_distribution_comparison_plot(metric, factors)
     else:
         return {}
+
+
+def build_longitudinal_scalar_comparison_plot(metric: pd.Series, factors: list[str]):
+    group = metric.groupby(['t'] + factors)
+    df = pd.DataFrame(group.mean())
+    df['std'] = group.std()
+    params = {param: factor for param, factor in zip(('color', 'facet_col'), factors)}
+    return px.line(df.reset_index(), x='t', y=metric.name, **params)
 
 
 def build_scalar_comparison_plot(metric: pd.Series, factors: list[str]):
