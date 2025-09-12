@@ -94,9 +94,9 @@ def __read_load_np(path: Path) -> list[tuple[str, np.ndarray]]:
 def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], output: Path,
           corr_threshold: float, absolute_thresholding: bool, areas_column_name: str, regions_column_name: str,
           select: bool, no_raw: bool):
-    """Build a spatio-temporal graph from correlation matrices.
+    """Build spatio-temporal graphs from sequences of correlation matrices.
 
-    The spatio-temporal graph will be saved to OUTPUT, built from the correlation matrices in CORRELATION_MATRICES_PATH and the area descriptions in AREAS_DESCRIPTION_PATH.
+    The spatio-temporal graphs will be saved to OUTPUT, built from the correlation matrices in CORRELATION_MATRICES_PATH and the area descriptions in AREAS_DESCRIPTION_PATH.
 
     Accepted file formats for correlation matrices are numpy pickle files with extensions `.npz` or `.npy`.
 
@@ -167,6 +167,10 @@ def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], 
 @cli.command
 @click.argument('dataset_path', type=click.Path(exists=True, dir_okay=False, path_type=Path))
 def metrics(dataset_path: Path):
+    """Calculate metrics on spatio-temporal graphs.
+
+    DATASET_PATH is the path to spatio-temporal graphs built with the command 'build'.
+    """
     dataset = GraphsDataset.from_filepath(dataset_path)
 
     # calculate spatial metrics
