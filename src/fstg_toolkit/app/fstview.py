@@ -2,9 +2,8 @@ import traceback as tb
 from pathlib import Path
 
 import dash_bootstrap_components as dbc
-import diskcache
 import plotly.io as pio
-from dash import DiskcacheManager, Dash, Input,Output, State, callback, dcc, set_props
+from dash import Dash, Input,Output, State, callback, dcc, set_props
 from dash_breakpoints import WindowBreakpoints
 
 from .views import metrics, data, subject, matrices
@@ -13,10 +12,6 @@ from .core.io import GraphsDataset
 
 # use orsjon to make JSON 5-10x faster
 pio.json.config.default_engine = 'orjson'
-
-# set up the cache
-cache = diskcache.Cache("./cache")
-background_callback_manager = DiskcacheManager(cache)
 
 # handling of errors messages
 def callback_error(err):
@@ -32,7 +27,6 @@ def callback_error(err):
 app = Dash(title="fSTView - An fMRI spatio-temporal data viewer", name="fSTView",
            external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
            assets_folder=str(Path(__file__).parent / 'assets'),
-           background_callback_manager=background_callback_manager,
            on_error=callback_error)
 
 app.layout = dbc.Container(
