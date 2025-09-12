@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    container:
+      image: mambaorg/micromamba:bookworm-slim
+    steps:
+      - uses: actions/checkout@v4
+      - &install-deps
+        name: Install dependencies
+        run: |
+          micromamba install --yes --name base --file environment.yml
+          micromamba clean --all --yes
+          micromamba run poetry config virtualenvs.create false --local
+          micromamba run poetry install
+          export PYTHONPATH="$PYTHONPATH:src"
+      - name: Run doctests
+        run: micromamba run python tests/doctests_runner.py
+
+  docstring-tests:
+    runs-on: ubuntu-latest
+    container:
+      image: mambaorg/micromamba:bookworm-slim
+    steps:
+      - uses: actions/checkout@v4
+      - *install-deps
+      - name: Run unit tests
+        run: micromamba run python tests/tests_runner.py
