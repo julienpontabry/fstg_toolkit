@@ -24,7 +24,7 @@ def callback_error(err):
         tb.print_tb(err_tb)
 
 # app's definition
-app = Dash(title="fSTView - An fMRI spatio-temporal data viewer", name="fSTView",
+app = Dash(title="fSTG-View - A web-based viewer for spatio-temporal graphs of fMRI data", name="fSTG-View",
            external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
            assets_folder=str(Path(__file__).parent / 'assets'),
            on_error=callback_error)

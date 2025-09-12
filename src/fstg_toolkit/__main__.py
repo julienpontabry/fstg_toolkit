@@ -15,7 +15,7 @@ from .graph import SpatioTemporalGraph
 from .factory import spatio_temporal_graph_from_corr_matrices
 from .io import save_spatio_temporal_graph, DataSaver, DataLoader, save_metrics
 from .visualization import spatial_plot, temporal_plot, multipartite_plot, DynamicPlot
-from .app.fstview import app
+from .app.fstg_view import app
 from .app.core.datafilesdb import get_data_file_db, MemoryDataFilesDB
 from .metrics import calculate_spatial_metrics, calculate_temporal_metrics, gather_metrics
 from .app.core.io import GraphsDataset
