@@ -29,6 +29,7 @@ class MetricsRegistry:
         return iter(self.__registry.items())
 
 
+# TODO use a single registry and multiple metrics categories
 spatial_metrics_registry: Optional[MetricsRegistry] = None
 temporal_metrics_registry: Optional[MetricsRegistry] = None
 

@@ -189,7 +189,7 @@ def metrics(dataset_path: Path):
         try:
             click.echo("Saving spatial metrics...")
             # TODO handle already present files
-            with zfp.open('metrics_spatial.csv', 'w') as fp:
+            with zfp.open('metrics_local.csv', 'w') as fp:
                 save_metrics(fp, spatial_df)
         except OSError as ex:
             click.echo(f"Error while saving spatial metrics to {dataset_path}: {ex}", err=True)
@@ -197,7 +197,7 @@ def metrics(dataset_path: Path):
         try:
             click.echo("Saving temporal metrics...")
             # TODO handle already present files
-            with zfp.open('metrics_temporal.csv', 'w') as fp:
+            with zfp.open('metrics_global.csv', 'w') as fp:
                 save_metrics(fp, temporal_df)
         except OSError as ex:
             click.echo(f"Error while saving temporal metrics to {dataset_path}: {ex}", err=True)
