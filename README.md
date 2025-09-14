@@ -2,10 +2,7 @@
 
 # fSTG Toolkit: an Open-Source Software for Spatio-Temporal Graph Analysis of fMRI data
 
-- package for longitudinal brain connectivity analysis
-- use a spatio-temporal graph modeling
-- allows to model the dynamic of the reorganisation of brain regions
-- primarily made for functional MRI data, but can be used for any connectivity data
+This package enables longitudinal analysis of brain connectivity by modeling data as spatio-temporal graphs. It allows the study of dynamic reorganization of brain regions. While primarily designed for functional MRI data, it can be used with any type of connectivity data.
 
 This README provides a brief usage overview, including installation instructions, usage examples, and detailed examples.
 
