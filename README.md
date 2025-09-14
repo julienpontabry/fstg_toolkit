@@ -2,14 +2,19 @@
 
 # fSTG Toolkit: an Open-Source Software for Spatio-Temporal Graph Analysis of fMRI data
 
-This package enables longitudinal analysis of brain connectivity by modeling data as spatio-temporal graphs. It allows the study of dynamic reorganization of brain regions. While primarily designed for functional MRI data, it can be used with any type of connectivity data.
+## Overview
 
-This README provides a brief usage overview, including installation instructions, usage examples, and detailed examples.
+**fSTG Toolkit** is an open-source software dedicated to longitudinal analysis of brain connectivity, modeling data as spatio-temporal graphs. It enables the study of dynamics and reorganization of brain regions, primarily using functional MRI (fMRI) data, but is also compatible with any type of connectivity data.
+
+Main features:
+- Building of spatio-temporal graphs from correlation matrices and region definitions.
+- Advanced graph metrics computation.
+- Interactive visualization of results.
+- Simulation of connectivity patterns and sequences.
 
 ## Installation
 
-The easiest is to create a new environment with the required python and poetry binaries. Using conda, to install the environment and activate it, run:
-
+The easiest way to ge started is to create a new environment with the required python and poetry binaries. Using conda, to install the environment and activate it, run:
 ```shell
 conda env create -n <env_name> -f environment.yml
 conda activate <env_name>
@@ -27,11 +32,11 @@ The CLI tool provides several commands building, calculating metrics, plotting, 
 python -m fstg_toolkit --help
 ```
 
-Use the `--help` option with any command to get help. Some examples and explanations are provided in the next section.
+Use the `--help` option with any command to get specific help. Some examples and explanations are provided in the next section.
 
 ## Examples
 
-### Build a Graph
+### Build one or multiple graphs
 
 Assume the timeseries of correlation matrices are stored in a numpy pickle file (`matrices.npz` or `matrices.npy`) and the definitions of the areas and regions are in a CSV file (`areas.csv`).
 
