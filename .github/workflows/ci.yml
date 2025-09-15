@@ -11,10 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: mambaorg/micromamba:bookworm-slim
+      options: --user=root
     steps:
       - uses: actions/checkout@v4
-      - &install-deps
-        name: Install dependencies
+      - shell: _entrypoint.sh /bin/bash --noprofile --norc -eo pipefail {0}
         run: |
           micromamba install --yes --name base --file environment.yml
           micromamba clean --all --yes
@@ -28,8 +28,15 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: mambaorg/micromamba:bookworm-slim
+      options: --user=root
     steps:
       - uses: actions/checkout@v4
-      - *install-deps
+      - shell: _entrypoint.sh /bin/bash --noprofile --norc -eo pipefail {0}
+        run: |
+          micromamba install --yes --name base --file environment.yml
+          micromamba clean --all --yes
+          micromamba run poetry config virtualenvs.create false --local
+          micromamba run poetry install
+          export PYTHONPATH="$PYTHONPATH:src"
       - name: Run unit tests
         run: micromamba run python tests/tests_runner.py
