@@ -1,4 +1,4 @@
-[![pipeline status](https://git.unistra.fr/jpontabry/mos-t_fmri/badges/main/pipeline.svg)](https://git.unistra.fr/jpontabry/mos-t_fmri/-/commits/main)
+[![CI](https://github.com/julienpontabry/fstg_toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/julienpontabry/fstg_toolkit/actions/workflows/ci.yml)
 
 # fSTG Toolkit: an Open-Source Software for Spatio-Temporal Graph Analysis of fMRI data
 
