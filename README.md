@@ -1,4 +1,4 @@
-[![CI](https://github.com/julienpontabry/fstg_toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/julienpontabry/fstg_toolkit/actions/workflows/ci.yml)
+[![CI](https://github.com/julienpontabry/fstg_toolkit/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/julienpontabry/fstg_toolkit/actions/workflows/ci.yml)
 
 # fSTG Toolkit: an Open-Source Software for Spatio-Temporal Graph Analysis of fMRI data
 
