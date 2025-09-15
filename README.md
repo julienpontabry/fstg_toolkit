@@ -6,11 +6,15 @@
 
 **fSTG Toolkit** is an open-source software dedicated to longitudinal analysis of brain connectivity, modeling data as spatio-temporal graphs. It enables the study of dynamics and reorganization of brain regions, primarily using functional MRI (fMRI) data, but is also compatible with any type of connectivity data.
 
-Main features:
+Current main features:
 - Building of spatio-temporal graphs from correlation matrices and region definitions.
 - Advanced graph metrics computation.
 - Interactive visualization of results.
 - Simulation of connectivity patterns and sequences.
+
+Future features in planned updates:
+- Frequent patterns detection and analysis in spatio-temporal graphs.
+- Web-based server to enhance end-user's interactions with an installation-free service.  
 
 ## Installation
 
