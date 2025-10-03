@@ -68,14 +68,14 @@ layout = [
         dbc.Col([
             dcc.Loading(
                 children=dash_table.DataTable(
-                    columns=corr_columns, page_size=15, id='corr-table',
+                    columns=corr_columns, page_size=15, id='subjects-table',
                     sort_action='native', filter_action='native', style_as_list_view=True,
                     style_header={'fontWeight': 'bold', 'textAlign': 'center'}),
                 type='circle', overlay_style={'visibility': 'visible', 'filter': 'blur(2px)'})
         ]),
         dbc.Col([
             dcc.Loading(
-                dcc.Graph(figure={}, id='corr-dist-plot',
+                dcc.Graph(figure={}, id='subjects-dist-plot',
                           config=dict(**plotly_config, modeBarButtonsToRemove=['select2d', 'lasso2d'])),
                 type='circle', overlay_style={'visibility': 'visible', 'filter': 'blur(2px)'}
             )
@@ -87,9 +87,9 @@ layout = [
 @callback(
     Output('desc-table', 'data'),
     Output('desc-count-plot', 'figure'),
-    Output('corr-table', 'columns'),
-    Output('corr-table', 'data'),
-    Output('corr-dist-plot', 'figure'),
+    Output('subjects-table', 'columns'),
+    Output('subjects-table', 'data'),
+    Output('subjects-dist-plot', 'figure'),
     Input('store-dataset', 'data'),
     prevent_initial_call=True
 )
@@ -105,6 +105,6 @@ def dataset_changed(store_dataset):
 
     # compute plots
     areas_count_fig = areas_per_region_figure(store_dataset['areas_desc'])
-    corr_dist_fig = subjects_per_factors_figure(store_dataset['subjects'])
+    subject_dist_fig = subjects_per_factors_figure(store_dataset['subjects'])
 
-    return store_dataset['areas_desc'], areas_count_fig, columns, store_dataset['subjects'], corr_dist_fig
+    return store_dataset['areas_desc'], areas_count_fig, columns, store_dataset['subjects'], subject_dist_fig
