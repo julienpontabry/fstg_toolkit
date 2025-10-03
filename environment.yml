@@ -1,4 +1,3 @@
-name: MoS-T_fMRI
 channels:
   - conda-forge
   - defaults
