@@ -36,8 +36,7 @@ from dash.exceptions import PreventUpdate
 from dash import Input, Output, callback, dash_table, dcc, html
 
 from .common import plotly_config
-from ..figures.data import areas_per_region_figure
-
+from ..figures.data import areas_per_region_figure, subjects_per_factors_figure
 
 desc_columns = [{'name': "Area id", 'id': 'Id_Area'},
                 {'name': "Area name", 'id': 'Name_Area'},
@@ -64,15 +63,22 @@ layout = [
                 type='circle', overlay_style={'visibility': 'visible', 'filter': 'blur(2px)'})
         ])
     ]),
+    dbc.Row(html.H2("Subjects")),
     dbc.Row([
         dbc.Col([
-            html.H2("Subjects"),
             dcc.Loading(
                 children=dash_table.DataTable(
                     columns=corr_columns, page_size=15, id='corr-table',
                     sort_action='native', filter_action='native', style_as_list_view=True,
                     style_header={'fontWeight': 'bold', 'textAlign': 'center'}),
                 type='circle', overlay_style={'visibility': 'visible', 'filter': 'blur(2px)'})
+        ]),
+        dbc.Col([
+            dcc.Loading(
+                dcc.Graph(figure={}, id='corr-dist-plot',
+                          config=dict(**plotly_config, modeBarButtonsToRemove=['select2d', 'lasso2d'])),
+                type='circle', overlay_style={'visibility': 'visible', 'filter': 'blur(2px)'}
+            )
         ])
     ]),
 ]
@@ -83,6 +89,7 @@ layout = [
     Output('desc-count-plot', 'figure'),
     Output('corr-table', 'columns'),
     Output('corr-table', 'data'),
+    Output('corr-dist-plot', 'figure'),
     Input('store-dataset', 'data'),
     prevent_initial_call=True
 )
@@ -98,5 +105,6 @@ def dataset_changed(store_dataset):
 
     # compute plots
     areas_count_fig = areas_per_region_figure(store_dataset['areas_desc'])
+    corr_dist_fig = subjects_per_factors_figure(store_dataset['subjects'])
 
-    return store_dataset['areas_desc'], areas_count_fig, columns, store_dataset['subjects']
+    return store_dataset['areas_desc'], areas_count_fig, columns, store_dataset['subjects'], corr_dist_fig

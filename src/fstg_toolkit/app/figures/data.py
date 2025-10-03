@@ -33,9 +33,10 @@
 
 import pandas as pd
 import plotly.express as px
+from plotly.graph_objects import Figure
 
 
-def areas_per_region_figure(records: list[dict[str, str]]):
+def areas_per_region_figure(records: list[dict[str, str]]) -> Figure:
     groups = pd.DataFrame.from_records(records, index='Id_Area').groupby('Name_Region')
     df = groups.count()
     df['Areas'] = groups.apply(lambda g: g['Name_Area'].to_list(), include_groups=False)
@@ -43,3 +44,7 @@ def areas_per_region_figure(records: list[dict[str, str]]):
     return px.bar(df, orientation='h', x='Name_Area', height=600,
                   labels={'Name_Area': 'Number of areas', 'Name_Region': 'Region'},
                   title="Distribution of areas per region", hover_data='Areas')
+
+
+def subjects_per_factors_figure(records: list[dict[str, str]]) -> Figure:
+    return {} # TODO to be implemented
