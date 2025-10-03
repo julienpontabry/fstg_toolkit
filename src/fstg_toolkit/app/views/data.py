@@ -16,7 +16,8 @@ layout = [
             dcc.Loading(
                 children=dash_table.DataTable(
                     columns=desc_columns, page_size=15, id='desc-table',
-                    sort_action='native', filter_action='native'),
+                    sort_action='native', filter_action='native', style_as_list_view=True,
+                    style_header={'fontWeight': 'bold', 'textAlign': 'center'}),
                 type='circle', overlay_style={'visibility': 'visible', 'filter': 'blur(2px)'})
         ]),
         dbc.Col([
@@ -24,8 +25,9 @@ layout = [
             dcc.Loading(
                 children=dash_table.DataTable(
                     columns=corr_columns, page_size=15, id='corr-table',
-                    sort_action='native', filter_action='native'),
-                type='circle', overlay_style={"visibility": "visible", "filter": "blur(2px)"})
+                    sort_action='native', filter_action='native', style_as_list_view=True,
+                    style_header={'fontWeight': 'bold', 'textAlign': 'center'}),
+                type='circle', overlay_style={'visibility': 'visible', 'filter': 'blur(2px)'})
         ])
     ]),
 ]
