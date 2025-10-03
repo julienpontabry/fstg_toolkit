@@ -14,10 +14,10 @@ unit-tests:
   stage: test
   extends: .install-dependencies
   script:
-    - micromamba run python tests/tests_runner.py
+    - micromamba run python test/tests_runner.py
 
 docstring-tests:
   stage: test
   extends: .install-dependencies
   script:
-    - micromamba run python tests/doctests_runner.py
+    - micromamba run python test/doctests_runner.py
