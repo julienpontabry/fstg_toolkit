@@ -53,7 +53,7 @@ def build_longitudinal_scalar_comparison_plot(metric: pd.Series, factors: list[s
     df = pd.DataFrame(group.mean())
     df['std'] = group.std()
     params = {param: factor for param, factor in zip(('color', 'facet_row', 'facet_col'), factors)}
-    return px.line(df.reset_index(), x='Time', y=metric.name, **params)
+    return px.line(df.reset_index(), x='Time', y=metric.name, **params, height=800)
 
 
 def build_scalar_comparison_plot(metric: pd.Series, factors: list[str]):
