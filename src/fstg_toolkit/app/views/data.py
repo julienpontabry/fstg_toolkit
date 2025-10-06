@@ -131,4 +131,4 @@ def factors_selection_changed(factors, store_dataset):
     if store_dataset is None:
         raise PreventUpdate
 
-    return subjects_per_factors_figure(store_dataset['subjects'])
+    return subjects_per_factors_figure(store_dataset['subjects'], factors)

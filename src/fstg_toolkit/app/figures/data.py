@@ -46,12 +46,18 @@ def areas_per_region_figure(records: list[dict[str, str]]) -> Figure:
                   title="Distribution of areas per region", hover_data='Areas')
 
 
-def subjects_per_factors_figure(records: list[dict[str, str]]) -> Figure:
-    df = pd.DataFrame.from_records(records)
+def subjects_per_factors_figure(records: list[dict[str, str]], factors: list[str]) -> Figure:
+    df = pd.DataFrame.from_records(records)[factors + ['Subject']]
 
-    col_fact = [name for name in df.columns if name.startswith('Factor')]
-    groups = df[col_fact + ['Subject']].groupby(col_fact)
-    df = groups.count().reset_index()
-    return px.bar(df, x='Factor1', y='Subject', color='Factor2', height=500,
-                  labels={'Subject': 'Number of subjects'},
+    labels = {'Subject': "Number of subjects"}
+
+    if len(df.columns) > 1:
+        df = df.groupby(factors).count().reset_index()
+    else:
+        df = pd.DataFrame(df.count(), columns=["All"]).T
+        labels['index'] = ""
+
+    params = {param: factor for param, factor in zip(('x', 'color'), factors)}
+    return px.bar(df, y='Subject', **params, height=500,
+                  labels=labels,
                   title="Distribution of subjects per factors")
