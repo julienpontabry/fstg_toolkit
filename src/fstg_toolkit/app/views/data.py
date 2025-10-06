@@ -108,8 +108,8 @@ def dataset_changed(store_dataset):
 
     # update the columns of subjects table
     n_factors = len(store_dataset['factors'])
-    columns = [{'name': f"Factor {i + 1}", 'id': f'Factor{i}'}
-               for i in range(n_factors)]
+    columns = [{'name': f"Factor {i}", 'id': f'Factor{i}'}
+               for i in range(1, n_factors+1)]
     columns.append({'name': "Subject", 'id': 'Subject'})
 
     # compute plot for areas distribution
