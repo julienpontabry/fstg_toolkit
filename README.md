@@ -90,10 +90,19 @@ To visualize a dashboard to explore the processed data from a dataset with the `
 python -m fstg_toolkit show my_graphs.zip
 ```
 
-It will start a local server and open a web browser containing the dashboard, that includes the content of the dataset, the raw matrices, a visualization of the spatio-temporal graphs, etc.
-An illustration of the dashboard is shown below.
+It will start a local server and open a web browser containing the dashboard, that includes the content of the dataset, the raw matrices, a visualization of the spatio-temporal graphs, etc. An illustration of the dashboard is shown below.
 
 ![Illustration of the dashboard.](doc/images/illustration_web-viewer.png)
+
+#### Factors and Subjects Detection
+
+If the names of the matrices are formatted, factors and subjects will be automatically detected and can be used to filter the data and choose the display of the plots. The parts of the names must be separated either by underscores (`_`) or by slashes (`/`) or a combination of both. For instance, the following names will be correctly parsed:
+- `control_time1_T21`;
+- `control/time2_T22`;
+- `group1_time2/T31`;
+- `group1_time1_T11`.
+
+The subjects will be matched to the part that has different values between the names, and the factors will be the parts that are common to multiple names. If a part is similar in all names, it will not be considered. In this case, the subjects are `T21`, `T22`, `T31`, and `T11`, and the factors are `control` and `group1` for first factor, `time1` and `time2` for the second factor.
 
 [//]: # (### Plot a Graph)
 
