@@ -36,14 +36,18 @@ from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, callback, dcc
 
-from .common import plotly_config
+from .common import (
+    plotly_config,
+    build_factors_options,
+    create_factors_options_controls,
+)
 from ..core.io import GraphsDataset
 from ..figures.metrics import build_metrics_plot
 
 layout = [
     dbc.Row(dcc.Dropdown([], value='', clearable=False, id='metrics-type')),
     dbc.Row(dcc.Dropdown([], value='', clearable=False, id='metrics-selection')),
-    dbc.Row(dbc.Col(dcc.Dropdown(options=[], value=[], id='metrics-factors', multi=True, clearable=False))),
+    dbc.Row(dbc.Col(create_factors_options_controls('metrics'))),
     dbc.Row(
         dcc.Loading(
             children=[dcc.Graph(figure={}, id='metrics-graph', config=plotly_config)],
@@ -70,8 +74,7 @@ def dataset_changed(store_dataset):
     metrics_types = [t.capitalize() for t in dataset.get_available_metrics()]
     default_metrics_type = metrics_types[0] if len(metrics_types) > 0 else ''
 
-    factors = [f"Factor{i+1}" for i in range(len(dataset.factors))]
-    default_factors = factors[:2]
+    factors, default_factors = build_factors_options(dataset)
 
     return metrics_types, default_metrics_type, factors, default_factors
 

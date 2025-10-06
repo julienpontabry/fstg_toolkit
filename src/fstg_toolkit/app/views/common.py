@@ -35,6 +35,7 @@ from dash.exceptions import PreventUpdate
 from dash import dcc
 import dash_bootstrap_components as dbc
 
+from fstg_toolkit.app.core.io import GraphsDataset
 
 plotly_config = dict(displayModeBar='hover', displaylogo=False)
 
@@ -59,3 +60,12 @@ def update_factor_controls(prefix: str, factors: list[set[str]], multi: bool = T
             )
 
     return controls
+
+
+def build_factors_options(dataset: GraphsDataset) -> tuple[list[str], list[str]]:
+    factors = [f"Factor{i+1}" for i in range(len(dataset.factors))]
+    return factors, factors[:2]
+
+
+def create_factors_options_controls(prefix: str):
+    return dcc.Dropdown(options=[], value=[], id=f'{prefix}-factors', multi=True, clearable=False)

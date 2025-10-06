@@ -229,7 +229,7 @@ class GraphsDataset:
         # create a subject's table with factors as index and filenames as data
         data = list(zip(*zip(*ids), graphs_filenames))
         n = len(factors)
-        columns = [f'Factor{i}' for i in range(n)] + ['Subject', 'Graph']
+        columns = [f'Factor{i+1}' for i in range(n)] + ['Subject', 'Graph']
         subjects = pd.DataFrame(data, columns=columns).set_index(columns[:n+1])
 
         if len(matrices_filenames) == len(graphs_filenames):

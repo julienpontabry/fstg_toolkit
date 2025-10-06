@@ -48,9 +48,10 @@ def areas_per_region_figure(records: list[dict[str, str]]) -> Figure:
 
 def subjects_per_factors_figure(records: list[dict[str, str]]) -> Figure:
     df = pd.DataFrame.from_records(records)
+
     col_fact = [name for name in df.columns if name.startswith('Factor')]
     groups = df[col_fact + ['Subject']].groupby(col_fact)
     df = groups.count().reset_index()
-    return px.bar(df, x='Factor0', y='Subject', color='Factor1', height=600,
+    return px.bar(df, x='Factor1', y='Subject', color='Factor2', height=500,
                   labels={'Subject': 'Number of subjects'},
                   title="Distribution of subjects per factors")

@@ -33,9 +33,14 @@
 
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
-from dash import Input, Output, callback, dash_table, dcc, html
+from dash import Input, Output, State, callback, dash_table, dcc, html
 
-from .common import plotly_config
+from .common import (
+    plotly_config,
+    create_factors_options_controls,
+    build_factors_options,
+)
+from ..core.io import GraphsDataset
 from ..figures.data import areas_per_region_figure, subjects_per_factors_figure
 
 desc_columns = [{'name': "Area id", 'id': 'Id_Area'},
@@ -74,9 +79,12 @@ layout = [
                 type='circle', overlay_style={'visibility': 'visible', 'filter': 'blur(2px)'})
         ]),
         dbc.Col([
-            dcc.Loading(
-                dcc.Graph(figure={}, id='subjects-dist-plot',
-                          config=dict(**plotly_config, modeBarButtonsToRemove=['select2d', 'lasso2d'])),
+            dcc.Loading([
+                    dbc.Row(dcc.Graph(
+                        figure={}, id='subjects-dist-plot',
+                        config=dict(**plotly_config, modeBarButtonsToRemove=['select2d', 'lasso2d']))),
+                    dbc.Row(create_factors_options_controls('data-subjects-dist'))
+                ],
                 type='circle', overlay_style={'visibility': 'visible', 'filter': 'blur(2px)'}
             )
         ])
@@ -89,7 +97,8 @@ layout = [
     Output('desc-count-plot', 'figure'),
     Output('subjects-table', 'columns'),
     Output('subjects-table', 'data'),
-    Output('subjects-dist-plot', 'figure'),
+    Output('data-subjects-dist-factors', 'options'),
+    Output('data-subjects-dist-factors', 'value'),
     Input('store-dataset', 'data'),
     prevent_initial_call=True
 )
@@ -103,8 +112,23 @@ def dataset_changed(store_dataset):
                for i in range(n_factors)]
     columns.append({'name': "Subject", 'id': 'Subject'})
 
-    # compute plots
+    # compute plot for areas distribution
     areas_count_fig = areas_per_region_figure(store_dataset['areas_desc'])
-    subject_dist_fig = subjects_per_factors_figure(store_dataset['subjects'])
 
-    return store_dataset['areas_desc'], areas_count_fig, columns, store_dataset['subjects'], subject_dist_fig
+    # update the factors selection for factors distribution plot
+    factors, default_factors = build_factors_options(GraphsDataset.deserialize(store_dataset))
+
+    return store_dataset['areas_desc'], areas_count_fig, columns, store_dataset['subjects'], \
+        factors, default_factors
+
+@callback(
+    Output('subjects-dist-plot', 'figure'),
+    Input('data-subjects-dist-factors', 'value'),
+    State('store-dataset', 'data'),
+    prevent_initial_call=True
+)
+def factors_selection_changed(factors, store_dataset):
+    if store_dataset is None:
+        raise PreventUpdate
+
+    return subjects_per_factors_figure(store_dataset['subjects'])
