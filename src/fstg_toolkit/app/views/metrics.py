@@ -70,7 +70,7 @@ def dataset_changed(store_dataset):
     metrics_types = [t.capitalize() for t in dataset.get_available_metrics()]
     default_metrics_type = metrics_types[0] if len(metrics_types) > 0 else ''
 
-    factors = [f"factor{i+1}" for i in range(len(dataset.factors))]
+    factors = [f"Factor{i+1}" for i in range(len(dataset.factors))]
     default_factors = factors[:2]
 
     return metrics_types, default_metrics_type, factors, default_factors

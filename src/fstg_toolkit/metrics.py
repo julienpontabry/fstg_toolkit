@@ -132,7 +132,7 @@ def gather_metrics(dataset: GraphsDataset, selection: Iterable[tuple[str, ...]],
         all_idx += [subject] * len(records)
 
     df = pd.json_normalize(all_records)
-    idx = pd.MultiIndex.from_tuples(all_idx, names=[f'factor{i + 1}' for i in range(n_factors)] + ['id'])
+    idx = pd.MultiIndex.from_tuples(all_idx, names=[f'Factor{i + 1}' for i in range(n_factors)] + ['id'])
     df.set_index(idx, inplace=True)
 
     if hasattr(calculator, 'index_columns'):
