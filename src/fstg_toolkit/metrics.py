@@ -133,6 +133,7 @@ def gather_metrics(dataset: GraphsDataset, selection: Sequence[tuple[str, ...]],
 
     futures = []
     num_workers = min(len(selection), max(1, multiprocessing.cpu_count() - 1))
+
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
         for subject in selection:
             future = executor.submit(_process_parallel, subject, dataset, calculator)
