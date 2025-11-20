@@ -30,9 +30,10 @@
 #
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
-
+import multiprocessing
 import re
 import zipfile
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import Optional
 from itertools import chain
@@ -105,6 +106,17 @@ def __read_load_np(path: Path) -> list[tuple[str, np.ndarray]]:
         return [(path.name, red)]
 
 
+def _build_graph(name: str, matrix: np.ndarray, areas: pd.DataFrame, corr_threshold: float,
+                 absolute_thresholding: bool, areas_column_name: str,
+                 regions_column_name: str) -> Optional[SpatioTemporalGraph]:
+    try:
+        return spatio_temporal_graph_from_corr_matrices(
+            matrix, areas, corr_thr=corr_threshold, abs_thr=absolute_thresholding,
+            area_col_name=areas_column_name, region_col_name=regions_column_name)
+    except Exception as ex:
+        click.echo(f"Error while processing {name}: {ex}", err=True)
+        return None
+
 @cli.command()
 @click.argument('areas_description_path', type=click.Path(exists=True, path_type=Path))
 @click.argument('correlation_matrices_path', type=click.Path(exists=True, path_type=Path), nargs=-1)
@@ -175,17 +187,26 @@ def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], 
         exit(1)
 
     # build the graphs
+    num_workers = min(len(matrices), max(1, multiprocessing.cpu_count() - 1))
     graphs = {}
+
     with click.progressbar(matrices.items(), label="Building ST graphs...", show_pos=True,
                            item_show_func=lambda a: str(a[0]) if a is not None else None) as bar:
-        for name, matrix in bar:
-            try:
-                graphs[name] = spatio_temporal_graph_from_corr_matrices(
-                    matrix, areas, corr_thr=corr_threshold, abs_thr=absolute_thresholding,
-                    area_col_name=areas_column_name, region_col_name=regions_column_name)
-            except Exception as ex:
-                click.echo(f"Error while processing {name}: {ex}", err=True)
-                continue
+        futures = {}
+
+        with ProcessPoolExecutor(max_workers=num_workers) as executor:
+            for name, matrix in matrices.items():
+                future = executor.submit(_build_graph, name, matrix, areas,
+                                         corr_threshold, absolute_thresholding,
+                                         areas_column_name, regions_column_name)
+                futures[future] = name
+
+            for future in as_completed(futures):
+                name = futures[future]
+                if graph := future.result():
+                    graphs[name] = graph
+                bar.update(1)
+
     saver.add(graphs)
 
     # save the graphs into a single zip file
