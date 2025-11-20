@@ -30,17 +30,18 @@
 #
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
-
+import multiprocessing
+from concurrent.futures import as_completed
+from concurrent.futures.process import ProcessPoolExecutor
 from dataclasses import dataclass, field
-from typing import Optional, Callable, Iterable
+from typing import Optional, Callable, Sequence
 
 import networkx as nx
 import numpy as np
 import pandas as pd
 
-from .graph import SpatioTemporalGraph, RC5
 from .app.core.io import GraphsDataset
-
+from .graph import SpatioTemporalGraph, RC5
 
 type MetricType = float | list[float] | dict[str, int]
 type MetricFunction = Callable[[SpatioTemporalGraph], MetricType]
@@ -120,16 +121,28 @@ def calculate_temporal_metrics(graph: SpatioTemporalGraph) -> list[MetricRecord]
     return [record]
 
 
-def gather_metrics(dataset: GraphsDataset, selection: Iterable[tuple[str, ...]],
-                   calculator: MetricsCalculator) -> pd.DataFrame:
+def _process_parallel(subject, dataset, calculator):
+    return subject, calculator(dataset.get_graph(subject))
+
+
+def gather_metrics(dataset: GraphsDataset, selection: Sequence[tuple[str, ...]],
+                   calculator: MetricsCalculator, callback: Optional[Callable[[str], None]] = lambda s: None) -> pd.DataFrame:
     n_factors = len(dataset.factors)
     all_records = []
     all_idx = []
 
-    for subject in selection:
-        records = calculator(dataset.get_graph(subject))
-        all_records += records
-        all_idx += [subject] * len(records)
+    futures = []
+    num_workers = min(len(selection), max(1, multiprocessing.cpu_count() - 1))
+    with ProcessPoolExecutor(max_workers=num_workers) as executor:
+        for subject in selection:
+            future = executor.submit(_process_parallel, subject, dataset, calculator)
+            futures.append(future)
+
+        for future in as_completed(futures):
+            subject, records = future.result()
+            all_records += records
+            all_idx += [subject] * len(records)
+            callback(subject)
 
     df = pd.json_normalize(all_records)
     idx = pd.MultiIndex.from_tuples(all_idx, names=[f'Factor{i + 1}' for i in range(n_factors)] + ['id'])

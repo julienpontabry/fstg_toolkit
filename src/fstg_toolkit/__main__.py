@@ -34,9 +34,9 @@ import multiprocessing
 import re
 import zipfile
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from itertools import chain
 from pathlib import Path
 from typing import Optional
-from itertools import chain
 
 import click
 import numpy as np
@@ -45,14 +45,14 @@ from matplotlib import pyplot as plt
 from screeninfo import get_monitors
 
 from fstg_toolkit import generate_pattern, SpatioTemporalGraphSimulator, CorrelationMatrixSequenceSimulator
-from .graph import SpatioTemporalGraph
-from .factory import spatio_temporal_graph_from_corr_matrices
-from .io import save_spatio_temporal_graph, DataSaver, DataLoader, save_metrics
-from .visualization import spatial_plot, temporal_plot, multipartite_plot, DynamicPlot
-from .app.fstg_view import app
 from .app.core.datafilesdb import get_data_file_db, MemoryDataFilesDB
-from .metrics import calculate_spatial_metrics, calculate_temporal_metrics, gather_metrics
 from .app.core.io import GraphsDataset
+from .app.fstg_view import app
+from .factory import spatio_temporal_graph_from_corr_matrices
+from .graph import SpatioTemporalGraph
+from .io import save_spatio_temporal_graph, DataSaver, DataLoader, save_metrics
+from .metrics import calculate_spatial_metrics, calculate_temporal_metrics, gather_metrics
+from .visualization import spatial_plot, temporal_plot, multipartite_plot, DynamicPlot
 
 
 @click.group()
@@ -230,12 +230,14 @@ def metrics(dataset_path: Path):
     # calculate spatial metrics
     with click.progressbar(dataset.subjects.index, label="Calculating spatial metrics...", show_pos=True,
                            item_show_func=lambda a: '/'.join(a) if a is not None else None) as bar:
-        spatial_df = gather_metrics(dataset, bar, calculate_spatial_metrics)
+        spatial_df = gather_metrics(dataset, dataset.subjects.index, calculate_spatial_metrics,
+                                    callback=lambda s: bar.update(1))
 
     # calculate temporal metrics
     with click.progressbar(dataset.subjects.index, label="Calculating temporal metrics...", show_pos=True,
                            item_show_func=lambda a: '/'.join(a) if a is not None else None) as bar:
-        temporal_df = gather_metrics(dataset, bar, calculate_temporal_metrics)
+        temporal_df = gather_metrics(dataset, dataset.subjects.index, calculate_temporal_metrics,
+                                     callback=lambda s: bar.update(1))
 
     # TODO modify the data saver to accepts those files
     # save the metrics into the dataset
