@@ -33,9 +33,10 @@
 
 """Defines helpers for inputs/outputs."""
 from dataclasses import dataclass, field
+from io import BytesIO
 from pathlib import Path
 from typing import Optional, Callable, List, Tuple, Dict, LiteralString, IO
-from zipfile import ZipFile
+from zipfile import ZipFile, ZIP_DEFLATED
 import json
 
 import numpy as np
@@ -501,6 +502,8 @@ class DataSaver:
         filepath : Path
             The path to the zip archive where the data will be saved.
         """
+        # TODO optimize saving to archive using in-worker serialization for
+        #      speed + threaded queue for memory saving
         with ZipFile(str(filepath), 'w') as zfp:
             for element in self.elements:
                 if isinstance(element, pd.DataFrame):
