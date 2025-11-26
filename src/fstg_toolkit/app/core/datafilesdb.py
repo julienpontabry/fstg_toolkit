@@ -36,6 +36,7 @@ from pathlib import Path
 from abc import ABC, abstractmethod
 
 import secrets
+import sqlite3
 
 
 class DataFilesDB(ABC):
@@ -173,7 +174,86 @@ class MemoryDataFilesDB(DataFilesDB):
 
 
 class SQLiteDataFilesDB(DataFilesDB):
-    pass  # TODO implement the sqlite backend for remote serving (larger number of files with persistence)
+    """SQLite-backed implementation of the DataFilesDB.
+
+    Stores token -> file path mappings in a SQLite database. Pass a
+    Path or string via the `db_path` parameter to persist to disk.
+
+    Parameters
+    ----------
+    db_path : pathlib.Path | str
+        Path to the sqlite database file.
+    Other keyword args are forwarded to the parent DataFilesDB (e.g. token_nb_bytes,
+    debug).
+    """
+
+    def __init__(self, db_path: Path, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._db_path = Path(db_path)
+        # Connect to sqlite. Allow access from multiple threads if needed.
+        self._conn = sqlite3.connect(str(self._db_path) if self._db_path is not None else ":memory:",
+                                     check_same_thread=False)
+        # Use WAL mode for better concurrency on disk-backed DBs
+        try:
+            self._conn.execute("PRAGMA journal_mode=WAL;")
+        except Exception:
+            # Some sqlite builds may not support WAL; ignore if it fails
+            pass
+
+        # Create table for storing token -> path
+        self._conn.execute("""
+            CREATE TABLE IF NOT EXISTS files (
+                token TEXT PRIMARY KEY,
+                path TEXT NOT NULL
+            )
+        """)
+        self._conn.commit()
+
+    def _add_data_file_to_db(self, token: str, file_path: Path) -> None:
+        # Insert or replace the mapping
+        self._conn.execute("INSERT OR REPLACE INTO files (token, path) VALUES (?, ?)",
+                           (token, str(file_path)))
+        self._conn.commit()
+
+    def get(self, token: str) -> Optional[Path]:
+        cur = self._conn.execute("SELECT path FROM files WHERE token = ?", (token,))
+        row = cur.fetchone()
+        if row is None:
+            return None
+        return Path(row[0])
+
+    def list(self) -> Generator[tuple[str, Path], None, None]:
+        cur = self._conn.execute("SELECT token, path FROM files ORDER BY rowid")
+        for token, path in cur.fetchall():
+            yield token, Path(path)
+
+    def __len__(self) -> int:
+        cur = self._conn.execute("SELECT COUNT(*) FROM files")
+        row = cur.fetchone()
+        return int(row[0]) if row is not None else 0
+
+    def __str__(self) -> str:
+        path_repr = str(self._db_path) if self._db_path is not None else ":memory:"
+        return f"SQLiteDataFilesDB(path={path_repr}, {super().__str__()})"
+
+    def __repr__(self) -> str:
+        return str(self)
+
+    def close(self) -> None:
+        """Close the underlying sqlite connection."""
+        try:
+            if hasattr(self, "_conn") and self._conn is not None:
+                self._conn.commit()
+                self._conn.close()
+        finally:
+            self._conn = None
+
+    def __del__(self):
+        # Best-effort cleanup
+        try:
+            self.close()
+        except Exception:
+            pass
 
 
 singleton_data_files_db: Optional[DataFilesDB] = None
