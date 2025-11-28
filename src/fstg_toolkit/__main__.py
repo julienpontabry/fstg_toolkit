@@ -601,7 +601,7 @@ def serve(data_path: Path, debug: bool, port: int, db_path: Path):
     """Serve a dashboard for visualizing spatio-temporal graphs from a data directory."""
 
     # prepare the database
-    get_data_file_db(requested_type=SQLiteDataFilesDB, db_path=db_path)
+    get_data_file_db(requested_type=SQLiteDataFilesDB, db_path=db_path, debug=debug)
 
     app.data_path = data_path
     click.echo(f"Dashboard serving data from {data_path} is at URL http://127.0.0.1:8050")
