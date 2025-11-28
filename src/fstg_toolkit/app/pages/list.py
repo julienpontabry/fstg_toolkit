@@ -32,49 +32,25 @@
 # knowledge of the CeCILL-B license and that you accept its terms.
 
 import dash
+from dash import html, dcc
 import dash_bootstrap_components as dbc
-from dash import dcc, html
 
-from fstg_toolkit.app.views import metrics, data, subject, matrices
 from fstg_toolkit.app.core.datafilesdb import get_data_file_db
-from fstg_toolkit.app.core.io import GraphsDataset
+from fstg_toolkit.app.views.common import get_navbar
 
 
-dash.register_page(__name__, path_template='/dashboard/<token>')
+dash.register_page(__name__, path='/list')
 
 
-def dashboard_layout(serialized_dataset, matrices_disabled, metrics_disabled):
-    return dbc.Container(
-        children=[
-            # app's layout
-            dbc.Tabs([
-                    dbc.Tab(label="Dataset", id='tab-data', tab_id='tab-data', children=data.layout),
-                    dbc.Tab(label="Raw data", id='tab-matrices', tab_id='tab-matrices', children=matrices.layout, disabled=matrices_disabled),
-                    dbc.Tab(label="Subject", id='tab-subject', tab_id='tab-subject', children=subject.layout, disabled=False),
-                    dbc.Tab(label="Metrics", id='tab-population', tab_id='tab-population', children=metrics.layout, disabled=metrics_disabled),
-                ],
-                id='tabs'),
-
-            # app's storage cache
-            dcc.Store(id='store-dataset', storage_type='memory', data=serialized_dataset),
+def layout():
+    db = get_data_file_db()
+    return dbc.Container([
+            get_navbar('/list'),
+            html.H1("List of available datasets"),
+            html.P("Click on a dataset token to open its dashboard in a new tab."),
+            html.Ul([
+                html.Li(dcc.Link(f"{token}", href=f'dashboard/{token}', target='new'))
+                for token, _ in db.list()
+            ])
         ],
         fluid='xxl')
-
-
-def layout(token=None):
-    db = get_data_file_db()
-
-    if filepath := db.get(token):
-        dataset = GraphsDataset.from_filepath(filepath)
-        return dashboard_layout(
-            serialized_dataset=dataset.serialize(),
-            matrices_disabled=not dataset.has_matrices(),
-            metrics_disabled=not dataset.has_metrics())
-    else:
-        return dbc.Container(
-            children=[
-                html.H1("Unable to show dashboard"),
-                html.P(f"The token '{token}' is invalid or the dataset does not exist."),
-            ],
-            fluid='xxl',
-        )

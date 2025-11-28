@@ -32,13 +32,18 @@
 # knowledge of the CeCILL-B license and that you accept its terms.
 
 import dash
-from dash import html
+from dash import html, dcc
+import dash_bootstrap_components as dbc
+
+from fstg_toolkit.app.views.common import get_navbar
 
 
 dash.register_page(__name__, path='/')
 
 
-layout = html.Div([
-    html.H1("Welcome to fSTG-View"),
-    html.P("This is the home page of the fSTG-View application. It is under construction."),
-])
+layout = dbc.Container([
+        get_navbar(),
+        html.H1("Welcome to fSTG-View"),
+        html.P("This is the home page of the fSTG-View application.")
+    ],
+    fluid='xxl')

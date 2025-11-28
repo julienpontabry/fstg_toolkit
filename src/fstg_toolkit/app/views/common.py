@@ -69,3 +69,12 @@ def build_factors_options(dataset: GraphsDataset) -> tuple[list[str], list[str]]
 
 def create_factors_options_controls(prefix: str):
     return dcc.Dropdown(options=[], value=[], id=f'{prefix}-factors', multi=True, clearable=False)
+
+
+def get_navbar(ref: str = None):
+    return dbc.NavbarSimple(
+        brand="fSTG-View", brand_href='/', color='dark', fluid=True,
+        children=[
+            dbc.NavItem(dbc.NavLink("List of datasets", href="/list", active=ref=='/list')),
+            dbc.NavItem(dbc.NavLink("Submit", href="/submit", active=ref=='/submit'))
+        ])
