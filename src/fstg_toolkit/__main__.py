@@ -590,12 +590,14 @@ def show(graphs_data: Path, debug: bool, port: int, no_browser: bool):
 
 @cli.command()
 @click.argument('data_path', type=click.Path(exists=True, file_okay=False, readable=True, path_type=Path))
+@click.option('--debug', is_flag=True, default=False,
+              help="Run the dashboard in debug mode.")
 @click.option('-p', '--port', type=int, default=8050, show_default=True,
               help="Port to run the dashboard service on.")
 @click.option('-d', '--db-path', type=click.Path(dir_okay=False, path_type=Path),
               default=Path.cwd() / 'data_files.db', show_default="a 'data_files.db' file in the current directory",
               help="Path to the database file to use for storing data files information.")
-def serve(data_path: Path, port: int, db_path: Path):
+def serve(data_path: Path, debug: bool, port: int, db_path: Path):
     """Serve a dashboard for visualizing spatio-temporal graphs from a data directory."""
 
     # prepare the database
@@ -603,7 +605,7 @@ def serve(data_path: Path, port: int, db_path: Path):
 
     app.data_path = data_path
     click.echo(f"Dashboard serving data from {data_path} is at URL http://127.0.0.1:8050")
-    app.run(debug=True, port=port)
+    app.run(debug=debug, port=port)
 
 
 if __name__ == '__main__':
