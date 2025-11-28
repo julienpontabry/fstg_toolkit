@@ -581,9 +581,9 @@ def show(graphs_data: Path, debug: bool, port: int, no_browser: bool):
     token = db.add(graphs_data)
 
     if not no_browser:
-        click.launch(f'http://127.0.0.1:8050/{token}')
+        click.launch(f'http://127.0.0.1:8050/dashboard/{token}')
     else:
-        click.echo(f"Dashboard for file {graphs_data} is at URL http://127.0.0.1:8050/{token}")
+        click.echo(f"Dashboard for file {graphs_data} is at URL http://127.0.0.1:8050/dashboard/{token}")
 
     app.run(debug=debug, port=port)
 
