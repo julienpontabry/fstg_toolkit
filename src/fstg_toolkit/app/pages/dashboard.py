@@ -34,7 +34,6 @@
 import dash
 import dash_bootstrap_components as dbc
 from dash import Input,Output, State, callback, dcc, html
-from dash_breakpoints import WindowBreakpoints
 
 from fstg_toolkit.app.views import metrics, data, subject, matrices
 from fstg_toolkit.app.core.datafilesdb import get_data_file_db
@@ -58,20 +57,6 @@ def dashboard_layout(serialized_dataset, matrices_disabled, metrics_disabled):
 
             # app's storage cache
             dcc.Store(id='store-dataset', storage_type='memory', data=serialized_dataset),
-            dcc.Store(id='store-break-width', storage_type='memory'),
-
-            # setup event on window's width breakpoints
-            # FIXME this should be on all pages
-            WindowBreakpoints(
-                id='window-width-break',
-                widthBreakpointThresholdsPx=[576, 768, 992, 1200, 1400],
-                widthBreakpointNames=['xsm', 'sm', 'md', 'lg', 'xl', 'xxl'],
-            ),
-
-            # message display as toasts
-            # FIXME this should be on all pages
-            dbc.Toast('', id='message-toast', header='', icon='primary', duration=4_000, is_open=False,
-                      dismissable=True, style={'position': 'fixed', 'bottom': 10, 'right': 10, 'width': 350}),
         ],
         fluid='xxl')
 
@@ -93,12 +78,3 @@ def layout(token=None):
             ],
             fluid='xxl',
         )
-
-
-@callback(
-    Output('store-break-width', 'data'),
-    Input('window-width-break', 'widthBreakpoint'),
-    State('window-width-break', 'width')
-)
-def store_current_break_width(breakpoint_name, breakpoint_width):
-    return {'name': breakpoint_name, 'width': breakpoint_width}

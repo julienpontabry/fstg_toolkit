@@ -35,9 +35,10 @@ import traceback as tb
 from pathlib import Path
 
 import dash
+from dash import Dash, set_props, html, dcc, callback, Input, Output, State
 import dash_bootstrap_components as dbc
+from dash_breakpoints import WindowBreakpoints
 import plotly.io as pio
-from dash import Dash, set_props, html
 
 # use orsjon to make JSON 5-10x faster
 pio.json.config.default_engine = 'orjson'
@@ -61,5 +62,26 @@ app = Dash(__name__, title="fSTG-View - A web-based viewer for spatio-temporal g
            suppress_callback_exceptions=True)
 
 app.layout = html.Div([
-    dash.page_container
+    dash.page_container,
+
+    dcc.Store(id='store-break-width', storage_type='memory'),
+
+    # setup event on window's width breakpoints
+    WindowBreakpoints(
+        id='window-width-break',
+        widthBreakpointThresholdsPx=[576, 768, 992, 1200, 1400],
+        widthBreakpointNames=['xsm', 'sm', 'md', 'lg', 'xl', 'xxl'],
+    ),
+
+    # message display as toasts
+    dbc.Toast('', id='message-toast', header='', icon='primary', duration=4_000, is_open=False,
+              dismissable=True, style={'position': 'fixed', 'bottom': 10, 'right': 10, 'width': 350}),
 ])
+
+@callback(
+    Output('store-break-width', 'data'),
+    Input('window-width-break', 'widthBreakpoint'),
+    State('window-width-break', 'width')
+)
+def store_current_break_width(breakpoint_name, breakpoint_width):
+    return {'name': breakpoint_name, 'width': breakpoint_width}
