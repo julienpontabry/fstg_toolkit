@@ -73,8 +73,7 @@ layout = [
     Output('subject-factors-block', 'children'),
     Output('regions-selection', 'options'),
     Output('regions-selection', 'value'),
-    Input('store-dataset', 'data'),
-    prevent_initial_call=True,
+    Input('store-dataset', 'data')
 )
 def dataset_changed(store_dataset):
     if store_dataset is None:

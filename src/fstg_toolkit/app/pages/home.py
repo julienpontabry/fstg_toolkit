@@ -31,35 +31,14 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
-import traceback as tb
-from pathlib import Path
-
 import dash
-import dash_bootstrap_components as dbc
-import plotly.io as pio
-from dash import Dash, set_props, html
+from dash import html
 
-# use orsjon to make JSON 5-10x faster
-pio.json.config.default_engine = 'orjson'
 
-# handling of errors messages
-def callback_error(err):
-    set_props('message-toast', dict(
-        is_open=True, header="Error", icon="danger", duration=None,
-        children=str(err)))
-    print(err)
+dash.register_page(__name__, path='/')
 
-    if err_tb := getattr(err, '__traceback__', None):
-        tb.print_tb(err_tb)
 
-# app's definition
-app = Dash(__name__, title="fSTG-View - A web-based viewer for spatio-temporal graphs of fMRI data",
-           external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
-           assets_folder=str(Path(__file__).parent / 'assets'),
-           on_error=callback_error,
-           use_pages=True, pages_folder=f'{Path(__file__).parent}/pages',
-           suppress_callback_exceptions=True)
-
-app.layout = html.Div([
-    dash.page_container
+layout = html.Div([
+    html.H1("Welcome to fSTG-View"),
+    html.P("This is the home page of the fSTG-View application. It is under construction."),
 ])

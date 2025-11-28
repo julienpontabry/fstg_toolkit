@@ -62,8 +62,7 @@ layout = [
     Output('metrics-type', 'value'),
     Output('metrics-factors', 'options'),
     Output('metrics-factors', 'value'),
-    Input('store-dataset', 'data'),
-    prevent_initial_call=True
+    Input('store-dataset', 'data')
 )
 def dataset_changed(store_dataset):
     if store_dataset is None:
