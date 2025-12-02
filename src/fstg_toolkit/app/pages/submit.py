@@ -63,7 +63,7 @@ options_input = html.Div([
 areas_upload = html.Div([
         dbc.Label("Areas description file (CSV)"),
         du.Upload(id='upload-areas-file', text="Drag and drop or click to select a file to upload.",
-                  max_files=1, filetypes=['csv']),
+                  max_files=1, filetypes=['csv'], text_completed="Last upload: "),
         html.Div("", id='upload-areas-file-output'),
         dbc.FormText("The CSV file describing the areas and their regions they belong to."),
     ], className='mb-3')
@@ -71,7 +71,7 @@ areas_upload = html.Div([
 matrices_upload = html.Div([
     dbc.Label("Matrices files (NPZ/NPY)"),
     du.Upload(id='upload-matrices-files', text="Drag and drop or click to select files to upload.",
-              max_files=10, filetypes=['npy', 'npz']),
+              max_files=10, filetypes=['npy', 'npz'], text_completed="Last upload: "),
     html.Div("", id='upload-matrices-files-output'),
     dbc.FormText("One or multiple (max. 10) numpy pickle files containing the timeseries of correlation matrices."),
 ], className='mb-3')
