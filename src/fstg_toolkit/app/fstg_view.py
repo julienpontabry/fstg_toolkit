@@ -36,12 +36,15 @@ from pathlib import Path
 
 import dash
 from dash import Dash, set_props, html, dcc, callback, Input, Output, State
+import dash_uploader as du
 import dash_bootstrap_components as dbc
 from dash_breakpoints import WindowBreakpoints
 import plotly.io as pio
 
+
 # use orsjon to make JSON 5-10x faster
 pio.json.config.default_engine = 'orjson'
+
 
 # handling of errors messages
 def callback_error(err):
@@ -53,6 +56,7 @@ def callback_error(err):
     if err_tb := getattr(err, '__traceback__', None):
         tb.print_tb(err_tb)
 
+
 # app's definition
 app = Dash(__name__, title="fSTG-View - A web-based viewer for spatio-temporal graphs of fMRI data",
            external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
@@ -61,6 +65,10 @@ app = Dash(__name__, title="fSTG-View - A web-based viewer for spatio-temporal g
            use_pages=True, pages_folder=f'{Path(__file__).parent}/pages',
            suppress_callback_exceptions=True)
 
+# configuration of the uploader system
+du.configure_upload(app, r'/tmp/uploads')
+
+# app's main layout
 app.layout = html.Div([
     dash.page_container,
 
@@ -78,6 +86,7 @@ app.layout = html.Div([
               dismissable=True, style={'position': 'fixed', 'bottom': 10, 'right': 10, 'width': 350}),
 ])
 
+
 @callback(
     Output('store-break-width', 'data'),
     Input('window-width-break', 'widthBreakpoint'),
@@ -85,3 +94,24 @@ app.layout = html.Div([
 )
 def store_current_break_width(breakpoint_name, breakpoint_width):
     return {'name': breakpoint_name, 'width': breakpoint_width}
+
+
+# NOTE the following callbacks are supposed to be within the submit page,
+# but dash-uploader requires the custom callbacks to be registered after app's initialization.
+# Since those callbacks are not useful practical, they are used to pass the callbacks to stores
+# and other callbacks.
+
+@du.callback(
+    output=Output('store-last-uploaded-areas-file', 'data'),
+    id='upload-areas-file'
+)
+def on_areas_upload(status: du.uploadstatus):
+    return str(status.uploaded_files[0]) if status.uploaded_files else None
+
+
+@du.callback(
+    output=Output('store-last-uploaded-matrices-files', 'data'),
+    id='upload-matrices-files'
+)
+def on_matrices_upload(status: du.uploadstatus):
+    return [str(f) for f in status.uploaded_files]
