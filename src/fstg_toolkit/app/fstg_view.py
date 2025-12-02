@@ -62,7 +62,7 @@ app = Dash(__name__, title="fSTG-View - A web-based viewer for spatio-temporal g
            external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
            assets_folder=str(Path(__file__).parent / 'assets'),
            on_error=callback_error,
-           use_pages=True, pages_folder=f'{Path(__file__).parent}/pages',
+           use_pages=True, pages_folder=str(Path(__file__).parent / 'pages'),
            suppress_callback_exceptions=True)
 
 # configuration of the uploader system
