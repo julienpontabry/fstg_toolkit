@@ -105,6 +105,24 @@ layout = dbc.Container([
     fluid='xxl')
 
 
+def __make_file_list(files: list[str]) -> html.Ul:
+    return html.Ul([
+        html.Li([name, " ", html.A("", className='bi bi-trash', id={'type': 'remove-uploaded-file', 'index': name})])
+        for name in map(lambda f: Path(f).name, files)
+    ])
+
+
+# FIXME duplicates outputs: merge with update_* callbacks and use context to know which component triggered the callback
+@callback(
+    Output('store-uploaded-areas-file', 'data'),
+    Output('store-uploaded-matrices-files', 'data'),
+    Input({'type': 'remove-uploaded-file', 'index': dash.ALL}, 'n_clicks'),
+    prevent_initial_callbacks=True,
+)
+def remove_uploaded_file(n_clicks):
+    print(n_clicks)
+
+
 @callback(
     Output('upload-areas-file-output', 'children'),
     Output('store-uploaded-areas-file', 'data'),
@@ -119,7 +137,7 @@ def update_uploaded_areas_file(last_uploaded_file, uploaded_file):
     if uploaded_file is not None:   # remove previous file from disk
         Path(uploaded_file).unlink()
 
-    return html.Ul([html.Li(Path(last_uploaded_file).name)]), last_uploaded_file
+    return __make_file_list([last_uploaded_file]), last_uploaded_file
 
 
 @callback(
@@ -140,12 +158,7 @@ def update_uploaded_matrices_files(last_uploaded_files, uploaded_files):
             f for f in last_uploaded_files if f not in uploaded_files
         ]
 
-    files_list = html.Ul([
-        html.Li(Path(f).name)
-        for f in all_uploaded_files
-    ])
-
-    return files_list, all_uploaded_files
+    return __make_file_list(all_uploaded_files), all_uploaded_files
 
 
 @callback(
