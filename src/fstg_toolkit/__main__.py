@@ -37,6 +37,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from itertools import chain
 from pathlib import Path
 from typing import Optional
+import os
 
 import click
 import numpy as np
@@ -47,7 +48,6 @@ from screeninfo import get_monitors
 from fstg_toolkit import generate_pattern, SpatioTemporalGraphSimulator, CorrelationMatrixSequenceSimulator
 from .app.core.datafilesdb import get_data_file_db, MemoryDataFilesDB, SQLiteDataFilesDB
 from .app.core.io import GraphsDataset
-from .app.fstg_view import app
 from .factory import spatio_temporal_graph_from_corr_matrices
 from .graph import SpatioTemporalGraph
 from .io import save_spatio_temporal_graph, DataSaver, DataLoader, save_metrics
@@ -585,11 +585,13 @@ def show(graphs_data: Path, debug: bool, port: int, no_browser: bool):
     else:
         click.echo(f"Dashboard for file {graphs_data} is at URL http://127.0.0.1:8050/dashboard/{token}")
 
+    from .app.fstg_view import app
     app.run(debug=debug, port=port)
 
 
 @cli.command()
 @click.argument('data_path', type=click.Path(exists=True, file_okay=False, readable=True, path_type=Path))
+@click.argument('upload_path', type=click.Path(exists=True, file_okay=False, readable=True, path_type=Path))
 @click.option('--debug', is_flag=True, default=False,
               help="Run the dashboard in debug mode.")
 @click.option('-p', '--port', type=int, default=8050, show_default=True,
@@ -597,13 +599,16 @@ def show(graphs_data: Path, debug: bool, port: int, no_browser: bool):
 @click.option('-d', '--db-path', type=click.Path(dir_okay=False, path_type=Path),
               default=Path.cwd() / 'data_files.db', show_default="a 'data_files.db' file in the current directory",
               help="Path to the database file to use for storing data files information.")
-def serve(data_path: Path, debug: bool, port: int, db_path: Path):
+def serve(data_path: Path, upload_path: Path, debug: bool, port: int, db_path: Path):
     """Serve a dashboard for visualizing spatio-temporal graphs from a data directory."""
 
     # prepare the database
     get_data_file_db(requested_type=SQLiteDataFilesDB, db_path=db_path, debug=debug)
 
-    app.data_path = data_path
+    os.environ['FSTG_TOOLKIT_DATA_PATH'] = str(data_path)
+    os.environ['FSTG_TOOLKIT_UPLOAD_PATH'] = str(upload_path)
+
+    from .app.fstg_view import app
     click.echo(f"Dashboard serving data from {data_path} is at URL http://127.0.0.1:8050")
     app.run(debug=debug, port=port)
 

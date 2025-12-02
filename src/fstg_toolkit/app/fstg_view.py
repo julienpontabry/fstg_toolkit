@@ -33,6 +33,7 @@
 
 import traceback as tb
 from pathlib import Path
+from os import environ as env
 
 import dash
 from dash import Dash, set_props, html, dcc, callback, Input, Output, State
@@ -66,7 +67,7 @@ app = Dash(__name__, title="fSTG-View - A web-based viewer for spatio-temporal g
            suppress_callback_exceptions=True)
 
 # configuration of the uploader system
-du.configure_upload(app, r'/tmp/uploads')
+du.configure_upload(app, env.get('FSTG_TOOLKIT_UPLOAD_PATH', '/tmp/fstg_toolkit_uploads'))
 
 # app's main layout
 app.layout = html.Div([
