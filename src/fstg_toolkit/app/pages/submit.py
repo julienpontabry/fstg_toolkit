@@ -93,6 +93,7 @@ layout = dbc.Container([
             html.Li("a CSV file describing the areas and their regions they belong to;"),
             html.Li("one or more numpy pickle files (NPZ or NPY) containing the timeseries of correlation matrices.")
         ]),
+        html.Hr(),
         dbc.Form([name_input, options_input, areas_upload, matrices_upload, form_buttons]),
         dbc.Alert(id='dataset-form-alert', children="", dismissable=True, fade=True, is_open=False),
 
@@ -199,7 +200,6 @@ def reset_dataset_form(_, areas_uploaded_file, matrices_uploaded_files):
 
 
 @callback(
-    Output('dataset-form-alert', 'children'),
     Input('submit-dataset-button', 'n_clicks'),
     State('dataset-name-input', 'value'),
     State('dataset-options-input', 'value'),
@@ -209,7 +209,7 @@ def reset_dataset_form(_, areas_uploaded_file, matrices_uploaded_files):
 )
 def submit_dataset_form(_, name, options, areas_uploaded_file, matrices_uploaded_files):
     try:
-        # There is a minimal validation of the dataset at init.
+        # There is a minimal validation of the dataset at initialization.
         dataset = SubmittedDataset(
             name=name,
             include_raw='include_raw' in options,
@@ -217,7 +217,7 @@ def submit_dataset_form(_, name, options, areas_uploaded_file, matrices_uploaded
             areas_file=Path(areas_uploaded_file) if areas_uploaded_file else None,
             matrices_files=[Path(f) for f in matrices_uploaded_files] if matrices_uploaded_files else None)
 
-        return str(dataset)
+        set_props('dataset-form-alert',{'children': str(dataset), 'is_open': True, 'color': 'success'})
         # TODO implement queuing to process the dataset submission in background
     except InvalidSubmittedDataset as ex:
-        return str(ex)
+        set_props('dataset-form-alert', {'children': str(ex), 'is_open': True, 'color': 'danger'})
