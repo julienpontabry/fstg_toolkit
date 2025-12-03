@@ -34,12 +34,11 @@
 from pathlib import Path
 
 import dash
-from dash import html, dcc, callback, Input, Output, State, set_props
 import dash_bootstrap_components as dbc
 import dash_uploader as du
+from dash import html, dcc, callback, Input, Output, State, set_props, callback_context
 
 from fstg_toolkit.app.views.common import get_navbar
-
 
 dash.register_page(__name__, path='/submit')
 
@@ -105,60 +104,74 @@ layout = dbc.Container([
     fluid='xxl')
 
 
-def __make_file_list(files: list[str]) -> html.Ul:
+def __make_file_list(files: list[str], prefix: str) -> html.Ul:
     return html.Ul([
-        html.Li([name, " ", html.A("", className='bi bi-trash', id={'type': 'remove-uploaded-file', 'index': name})])
-        for name in map(lambda f: Path(f).name, files)
+        html.Li([Path(f).name, " ", html.A("", className='bi bi-trash',
+                                           id={'type': f'{prefix}-remove-uploaded-file', 'index': f})])
+        for f in files
     ])
-
-
-# FIXME duplicates outputs: merge with update_* callbacks and use context to know which component triggered the callback
-@callback(
-    Output('store-uploaded-areas-file', 'data'),
-    Output('store-uploaded-matrices-files', 'data'),
-    Input({'type': 'remove-uploaded-file', 'index': dash.ALL}, 'n_clicks'),
-    prevent_initial_callbacks=True,
-)
-def remove_uploaded_file(n_clicks):
-    print(n_clicks)
 
 
 @callback(
     Output('upload-areas-file-output', 'children'),
     Output('store-uploaded-areas-file', 'data'),
     Input('store-last-uploaded-areas-file', 'data'),
+    Input({'type': 'areas-remove-uploaded-file', 'index': dash.ALL}, 'n_clicks'),
     State('store-uploaded-areas-file', 'data'),
     prevent_initial_callbacks=True
 )
-def update_uploaded_areas_file(last_uploaded_file, uploaded_file):
-    if not last_uploaded_file:
-        return "", dash.no_update
+def update_uploaded_areas_file(last_uploaded_file, n_clicks, uploaded_file):
+    ctx = callback_context
 
-    if uploaded_file is not None:   # remove previous file from disk
-        Path(uploaded_file).unlink()
+    if ctx.triggered_id == 'store-last-uploaded-areas-file':
+        if not last_uploaded_file:
+            return "", dash.no_update
 
-    return __make_file_list([last_uploaded_file]), last_uploaded_file
+        if uploaded_file is not None:   # remove previous file from disk
+            Path(uploaded_file).unlink()
+
+        return __make_file_list([last_uploaded_file], 'areas'), last_uploaded_file
+    else:
+        if not n_clicks:
+            return dash.no_update, dash.no_update
+        else:
+            # clear the only file and clear the display
+            Path(uploaded_file).unlink()
+            return "", None
 
 
 @callback(
     Output('upload-matrices-files-output', 'children'),
     Output('store-uploaded-matrices-files', 'data'),
     Input('store-last-uploaded-matrices-files', 'data'),
+    Input({'type': 'matrices-remove-uploaded-file', 'index': dash.ALL}, 'n_clicks'),
     State('store-uploaded-matrices-files', 'data'),
     prevent_initial_callbacks=True
 )
-def update_uploaded_matrices_files(last_uploaded_files, uploaded_files):
-    if not last_uploaded_files:
-        return "", dash.no_update
+def update_uploaded_matrices_files(last_uploaded_files, n_clicks, uploaded_files):
+    ctx = callback_context
 
-    if not uploaded_files:
-        all_uploaded_files = last_uploaded_files
+    if ctx.triggered_id == 'store-last-uploaded-matrices-files':
+        if not last_uploaded_files:
+            return "", dash.no_update
+
+        if not uploaded_files:
+            all_uploaded_files = last_uploaded_files
+        else:
+            all_uploaded_files = uploaded_files + [
+                f for f in last_uploaded_files if f not in uploaded_files
+            ]
+
+        return __make_file_list(all_uploaded_files, 'matrices'), all_uploaded_files
     else:
-        all_uploaded_files = uploaded_files + [
-            f for f in last_uploaded_files if f not in uploaded_files
-        ]
-
-    return __make_file_list(all_uploaded_files), all_uploaded_files
+        if not n_clicks:
+            return dash.no_update, dash.no_update
+        else:
+            # clear the requested file and update the display
+            to_del = ctx.triggered_id['index']
+            Path(to_del).unlink()
+            all_uploaded_files = [f for f in uploaded_files if f != to_del]
+            return __make_file_list(all_uploaded_files, 'matrices'), all_uploaded_files
 
 
 @callback(
