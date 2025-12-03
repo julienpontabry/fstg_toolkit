@@ -38,6 +38,7 @@ import dash_bootstrap_components as dbc
 import dash_uploader as du
 from dash import html, dcc, callback, Input, Output, State, set_props, callback_context
 
+from fstg_toolkit.app.core.processing import SubmittedDataset, InvalidSubmittedDataset
 from fstg_toolkit.app.views.common import get_navbar
 
 dash.register_page(__name__, path='/submit')
@@ -81,7 +82,6 @@ form_buttons = html.Div([
     ], className='mb-3')
 
 
-# TODO add form validation
 layout = dbc.Container([
         get_navbar('/submit'),
 
@@ -94,6 +94,7 @@ layout = dbc.Container([
             html.Li("one or more numpy pickle files (NPZ or NPY) containing the timeseries of correlation matrices.")
         ]),
         dbc.Form([name_input, options_input, areas_upload, matrices_upload, form_buttons]),
+        dbc.Alert(id='dataset-form-alert', children="", dismissable=True, fade=True, is_open=False),
 
         # storage to keep track of uploaded files
         dcc.Store(id='store-uploaded-areas-file', storage_type='memory'),
@@ -198,6 +199,7 @@ def reset_dataset_form(_, areas_uploaded_file, matrices_uploaded_files):
 
 
 @callback(
+    Output('dataset-form-alert', 'children'),
     Input('submit-dataset-button', 'n_clicks'),
     State('dataset-name-input', 'value'),
     State('dataset-options-input', 'value'),
@@ -205,9 +207,17 @@ def reset_dataset_form(_, areas_uploaded_file, matrices_uploaded_files):
     State('store-uploaded-matrices-files', 'data'),
     prevent_initial_callbacks=True
 )
-def submit_dataset_form(_, name, options, areas_uploaded_files, matrices_uploaded_files):
-    # TODO implement queuing to process the dataset submission in background
-    print("name:", name)
-    print("options:", options)
-    print("areas file:", areas_uploaded_files)
-    print("matrices files:", matrices_uploaded_files)
+def submit_dataset_form(_, name, options, areas_uploaded_file, matrices_uploaded_files):
+    try:
+        # There is a minimal validation of the dataset at init.
+        dataset = SubmittedDataset(
+            name=name,
+            include_raw='include_raw' in options,
+            compute_metrics='compute_metrics' in options,
+            areas_file=Path(areas_uploaded_file) if areas_uploaded_file else None,
+            matrices_files=[Path(f) for f in matrices_uploaded_files] if matrices_uploaded_files else None)
+
+        return str(dataset)
+        # TODO implement queuing to process the dataset submission in background
+    except InvalidSubmittedDataset as ex:
+        return str(ex)
