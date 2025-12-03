@@ -75,6 +75,6 @@ def get_navbar(ref: str = None):
     return dbc.NavbarSimple(
         brand="fSTG-View", brand_href='/', color='dark', fluid=True,
         children=[
-            dbc.NavItem(dbc.NavLink("List of datasets", href="/list", active=ref=='/list')),
+            dbc.NavItem(dbc.NavLink("Datasets", href="/list", active=ref=='/list')),
             dbc.NavItem(dbc.NavLink("Submit", href="/submit", active=ref=='/submit'))
         ])
