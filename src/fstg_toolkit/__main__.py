@@ -590,8 +590,8 @@ def show(graphs_data: Path, debug: bool, port: int, no_browser: bool):
 
 
 @cli.command()
-@click.argument('data_path', type=click.Path(exists=True, file_okay=False, readable=True, path_type=Path))
-@click.argument('upload_path', type=click.Path(exists=True, file_okay=False, readable=True, path_type=Path))
+@click.argument('data_path', type=click.Path(exists=True, file_okay=False, readable=True, writable=True, path_type=Path))
+@click.argument('upload_path', type=click.Path(exists=True, file_okay=False, readable=True, writable=True, path_type=Path))
 @click.option('--debug', is_flag=True, default=False,
               help="Run the dashboard in debug mode.")
 @click.option('-p', '--port', type=int, default=8050, show_default=True,
