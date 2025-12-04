@@ -138,7 +138,7 @@ class ProcessingJobStatus(Enum):
     FAILED = "Failed"
 
 
-class JobStatusTracker(ProcessingQueueListener):
+class JobStatusMonitor(ProcessingQueueListener):
     def __init__(self, db_path: Path):
         self.db_path = db_path
         self.__initialize_db()
@@ -148,6 +148,7 @@ class JobStatusTracker(ProcessingQueueListener):
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS jobs (
                     id TEXT UNIQUE,
+                    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     status TEXT,
                     result TEXT,
                     error TEXT,
@@ -189,3 +190,12 @@ class JobStatusTracker(ProcessingQueueListener):
 
     def on_job_failed(self, job_id: str, error: Exception):
         self.__update(job_id, status=ProcessingJobStatus.FAILED.name, error=str(error))
+
+    def list_jobs(self, limit: int = 30) -> list[dict[str, str]]:
+        with self.__get_connection() as conn:
+            rows = conn.execute(f'''
+                SELECT * FROM jobs
+                ORDER BY submitted_at DESC
+                LIMIT ?
+            ''', (limit,)).fetchall()
+            return [dict(row) for row in rows]
