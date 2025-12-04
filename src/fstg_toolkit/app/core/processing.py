@@ -199,3 +199,20 @@ class JobStatusMonitor(ProcessingQueueListener):
                 LIMIT ?
             ''', (limit,)).fetchall()
             return [dict(row) for row in rows]
+
+
+singleton_processing_queue: Optional[ProcessingQueue] = None
+
+
+def init_processing_queue(max_workers: int = 1, listener: Optional[ProcessingQueueListener] = None):
+    global singleton_processing_queue
+    singleton_processing_queue = ProcessingQueue(max_workers=max_workers, listener=listener)
+
+
+def get_processing_queue() -> ProcessingQueue:
+    global  singleton_processing_queue
+
+    if not singleton_processing_queue:
+        init_processing_queue()
+
+    return singleton_processing_queue
