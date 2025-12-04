@@ -31,8 +31,13 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
+from typing import TypeVar, Callable, Optional, Dict
 from dataclasses import dataclass
 from pathlib import Path
+from abc import ABC, abstractmethod
+from enum import Enum
+import uuid
+from concurrent.futures import ThreadPoolExecutor, Future
 
 
 class InvalidSubmittedDataset(Exception):
@@ -63,3 +68,69 @@ class SubmittedDataset:
 
         if any(not Path(f).exists() for f in self.matrices_files):
             raise InvalidSubmittedDataset("The matrices files must all exist!")
+
+
+T = TypeVar('T')
+
+
+class ProcessingQueueListener(ABC):
+    @abstractmethod
+    def on_job_submitted(self, job_id: str):
+        pass
+
+    @abstractmethod
+    def on_job_started(self, job_id: str):
+        pass
+
+    @abstractmethod
+    def on_job_completed(self, job_id: str, result: Optional[T]):
+        pass
+
+    @abstractmethod
+    def on_job_failed(self, job_id: str, error: Exception):
+        pass
+
+
+class ProcessingQueue:
+    def __init__(self, max_workers: int = 1, listener: Optional[ProcessingQueueListener] = None):
+        self.executor = ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix='ProcessingQueueWorkers')
+        self.futures: Dict[str, Future] = {}
+        self.listener = listener
+
+    def __process(self, job_id: str, func: Callable[..., T], *args, **kwargs) -> T:
+        try:
+            if self.listener:
+                self.listener.on_job_started(job_id)
+
+            result = func(*args, **kwargs)
+
+            if self.listener:
+                self.listener.on_job_completed(job_id, result)
+
+            return result
+        except Exception as ex:
+            if self.listener:
+                self.listener.on_job_failed(job_id, ex)
+            raise ex
+
+    def submit(self, func: Callable[..., T], *args, **kwargs) -> str:
+        job_id = str(uuid.uuid4())
+        self.futures[job_id] = self.executor.submit(self.__process, job_id, func, *args, **kwargs)
+
+        if self.listener:
+            self.listener.on_job_submitted(job_id)
+
+        return job_id
+
+    def get_result(self, job_id: str) -> Optional[T]:
+        if future := self.futures.get(job_id):
+            if future.done():
+                return future.result()
+        return None
+
+
+class ProcessingJobStatus(Enum):
+    PENDING = 'PENDING'
+    RUNNING = 'RUNNING'
+    COMPLETED = 'COMPLETED'
+    FAILED = 'FAILED'
