@@ -38,8 +38,8 @@ from abc import ABC, abstractmethod
 from enum import Enum
 import uuid
 from concurrent.futures import ThreadPoolExecutor, Future
-import sqlite3
-from contextlib import contextmanager
+
+from .utils import SQLiteConnected
 
 
 T = TypeVar('T')
@@ -108,13 +108,13 @@ class ProcessingJobStatus(Enum):
     FAILED = "Failed"
 
 
-class JobStatusMonitor(ProcessingQueueListener):
+class JobStatusMonitor(SQLiteConnected, ProcessingQueueListener):
     def __init__(self, db_path: Path):
-        self.db_path = db_path
+        super().__init__(db_path)
         self.__initialize_db()
 
     def __initialize_db(self):
-        with self.__get_connection() as conn:
+        with self._get_connection() as conn:
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS jobs (
                     id TEXT UNIQUE,
@@ -126,25 +126,15 @@ class JobStatusMonitor(ProcessingQueueListener):
                 )
             ''')
 
-    @contextmanager
-    def __get_connection(self):
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        try:
-            yield conn
-            conn.commit()
-        finally:
-            conn.close()
-
     def on_job_submitted(self, job_id: str):
-        with self.__get_connection() as conn:
+        with self._get_connection() as conn:
             conn.execute('''
                 INSERT INTO jobs (id, status)
                 VALUES (?, ?)
             ''', (job_id, ProcessingJobStatus.PENDING.name))
 
     def __update(self, job_id: str, **kwargs):
-        with self.__get_connection() as conn:
+        with self._get_connection() as conn:
             updates = [f'{field} = ?' for field in kwargs]
             values = tuple([kwargs[field] for field in kwargs] + [job_id])
             conn.execute(f'''
@@ -162,7 +152,7 @@ class JobStatusMonitor(ProcessingQueueListener):
         self.__update(job_id, status=ProcessingJobStatus.FAILED.name, error=str(error))
 
     def list_jobs(self, limit: int = 30) -> list[dict[str, str]]:
-        with self.__get_connection() as conn:
+        with self._get_connection() as conn:
             rows = conn.execute(f'''
                 SELECT * FROM jobs
                 ORDER BY submitted_at DESC

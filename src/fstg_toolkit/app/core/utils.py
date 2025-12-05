@@ -32,6 +32,10 @@
 # knowledge of the CeCILL-B license and that you accept its terms.
 
 from typing import Iterable
+from dataclasses import dataclass
+from pathlib import Path
+import sqlite3
+from contextlib import contextmanager
 import re
 
 
@@ -97,3 +101,42 @@ def split_factors_from_name(names: Iterable[str],
     identifiers.append(ids)
 
     return factors, list(zip(*identifiers))
+
+
+@dataclass(frozen=True)
+class SQLiteConnected:
+    """A class that brings a connection to an SQLite database as a feature.
+
+    Attributes
+    ----------
+    db_path : Path
+        The file path to the SQLite database.
+    """
+    db_path: Path
+
+    @contextmanager
+    def _get_connection(self):
+        """Get a context manager that handles the SQLite database connection.
+
+        This method establishes a connection to the SQLite database specified by `db_path`,
+        sets the row factory to `sqlite3.Row` for dictionary-like row access, and ensures
+        the connection is properly closed after use.
+
+        Yields
+        ------
+        sqlite3.Connection
+            The SQLite database connection object.
+
+        Example
+        -------
+        >>> with SQLiteConnected(Path("example.db"))._get_connection() as conn:
+        ...     cursor = conn.cursor()
+        ...     cursor.execute("SELECT * FROM some_table")
+        """
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        try:
+            yield conn
+            conn.commit()
+        finally:
+            conn.close()
