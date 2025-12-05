@@ -42,36 +42,6 @@ import sqlite3
 from contextlib import contextmanager
 
 
-class InvalidSubmittedDataset(Exception):
-    def __init__(self, message: str):
-        super().__init__(message)
-
-
-@dataclass(frozen=True)
-class SubmittedDataset:
-    name: str
-    include_raw: bool
-    compute_metrics: bool
-    areas_file: Path
-    matrices_files: list[Path]
-
-    def __post_init__(self):
-        if self.name == "":
-            raise InvalidSubmittedDataset("The dataset's name must be non-empty!")
-
-        if not self.areas_file:
-            raise InvalidSubmittedDataset("The areas description file must be non-empty!")
-
-        if not self.areas_file.exists() or not self.areas_file.is_file():
-            raise InvalidSubmittedDataset("The areas description file does not exist!")
-
-        if not self.matrices_files:
-            raise InvalidSubmittedDataset("There must be at least one matrices file!")
-
-        if any(not Path(f).exists() for f in self.matrices_files):
-            raise InvalidSubmittedDataset("The matrices files must all exist!")
-
-
 T = TypeVar('T')
 
 
@@ -216,3 +186,35 @@ def get_processing_queue() -> ProcessingQueue:
         init_processing_queue()
 
     return singleton_processing_queue
+
+
+class InvalidSubmittedDataset(Exception):
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+@dataclass(frozen=True)
+class SubmittedDataset:
+    name: str
+    include_raw: bool
+    compute_metrics: bool
+    areas_file: Path
+    matrices_files: list[Path]
+
+    def __post_init__(self):
+        if self.name == "":
+            raise InvalidSubmittedDataset("The dataset's name must be non-empty!")
+
+        if not self.areas_file:
+            raise InvalidSubmittedDataset("The areas description file must be non-empty!")
+
+        if not self.areas_file.exists() or not self.areas_file.is_file():
+            raise InvalidSubmittedDataset("The areas description file does not exist!")
+
+        if not self.matrices_files:
+            raise InvalidSubmittedDataset("There must be at least one matrices file!")
+
+        if any(not Path(f).exists() for f in self.matrices_files):
+            raise InvalidSubmittedDataset("The matrices files must all exist!")
+
+# TODO dataset processing + dataset/job link
