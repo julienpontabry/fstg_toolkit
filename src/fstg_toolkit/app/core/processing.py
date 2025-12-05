@@ -39,6 +39,7 @@ from enum import Enum
 import uuid
 from concurrent.futures import ThreadPoolExecutor, Future
 
+from .config import config
 from .utils import SQLiteConnected
 
 
@@ -164,16 +165,13 @@ class JobStatusMonitor(SQLiteConnected, ProcessingQueueListener):
 singleton_processing_queue: Optional[ProcessingQueue] = None
 
 
-def init_processing_queue(max_workers: int = 1, listener: Optional[ProcessingQueueListener] = None):
-    global singleton_processing_queue
-    singleton_processing_queue = ProcessingQueue(max_workers=max_workers, listener=listener)
-
-
 def get_processing_queue() -> ProcessingQueue:
     global  singleton_processing_queue
 
     if not singleton_processing_queue:
-        init_processing_queue()
+        monitor = JobStatusMonitor(db_path=config.db_path)
+        singleton_processing_queue = ProcessingQueue(
+            max_workers=config.max_processing_queue_workers, listener=monitor)
 
     return singleton_processing_queue
 
@@ -261,7 +259,6 @@ def get_dataset_processing_manager() -> DatasetProcessingManager:
     global singleton_processing_manager
 
     if not singleton_processing_manager:
-        # FIXME the init of all database-based class should be done at the same time
-        singleton_processing_manager = DatasetProcessingManager()
+        singleton_processing_manager = DatasetProcessingManager(config.db_path)
 
     return singleton_processing_manager

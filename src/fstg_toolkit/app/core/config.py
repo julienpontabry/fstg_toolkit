@@ -13,6 +13,7 @@ class __Config:
     db_path: Optional[Path] = None
     data_path: Optional[Path] = None
     upload_path: Optional[Path] = None
+    max_processing_queue_workers: int = 1
 
     def __getattribute__(self, name: str) -> Any:
         if value := super().__getattribute__(name):

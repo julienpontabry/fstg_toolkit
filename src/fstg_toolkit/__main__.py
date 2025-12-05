@@ -48,7 +48,6 @@ from fstg_toolkit import generate_pattern, SpatioTemporalGraphSimulator, Correla
 from .app.core.config import config
 from .app.core.datafilesdb import get_data_file_db, MemoryDataFilesDB, SQLiteDataFilesDB
 from .app.core.io import GraphsDataset
-from .app.core.processing import JobStatusMonitor, init_processing_queue
 from .factory import spatio_temporal_graph_from_corr_matrices
 from .graph import SpatioTemporalGraph
 from .io import save_spatio_temporal_graph, DataSaver, DataLoader, save_metrics
@@ -603,17 +602,13 @@ def show(graphs_data: Path, debug: bool, port: int, no_browser: bool):
 def serve(data_path: Path, upload_path: Path, debug: bool, port: int, db_path: Path):
     """Serve a dashboard for visualizing spatio-temporal graphs from a data directory."""
 
-    # set up the environment
+    # set up the configuration
     config.data_path = data_path
     config.upload_path = upload_path
     config.db_path = db_path
 
     # set up the data file database
     get_data_file_db(requested_type=SQLiteDataFilesDB, db_path=db_path, debug=debug)
-
-    # set up the processing queue and its jobs monitoring
-    monitor = JobStatusMonitor(db_path=db_path)
-    init_processing_queue(max_workers=1, listener=monitor)
 
     # set up and run the dash app
     from .app.fstg_view import app
