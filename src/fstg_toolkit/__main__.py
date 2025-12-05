@@ -37,7 +37,6 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from itertools import chain
 from pathlib import Path
 from typing import Optional
-import os
 
 import click
 import numpy as np
@@ -46,6 +45,7 @@ from matplotlib import pyplot as plt
 from screeninfo import get_monitors
 
 from fstg_toolkit import generate_pattern, SpatioTemporalGraphSimulator, CorrelationMatrixSequenceSimulator
+from .app.core.config import config
 from .app.core.datafilesdb import get_data_file_db, MemoryDataFilesDB, SQLiteDataFilesDB
 from .app.core.io import GraphsDataset
 from .app.core.processing import JobStatusMonitor, init_processing_queue
@@ -604,8 +604,9 @@ def serve(data_path: Path, upload_path: Path, debug: bool, port: int, db_path: P
     """Serve a dashboard for visualizing spatio-temporal graphs from a data directory."""
 
     # set up the environment
-    os.environ['FSTG_TOOLKIT_DATA_PATH'] = str(data_path)
-    os.environ['FSTG_TOOLKIT_UPLOAD_PATH'] = str(upload_path)
+    config.data_path = data_path
+    config.upload_path = upload_path
+    config.db_path = db_path
 
     # set up the data file database
     get_data_file_db(requested_type=SQLiteDataFilesDB, db_path=db_path, debug=debug)

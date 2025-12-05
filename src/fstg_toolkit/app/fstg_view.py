@@ -33,7 +33,6 @@
 
 import traceback as tb
 from pathlib import Path
-from os import environ as env
 
 import dash
 from dash import Dash, set_props, html, dcc, callback, Input, Output, State
@@ -41,6 +40,8 @@ import dash_uploader as du
 import dash_bootstrap_components as dbc
 from dash_breakpoints import WindowBreakpoints
 import plotly.io as pio
+
+from .core.config import config
 
 
 # use orsjon to make JSON 5-10x faster
@@ -67,7 +68,7 @@ app = Dash(__name__, title="fSTG-View - A web-based viewer for spatio-temporal g
            suppress_callback_exceptions=True)
 
 # configuration of the uploader system
-du.configure_upload(app, env.get('FSTG_TOOLKIT_UPLOAD_PATH', '/tmp/fstg_toolkit_uploads'))
+du.configure_upload(app, str(config.upload_path))
 
 # app's main layout
 app.layout = html.Div([
