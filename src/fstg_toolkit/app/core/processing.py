@@ -112,9 +112,9 @@ class ProcessingJobStatus(Enum):
 class JobStatusMonitor(SQLiteConnected, ProcessingQueueListener):
     def __init__(self, db_path: Path):
         super().__init__(db_path)
-        self.__initialize_db()
+        self.__init_db()
 
-    def __initialize_db(self):
+    def __init_db(self):
         with self._get_connection() as conn:
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS jobs (
@@ -209,6 +209,7 @@ class SubmittedDataset:
 class DatasetProcessingManager(SQLiteConnected):
     def __init__(self, db_path: Path):
         super().__init__(db_path)
+        self.__init_db()
 
     def __init_db(self):
         with self._get_connection() as conn:
@@ -220,6 +221,7 @@ class DatasetProcessingManager(SQLiteConnected):
                     compute_metrics INTEGER NOT NULL,
                     areas_path TEXT NOT NULL,
                     matrices_paths TEXT NOT NULL,
+                    job_id TEXT UNIQUE,
                     PRIMARY KEY(id)
                     FOREIGN KEY(job_id) REFERENCES jobs(id)
                 )
