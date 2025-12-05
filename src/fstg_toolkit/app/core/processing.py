@@ -207,4 +207,61 @@ class SubmittedDataset:
         if any(not Path(f).exists() for f in self.matrices_files):
             raise InvalidSubmittedDataset("The matrices files must all exist!")
 
-# TODO dataset processing + dataset/job link
+
+class DatasetProcessingManager(SQLiteConnected):
+    def __init__(self, db_path: Path):
+        super().__init__(db_path)
+
+    def __init_db(self):
+        with self._get_connection() as conn:
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS datasets (
+                    id INTEGER UNIQUE,
+                    name TEXT NOT NULL,
+                    include_raw INTEGER NOT NULL,
+                    compute_metrics INTEGER NOT NULL,
+                    areas_path TEXT NOT NULL,
+                    matrices_paths TEXT NOT NULL,
+                    PRIMARY KEY(id)
+                    FOREIGN KEY(job_id) REFERENCES jobs(id)
+                )
+            ''')
+
+    def __insert_record(self, dataset: SubmittedDataset, job_id: str):
+        with self._get_connection() as conn:
+            conn.execute('''
+                INSERT INTO datasets (name, include_raw, compute_metrics, areas_path, matrices_paths, job_id)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (dataset.name, int(dataset.include_raw), int(dataset.compute_metrics),
+                  str(dataset.areas_file), ";".join(str(p) for p in dataset.matrices_files), job_id))
+
+    def submit(self, dataset: SubmittedDataset):
+        # TODO create the real processing task
+        task = lambda x: x
+        args = ["Test"]
+        job_id = get_processing_queue().submit(task, *args)
+        self.__insert_record(dataset, job_id)
+
+    def list(self, limit: int = 30) -> list[dict[str, str]]:
+        # FIXME we should uncouple the manager and monitor (remove join and make two consecutive requests)
+        with self._get_connection() as conn:
+            rows = conn.execute(f'''
+                SELECT * FROM datasets A
+                INNER JOINT jobs B ON A.job_id = B.id
+                ORDER BY B.submitted_at DESC
+                LIMIT ?
+            ''', (limit,)).fetchall()
+            return [dict(row) for row in rows]
+
+
+singleton_processing_manager: Optional[DatasetProcessingManager] = None
+
+
+def get_dataset_processing_manager() -> DatasetProcessingManager:
+    global singleton_processing_manager
+
+    if not singleton_processing_manager:
+        # FIXME the init of all database-based class should be done at the same time
+        singleton_processing_manager = DatasetProcessingManager()
+
+    return singleton_processing_manager

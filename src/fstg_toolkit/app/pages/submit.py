@@ -38,7 +38,7 @@ import dash_bootstrap_components as dbc
 import dash_uploader as du
 from dash import html, dcc, callback, Input, Output, State, set_props, callback_context
 
-from fstg_toolkit.app.core.processing import SubmittedDataset, InvalidSubmittedDataset
+from fstg_toolkit.app.core.processing import SubmittedDataset, InvalidSubmittedDataset, get_dataset_processing_manager
 from fstg_toolkit.app.views.common import get_navbar
 
 dash.register_page(__name__, path='/submit')
@@ -217,7 +217,15 @@ def submit_dataset_form(_, name, options, areas_uploaded_file, matrices_uploaded
             areas_file=Path(areas_uploaded_file) if areas_uploaded_file else None,
             matrices_files=[Path(f) for f in matrices_uploaded_files] if matrices_uploaded_files else None)
 
-        set_props('dataset-form-alert',{'children': str(dataset), 'is_open': True, 'color': 'success'})
-        # TODO implement queuing to process the dataset submission in background
+        # Submit the dataset (no live check that the submission is going well;
+        # user must monitor the progress on the list page.
+        manager = get_dataset_processing_manager()
+        manager.submit(dataset)
+        set_props('dataset-form-alert',{
+            'children': ["The dataset has been submitted for processing. You can monitor the progress on the ",
+                         html.A("list page", href='/list', className='alert-link'),
+                         "."],
+            'is_open': True,
+            'color': 'success'})
     except InvalidSubmittedDataset as ex:
         set_props('dataset-form-alert', {'children': str(ex), 'is_open': True, 'color': 'danger'})
