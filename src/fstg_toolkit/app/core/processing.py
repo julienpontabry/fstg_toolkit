@@ -31,7 +31,7 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
-from typing import TypeVar, Callable, Optional, Dict
+from typing import TypeVar, Callable, Optional, Dict, Any
 from dataclasses import dataclass
 from pathlib import Path
 from abc import ABC, abstractmethod
@@ -107,6 +107,13 @@ class ProcessingJobStatus(Enum):
     RUNNING = "Running"
     COMPLETED = "Completed"
     FAILED = "Failed"
+
+    @staticmethod
+    def from_value(name: str) -> 'Optional[ProcessingJobStatus]':
+        for status in ProcessingJobStatus:
+            if name == status.name:
+                return status
+        return None
 
 
 class JobStatusMonitor(SQLiteConnected, ProcessingQueueListener):
@@ -205,6 +212,15 @@ class SubmittedDataset:
         if any(not Path(f).exists() for f in self.matrices_files):
             raise InvalidSubmittedDataset("The matrices files must all exist!")
 
+    @staticmethod
+    def from_record(record: dict[str, Any]) -> 'SubmittedDataset':
+        return SubmittedDataset(
+            name=record['name'],
+            include_raw=bool(record['include_raw']),
+            compute_metrics=bool(record['compute_metrics']),
+            areas_file=Path(record['areas_path']),
+            matrices_files=[Path(s) for s in record['matrices_paths'].split(';')])
+
 
 class DatasetProcessingManager(SQLiteConnected):
     def __init__(self, db_path: Path):
@@ -242,7 +258,7 @@ class DatasetProcessingManager(SQLiteConnected):
         job_id = get_processing_queue().submit(task, *args)
         self.__insert_record(dataset, job_id)
 
-    def list(self, limit: int = 30) -> list[dict[str, str]]:
+    def list(self, limit: int = 30) -> list[tuple[SubmittedDataset, ProcessingJobStatus]]:
         # FIXME we should uncouple the manager and monitor (remove join and make two consecutive requests)
         with self._get_connection() as conn:
             rows = conn.execute(f'''
@@ -251,7 +267,9 @@ class DatasetProcessingManager(SQLiteConnected):
                 ORDER BY B.submitted_at DESC
                 LIMIT ?
             ''', (limit,)).fetchall()
-            return [dict(row) for row in rows]
+            rows = [dict(row) for row in rows]
+            return [(SubmittedDataset.from_record(row), ProcessingJobStatus.from_value(row['status']))
+                    for row in rows]
 
 
 singleton_processing_manager: Optional[DatasetProcessingManager] = None

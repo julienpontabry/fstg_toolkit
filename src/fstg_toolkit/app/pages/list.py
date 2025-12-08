@@ -31,26 +31,59 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
+from typing import Optional
+
 import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 
-from fstg_toolkit.app.core.datafilesdb import get_data_file_db
+from fstg_toolkit.app.core.processing import get_dataset_processing_manager
 from fstg_toolkit.app.views.common import get_navbar
+from fstg_toolkit.app.core.processing import ProcessingJobStatus
 
 
 dash.register_page(__name__, path='/list')
 
 
+def __status2color(job_status: ProcessingJobStatus) -> str:
+    match job_status:
+        case ProcessingJobStatus.PENDING|ProcessingJobStatus.RUNNING:
+            return "warning"
+        case ProcessingJobStatus.COMPLETED:
+            return "success"
+        case ProcessingJobStatus.FAILED:
+            return "danger"
+
+
+def __make_status_badge(status: Optional[ProcessingJobStatus]) -> dbc.Badge:
+    if status is not None:
+        label = status.value
+        color = __status2color(status)
+    else:
+        label = "Unknown"
+        color = "info"
+
+    return dbc.Badge(label, color=color, className="me-1")
+
+
 def layout():
-    db = get_data_file_db()
+    manager = get_dataset_processing_manager()
     return dbc.Container([
             get_navbar('/list'),
-            html.H1("List of available datasets"),
+            html.H1("List of last submitted datasets"),
             html.P("Click on a dataset token to open its dashboard in a new tab."),
-            html.Ul([
-                html.Li(dcc.Link(f"{token}", href=f'dashboard/{token}', target='new'))
-                for token, _ in db.list()
+            html.Hr(),
+            # TODO currently url token of result is missing
+            dbc.CardGroup([
+                dbc.Card(
+                    dbc.CardBody([
+                        html.H4(dataset.name, className='card-title'),
+                        html.H6(__make_status_badge(status), className='card-subtitle'),
+                        html.P("Some information", className='card-text'),
+                        dbc.CardLink("Open")
+                    ])
+                )
+                for dataset, status in manager.list()
             ])
         ],
         fluid='xxl')
