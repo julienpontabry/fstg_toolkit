@@ -31,6 +31,7 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
+from datetime import datetime
 from typing import TypeVar, Callable, Optional, Dict, Any
 from dataclasses import dataclass
 from pathlib import Path
@@ -222,6 +223,15 @@ class SubmittedDataset:
             matrices_files=[Path(s) for s in record['matrices_paths'].split(';')])
 
 
+@dataclass(frozen=True)
+class DatasetResult:
+    dataset: SubmittedDataset
+    job_status: ProcessingJobStatus
+    submitted_at: datetime
+    result: str
+    error: Optional[str]
+
+
 class DatasetProcessingManager(SQLiteConnected):
     def __init__(self, db_path: Path):
         super().__init__(db_path)
@@ -258,7 +268,7 @@ class DatasetProcessingManager(SQLiteConnected):
         job_id = get_processing_queue().submit(task, *args)
         self.__insert_record(dataset, job_id)
 
-    def list(self, limit: int = 30) -> list[tuple[SubmittedDataset, ProcessingJobStatus]]:
+    def list(self, limit: int = 30) -> list[DatasetResult]:
         # FIXME we should uncouple the manager and monitor (remove join and make two consecutive requests)
         with self._get_connection() as conn:
             rows = conn.execute(f'''
@@ -268,7 +278,12 @@ class DatasetProcessingManager(SQLiteConnected):
                 LIMIT ?
             ''', (limit,)).fetchall()
             rows = [dict(row) for row in rows]
-            return [(SubmittedDataset.from_record(row), ProcessingJobStatus.from_value(row['status']))
+            return [DatasetResult(
+                        dataset=SubmittedDataset.from_record(row),
+                        job_status=ProcessingJobStatus.from_value(row['status']),
+                        submitted_at=datetime.fromisoformat(row['submitted_at']),
+                        result=row['result'],
+                        error=row['error'])
                     for row in rows]
 
 

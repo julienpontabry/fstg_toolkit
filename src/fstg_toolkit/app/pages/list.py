@@ -31,10 +31,11 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
+from datetime import datetime
 from typing import Optional
 
 import dash
-from dash import html, dcc
+from dash import html
 import dash_bootstrap_components as dbc
 
 from fstg_toolkit.app.core.processing import get_dataset_processing_manager
@@ -66,24 +67,46 @@ def __make_status_badge(status: Optional[ProcessingJobStatus]) -> dbc.Badge:
     return dbc.Badge(label, color=color, className="me-1")
 
 
+def __format_time_ago(timestamp: datetime) -> str:
+    diff = datetime.now() - timestamp
+
+    if diff.days > 0:
+        return f"{diff.days}{'s' if diff.days > 1 else ''} ago"
+
+    hours = diff.seconds // 3600
+    if hours > 0:
+        return f"{hours} hour{'s' if hours > 1 else ''} ago"
+
+    minutes = (diff.seconds % 3600) // 60
+    if minutes > 0:
+        return f"{minutes} minute{'s' if minutes > 1 else ''} ago"
+
+    if diff.seconds > 0:
+        return f"{diff.seconds} second{'s' if diff.seconds > 1 else ''} ago"
+
+    return "just now"
+
+
 def layout():
     manager = get_dataset_processing_manager()
     return dbc.Container([
             get_navbar('/list'),
             html.H1("List of last submitted datasets"),
-            html.P("Click on a dataset token to open its dashboard in a new tab."),
+            html.P("Click on a dataset to open its dashboard in a new tab."),
             html.Hr(),
             # TODO currently url token of result is missing
             dbc.CardGroup([
                 dbc.Card(
                     dbc.CardBody([
-                        html.H4(dataset.name, className='card-title'),
-                        html.H6(__make_status_badge(status), className='card-subtitle'),
+                        html.H4(result.dataset.name, className='card-title'),
+                        html.H6(__make_status_badge(result.job_status), className='card-subtitle'),
                         html.P("Some information", className='card-text'),
-                        dbc.CardLink("Open")
+                        html.Small(f"Submitted {__format_time_ago(result.submitted_at)}", className="card-text text-muted"),
+                        html.Br(),
+                        dbc.CardLink("Open dashboard")
                     ])
                 )
-                for dataset, status in manager.list()
+                for result in manager.list()
             ])
         ],
         fluid='xxl')
