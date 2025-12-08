@@ -31,7 +31,7 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
-from typing import Iterable
+from typing import Iterable, Optional
 from dataclasses import dataclass
 from pathlib import Path
 import sqlite3
@@ -113,12 +113,12 @@ class SQLiteConnected:
     db_path : Path
         The file path to the SQLite database.
     """
-    db_path: Path
+    db_path: Optional[Path]
     timeout: float = 30.0
 
     def __setup_connection(self):
         conn = sqlite3.connect(
-            self.db_path,
+            self.db_path if self.db_path is not None else ":memory:", # use memory if path is none
             timeout=self.timeout,     # longer timeout
             check_same_thread=False)  # allows multi-threading
 
