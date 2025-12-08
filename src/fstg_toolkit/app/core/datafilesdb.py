@@ -173,6 +173,7 @@ class MemoryDataFilesDB(DataFilesDB):
         return str(self)
 
 
+# TODO use the SQLite utility class
 class SQLiteDataFilesDB(DataFilesDB):
     """SQLite-backed implementation of the DataFilesDB.
 

@@ -100,7 +100,7 @@ def layout():
                     dbc.CardBody([
                         html.H4(result.dataset.name, className='card-title'),
                         html.H6(__make_status_badge(result.job_status), className='card-subtitle'),
-                        html.P("Some information", className='card-text'),
+                        # TODO add more information as modal or other: html.P("Some information", className='card-text'),
                         html.Small(f"Submitted {__format_time_ago(result.submitted_at)}", className="card-text text-muted"),
                         html.Br(),
                         dbc.CardLink("Open dashboard")
