@@ -247,7 +247,7 @@ class DatasetProcessingManager(SQLiteConnected):
         with self._get_connection() as conn:
             rows = conn.execute(f'''
                 SELECT * FROM datasets A
-                INNER JOINT jobs B ON A.job_id = B.id
+                INNER JOIN jobs B ON A.job_id = B.id
                 ORDER BY B.submitted_at DESC
                 LIMIT ?
             ''', (limit,)).fetchall()
