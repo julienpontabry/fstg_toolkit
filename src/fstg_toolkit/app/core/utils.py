@@ -129,7 +129,8 @@ class SQLiteConnected:
 
         Example
         -------
-        >>> with SQLiteConnected(Path("example.db"))._get_connection() as conn:
+        Whithin an object subclassing this feature, you can write
+        >>> with self._get_connection() as conn:
         ...     cursor = conn.cursor()
         ...     cursor.execute("SELECT * FROM some_table")
         """
@@ -138,5 +139,8 @@ class SQLiteConnected:
         try:
             yield conn
             conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
         finally:
             conn.close()
