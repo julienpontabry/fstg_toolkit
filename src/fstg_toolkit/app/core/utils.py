@@ -103,6 +103,7 @@ def split_factors_from_name(names: Iterable[str],
     return factors, list(zip(*identifiers))
 
 
+# TODO use pooled connections to handle moderate to large traffic
 @dataclass(frozen=True)
 class SQLiteConnected:
     """A class that brings a connection to an SQLite database as a feature.
@@ -113,6 +114,20 @@ class SQLiteConnected:
         The file path to the SQLite database.
     """
     db_path: Path
+    timeout: float = 30.0
+
+    def __setup_connection(self):
+        conn = sqlite3.connect(
+            self.db_path,
+            timeout=self.timeout,     # longer timeout
+            check_same_thread=False)  # allows multi-threading
+
+        conn.row_factory = sqlite3.Row
+        conn.execute('PRAGMA journal_mode=WAL')    # use WAL mode for better concurrency on disk-backed DBs
+        conn.execute('PRAGMA synchronous=NORMAL')  # accepts some crash vulnerabilities for improved performances
+        conn.execute('PRAGMA cache_size=-64000')   # use a 64Mb cache
+
+        return conn
 
     @contextmanager
     def _get_connection(self):
@@ -134,8 +149,8 @@ class SQLiteConnected:
         ...     cursor = conn.cursor()
         ...     cursor.execute("SELECT * FROM some_table")
         """
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
+        conn = self.__setup_connection()
+
         try:
             yield conn
             conn.commit()
