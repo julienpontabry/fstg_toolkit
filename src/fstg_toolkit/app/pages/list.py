@@ -35,7 +35,7 @@ from datetime import datetime
 from typing import Optional
 
 import dash
-from dash import html
+from dash import html, callback, Input, Output, State, MATCH
 import dash_bootstrap_components as dbc
 
 from fstg_toolkit.app.core.processing import get_dataset_processing_manager
@@ -71,7 +71,7 @@ def __format_time_ago(timestamp: datetime) -> str:
     diff = datetime.now() - timestamp
 
     if diff.days > 0:
-        return f"{diff.days}{'s' if diff.days > 1 else ''} ago"
+        return f"{diff.days} day{'s' if diff.days > 1 else ''} ago"
 
     hours = diff.seconds // 3600
     if hours > 0:
@@ -89,24 +89,61 @@ def __format_time_ago(timestamp: datetime) -> str:
 
 def layout():
     manager = get_dataset_processing_manager()
-    return dbc.Container([
-            get_navbar('/list'),
+    return dbc.Container(
+        [
+            get_navbar("/list"),
             html.H1("List of last submitted datasets"),
             html.P("Click on a dataset to open its dashboard in a new tab."),
             html.Hr(),
             # TODO currently url token of result is missing
-            dbc.CardGroup([
-                dbc.Card(
-                    dbc.CardBody([
-                        html.H4(result.dataset.name, className='card-title'),
-                        html.H6(__make_status_badge(result.job_status), className='card-subtitle'),
-                        # TODO add more information as modal or other: html.P("Some information", className='card-text'),
-                        html.Small(f"Submitted {__format_time_ago(result.submitted_at)}", className="card-text text-muted"),
-                        html.Br(),
-                        dbc.CardLink("Open dashboard")
-                    ])
-                )
-                for result in manager.list()
-            ])
+            dbc.Stack([
+                dbc.Card([
+                    dbc.CardHeader(
+                        dbc.Row([
+                            dbc.Col([
+                                # bi-caret-down-square, bi-caret-down bi-caret-right-square bi-caret-right
+                                html.I(className='bi bi-caret-right-square', id={'type': 'dataset-arrow', 'index': i},
+                                       style={'font-size': '1.5rem', 'color': 'gray'})
+                            ], width=1, align='center'),
+                            dbc.Col([
+                                html.H4(result.dataset.name, className='card-title'),
+                                html.Small(f"Submitted {__format_time_ago(result.submitted_at)}", className='text-muted'),
+                            ]),
+                            dbc.Col([
+                                html.Div(__make_status_badge(result.job_status), className='text-end')
+                            ], width=3, align='center')
+                        ])
+                    ),
+                    dbc.Collapse(
+                        dbc.CardBody(html.Ul([
+                            html.Li([html.B("Include raw data: "), 'Yes' if result.dataset.include_raw else 'No']),
+                            html.Li([html.B("Compute metrics: "), 'Yes' if result.dataset.compute_metrics else 'No']),
+                            html.Li([html.B("Areas description file: "), html.I(result.dataset.areas_file.name)]),
+                            html.Li([
+                                html.B("Matrices files: "),
+                                html.Ul([
+                                    html.Li(html.I(str(mat_path.name)))
+                                    for mat_path in result.dataset.matrices_files
+                                ])
+                            ]),
+                            *([html.Hr(), html.P(result.error if result.error else "", className="text-danger text-center")]
+                            if result.error else [])
+                        ]), className='card-text'), is_open=False, id={'type': 'dataset-sup-info', 'index': i}),
+                ])
+                for i, result in enumerate(manager.list())
+            ], gap=3)
         ],
         fluid='xxl')
+
+@callback(
+    Output({'type': 'dataset-sup-info', 'index': MATCH}, 'is_open'),
+    Output({'type': 'dataset-arrow', 'index': MATCH}, 'className'),
+    Input({'type': 'dataset-arrow', 'index': MATCH}, 'n_clicks'),
+    State({'type': 'dataset-sup-info', 'index': MATCH}, 'is_open'),
+    prevent_initial_callbacks=True
+)
+def toggle_collapse(n_clicks, is_open):
+    if not n_clicks or is_open:
+        return False, 'bi bi-caret-right-square'
+    else:
+        return True, 'bi bi-caret-down-square'
