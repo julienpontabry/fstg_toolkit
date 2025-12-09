@@ -102,7 +102,7 @@ def layout():
                     dbc.CardHeader(
                         dbc.Row([
                             dbc.Col([
-                                html.I(className='bi bi-caret-right-square', id={'type': 'dataset-arrow', 'index': i},
+                                html.I(className='bi bi-caret-right-fill', id={'type': 'dataset-arrow', 'index': i},
                                        style={'font-size': '1.5rem', 'color': 'gray', 'cursor': 'pointer'})
                             ], width=1, align='center'),
                             dbc.Col([
@@ -143,6 +143,6 @@ def layout():
 )
 def toggle_collapse(n_clicks, is_open):
     if not n_clicks or is_open:
-        return False, 'bi bi-caret-right-square'
+        return False, 'bi bi-caret-right-fill'
     else:
-        return True, 'bi bi-caret-down-square'
+        return True, 'bi bi-caret-down-fill'
