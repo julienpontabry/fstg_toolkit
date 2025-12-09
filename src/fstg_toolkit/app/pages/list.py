@@ -101,7 +101,6 @@ def layout():
                     dbc.CardHeader(
                         dbc.Row([
                             dbc.Col([
-                                # bi-caret-down-square, bi-caret-down bi-caret-right-square bi-caret-right
                                 html.I(className='bi bi-caret-right-square', id={'type': 'dataset-arrow', 'index': i},
                                        style={'font-size': '1.5rem', 'color': 'gray', 'cursor': 'pointer'})
                             ], width=1, align='center'),
