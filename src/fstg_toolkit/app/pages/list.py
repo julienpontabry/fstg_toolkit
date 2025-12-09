@@ -93,7 +93,8 @@ def layout():
         [
             get_navbar("/list"),
             html.H1("List of last submitted datasets"),
-            html.P("Click on a dataset to open its dashboard in a new tab."),
+            html.P("Click on a dataset to open its dashboard in a new tab. "
+                   "Click on the left arrow to expand the dataset card and see additional informations."),
             html.Hr(),
             # TODO currently url token of result is missing
             dbc.Container(dbc.Stack([
