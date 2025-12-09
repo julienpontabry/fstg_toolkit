@@ -96,7 +96,7 @@ def layout():
             html.P("Click on a dataset to open its dashboard in a new tab."),
             html.Hr(),
             # TODO currently url token of result is missing
-            dbc.Stack([
+            dbc.Container(dbc.Stack([
                 dbc.Card([
                     dbc.CardHeader(
                         dbc.Row([
@@ -130,9 +130,8 @@ def layout():
                         ]), className='card-text'), is_open=False, id={'type': 'dataset-sup-info', 'index': i}),
                 ])
                 for i, result in enumerate(manager.list())
-            ], gap=3)
-        ],
-        fluid='xxl')
+            ], gap=3), style={'max-width': '800px', 'align': 'center'})
+        ], fluid='xxl')
 
 @callback(
     Output({'type': 'dataset-sup-info', 'index': MATCH}, 'is_open'),
