@@ -32,13 +32,14 @@
 # knowledge of the CeCILL-B license and that you accept its terms.
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Any
 
 import dash
 from dash import html, callback, Input, Output, State, MATCH
 import dash_bootstrap_components as dbc
 
-from fstg_toolkit.app.core.processing import get_dataset_processing_manager
+from fstg_toolkit.app.core.processing import get_dataset_processing_manager, DatasetResult
+from fstg_toolkit.app.core.utils import join
 from fstg_toolkit.app.views.common import get_navbar
 from fstg_toolkit.app.core.processing import ProcessingJobStatus
 
@@ -87,14 +88,23 @@ def __format_time_ago(timestamp: datetime) -> str:
     return "just now"
 
 
+def __fill_quick_bar(result: DatasetResult) -> html.Small:
+    elements: list[Any] = [f"Submitted {__format_time_ago(result.submitted_at)}"]
+
+    if result.result is not None:
+        elements.append(html.A(html.I(className='bi bi-clipboard-data'), href=f'/dashboard/{result.result}', target='new'))
+
+    return html.Small(join(elements, sep=html.I(className='bi bi-dot')), className='text-muted')
+
+
 def layout():
     manager = get_dataset_processing_manager()
     return dbc.Container(
         [
             get_navbar("/list"),
             html.H1("List of last submitted datasets"),
-            html.P("Click on a dataset to open its dashboard in a new tab. "
-                   "Click on the left arrow to expand the dataset card and see additional informations."),
+            html.P("Click on the dashboard icon of a dataset to open its dashboard in a new tab. "
+                   "Click on the left arrow to expand the dataset card and see additional information."),
             html.Hr(),
             # TODO currently url token of result is missing
             dbc.Container(dbc.Stack([
@@ -107,7 +117,7 @@ def layout():
                             ], width=1, align='center'),
                             dbc.Col([
                                 html.H4(result.dataset.name, className='card-title'),
-                                html.Small(f"Submitted {__format_time_ago(result.submitted_at)}", className='text-muted'),
+                                __fill_quick_bar(result),
                             ]),
                             dbc.Col([
                                 html.Div(__make_status_badge(result.job_status), className='text-end')

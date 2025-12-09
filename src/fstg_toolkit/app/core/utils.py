@@ -30,8 +30,8 @@
 #
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
-
-from typing import Iterable, Optional
+from itertools import chain
+from typing import Iterable, Optional, Any
 from dataclasses import dataclass
 from pathlib import Path
 import sqlite3
@@ -159,3 +159,36 @@ class SQLiteConnected:
             raise
         finally:
             conn.close()
+
+
+def join(l: list[Any], sep: Any) -> list[Any]:
+    """Interleave a separator between elements of a list.
+
+    Parameters
+    ----------
+    l : list
+        Sequence of elements to be joined. If empty, an empty list is returned.
+    sep : Any
+        Separator value to insert between consecutive elements of ``l``.
+
+    Returns
+    -------
+    list
+        A new list with ``sep`` inserted between each pair of elements from ``l``.
+        If ``l`` is empty, returns ``[]``. If ``l`` contains a single element,
+        a shallow copy of ``l`` is returned.
+
+    Examples
+    --------
+    >>> join([1, 2, 3], 0)
+    [1, 0, 2, 0, 3]
+    >>> join(['a'], '-')
+    ['a']
+    >>> join([], None)
+    []
+    """
+
+    if l:
+        return list(chain.from_iterable((elem, sep) for elem in l[:-1])) + l[-1:]
+    else:
+        return []
