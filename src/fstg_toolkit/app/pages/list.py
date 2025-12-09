@@ -103,7 +103,7 @@ def layout():
                             dbc.Col([
                                 # bi-caret-down-square, bi-caret-down bi-caret-right-square bi-caret-right
                                 html.I(className='bi bi-caret-right-square', id={'type': 'dataset-arrow', 'index': i},
-                                       style={'font-size': '1.5rem', 'color': 'gray'})
+                                       style={'font-size': '1.5rem', 'color': 'gray', 'cursor': 'pointer'})
                             ], width=1, align='center'),
                             dbc.Col([
                                 html.H4(result.dataset.name, className='card-title'),
