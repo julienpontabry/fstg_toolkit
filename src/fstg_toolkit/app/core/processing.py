@@ -200,22 +200,21 @@ class SubmittedDataset:
     areas_file: Path
     matrices_files: list[Path]
 
-    # FIXME check should be conducted only at submission
-    # def __post_init__(self):
-    #     if self.name == "":
-    #         raise InvalidSubmittedDataset("The dataset's name must be non-empty!")
-    #
-    #     if not self.areas_file:
-    #         raise InvalidSubmittedDataset("The areas description file must be non-empty!")
-    #
-    #     if not self.areas_file.exists() or not self.areas_file.is_file():
-    #         raise InvalidSubmittedDataset("The areas description file does not exist!")
-    #
-    #     if not self.matrices_files:
-    #         raise InvalidSubmittedDataset("There must be at least one matrices file!")
-    #
-    #     if any(not Path(f).exists() for f in self.matrices_files):
-    #         raise InvalidSubmittedDataset("The matrices files must all exist!")
+    def check(self):
+        if self.name == "":
+            raise InvalidSubmittedDataset("The dataset's name must be non-empty!")
+
+        if not self.areas_file:
+            raise InvalidSubmittedDataset("The areas description file must be non-empty!")
+
+        if not self.areas_file.exists() or not self.areas_file.is_file():
+            raise InvalidSubmittedDataset("The areas description file does not exist!")
+
+        if not self.matrices_files:
+            raise InvalidSubmittedDataset("There must be at least one matrices file!")
+
+        if any(not Path(f).exists() for f in self.matrices_files):
+            raise InvalidSubmittedDataset("The matrices files must all exist!")
 
     @staticmethod
     def from_record(record: dict[str, Any]) -> 'SubmittedDataset':
@@ -301,6 +300,7 @@ class DatasetProcessingManager(SQLiteConnected):
                   str(dataset.areas_file), ";".join(str(p) for p in dataset.matrices_files), job_id))
 
     def submit(self, dataset: SubmittedDataset):
+        dataset.check()
         job_id = get_processing_queue().submit(_process_dataset, dataset)
         self.__insert_record(dataset, job_id)
 
