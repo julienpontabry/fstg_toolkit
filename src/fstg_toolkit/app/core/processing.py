@@ -163,15 +163,6 @@ class JobStatusMonitor(SQLiteConnected, ProcessingQueueListener):
     def on_job_failed(self, job_id: str, error: Exception):
         self.__update(job_id, status=ProcessingJobStatus.FAILED.name, error=str(error))
 
-    def list_jobs(self, limit: int = 30) -> list[dict[str, str]]:
-        with self._get_connection() as conn:
-            rows = conn.execute(f'''
-                SELECT * FROM jobs
-                ORDER BY submitted_at DESC
-                LIMIT ?
-            ''', (limit,)).fetchall()
-            return [dict(row) for row in rows]
-
 
 singleton_processing_queue: Optional[ProcessingQueue] = None
 
@@ -305,9 +296,10 @@ class DatasetProcessingManager(SQLiteConnected):
         self.__insert_record(dataset, job_id)
 
     def list(self, limit: int = 30) -> list[DatasetResult]:
-        # FIXME we should uncouple the manager and monitor (remove join and make two consecutive requests)
+        # NOTE for performances and practical reasons, this class and the job monitoring
+        # one are coupled into this join SQL request.
         with self._get_connection() as conn:
-            rows = conn.execute(f'''
+            rows = conn.execute('''
                 SELECT * FROM datasets A
                 INNER JOIN jobs B ON A.job_id = B.id
                 ORDER BY B.submitted_at DESC
