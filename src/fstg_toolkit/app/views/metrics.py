@@ -111,7 +111,7 @@ def metrics_type_changed(metrics_type, store_dataset):
     prevent_initial_call=True,
 )
 def metric_factors_selection_changed(metric_selection, factors_selection, store_dataset, metrics_type):
-    if store_dataset is None and metrics_type == '':
+    if store_dataset is None or metrics_type == '':
         raise PreventUpdate
 
     dataset = GraphsDataset.deserialize(store_dataset)
