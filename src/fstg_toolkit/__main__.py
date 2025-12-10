@@ -136,9 +136,11 @@ def _build_graph(name: str, matrix: np.ndarray, areas: pd.DataFrame, corr_thresh
                    "(only if there are multiple sets of correlation matrices).")
 @click.option('--no-raw', is_flag=True, default=False,
               help="Do not save the raw data along with the graphs.")
+@click.option('--max-cpus', type=click.IntRange(1, multiprocessing.cpu_count()-1), default=multiprocessing.cpu_count()-1,
+              help="Set the number of CPUs to use for the processing.")
 def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], output: Path,
           corr_threshold: float, absolute_thresholding: bool, areas_column_name: str, regions_column_name: str,
-          select: bool, no_raw: bool):
+          select: bool, no_raw: bool, max_cpus: int):
     """Build spatio-temporal graphs from sequences of correlation matrices.
 
     The spatio-temporal graphs will be saved to OUTPUT, built from the correlation matrices in CORRELATION_MATRICES_PATH and the area descriptions in AREAS_DESCRIPTION_PATH.
@@ -192,7 +194,7 @@ def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], 
     with click.progressbar(matrices.items(), label="Building ST graphs...", show_pos=True,
                            item_show_func=lambda a: str(a[0]) if a is not None else None) as bar:
         futures = []
-        num_workers = min(len(matrices), max(1, multiprocessing.cpu_count() - 1))
+        num_workers = min(len(matrices), max_cpus)
 
         with ProcessPoolExecutor(max_workers=num_workers) as executor:
             for name, matrix in matrices.items():
@@ -220,7 +222,9 @@ def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], 
 
 @cli.command
 @click.argument('dataset_path', type=click.Path(exists=True, dir_okay=False, path_type=Path))
-def metrics(dataset_path: Path):
+@click.option('--max-cpus', type=click.IntRange(1, multiprocessing.cpu_count()-1), default=multiprocessing.cpu_count()-1,
+              help="Set the number of CPUs to use for the processing.")
+def metrics(dataset_path: Path, max_cpus: int):
     """Calculate metrics on spatio-temporal graphs.
 
     DATASET_PATH is the path to spatio-temporal graphs built with the command 'build'.
@@ -231,13 +235,13 @@ def metrics(dataset_path: Path):
     with click.progressbar(dataset.subjects.index, label="Calculating spatial metrics...", show_pos=True,
                            item_show_func=lambda a: '/'.join(a) if a is not None else None) as bar:
         spatial_df = gather_metrics(dataset, dataset.subjects.index, calculate_spatial_metrics,
-                                    callback=lambda s: bar.update(1))
+                                    callback=lambda s: bar.update(1), max_cpus=max_cpus)
 
     # calculate temporal metrics
     with click.progressbar(dataset.subjects.index, label="Calculating temporal metrics...", show_pos=True,
                            item_show_func=lambda a: '/'.join(a) if a is not None else None) as bar:
         temporal_df = gather_metrics(dataset, dataset.subjects.index, calculate_temporal_metrics,
-                                     callback=lambda s: bar.update(1))
+                                     callback=lambda s: bar.update(1), max_cpus=max_cpus)
 
     # TODO modify the data saver to accepts those files
     # save the metrics into the dataset
