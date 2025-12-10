@@ -221,6 +221,10 @@ def submit_dataset_form(_, name, options, areas_uploaded_file, matrices_uploaded
         # user must monitor the progress on the list page.
         manager = get_dataset_processing_manager()
         manager.submit(dataset)
+        for comp in ('dataset-name-input', 'upload-areas-file', 'upload-matrices-files',
+                     'submit-dataset-button', 'reset-dataset-button'):
+            set_props(comp, {'disabled': True})
+
         set_props('dataset-form-alert',{
             'children': ["The dataset has been submitted for processing. You can monitor the progress on the ",
                          html.A("list page", href='/list', className='alert-link'),
