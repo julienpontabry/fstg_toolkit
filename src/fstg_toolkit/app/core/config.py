@@ -14,6 +14,7 @@ class __Config:
     data_path: Optional[Path] = None
     upload_path: Optional[Path] = None
     max_processing_queue_workers: int = 1
+    max_processing_cpus: int = 4
 
     def __getattribute__(self, name: str) -> Any:
         if value := super().__getattribute__(name):

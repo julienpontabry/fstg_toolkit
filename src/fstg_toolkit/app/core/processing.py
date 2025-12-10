@@ -30,7 +30,7 @@
 #
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
-
+import shutil
 from datetime import datetime
 from typing import TypeVar, Callable, Optional, Dict, Any
 from dataclasses import dataclass
@@ -39,8 +39,10 @@ from abc import ABC, abstractmethod
 from enum import Enum
 import uuid
 from concurrent.futures import ThreadPoolExecutor, Future
+import subprocess
 
 from .config import config
+from .datafilesdb import get_data_file_db
 from .utils import SQLiteConnected
 
 
@@ -197,21 +199,22 @@ class SubmittedDataset:
     areas_file: Path
     matrices_files: list[Path]
 
-    def __post_init__(self):
-        if self.name == "":
-            raise InvalidSubmittedDataset("The dataset's name must be non-empty!")
-
-        if not self.areas_file:
-            raise InvalidSubmittedDataset("The areas description file must be non-empty!")
-
-        if not self.areas_file.exists() or not self.areas_file.is_file():
-            raise InvalidSubmittedDataset("The areas description file does not exist!")
-
-        if not self.matrices_files:
-            raise InvalidSubmittedDataset("There must be at least one matrices file!")
-
-        if any(not Path(f).exists() for f in self.matrices_files):
-            raise InvalidSubmittedDataset("The matrices files must all exist!")
+    # FIXME check should be conducted only at submission
+    # def __post_init__(self):
+    #     if self.name == "":
+    #         raise InvalidSubmittedDataset("The dataset's name must be non-empty!")
+    #
+    #     if not self.areas_file:
+    #         raise InvalidSubmittedDataset("The areas description file must be non-empty!")
+    #
+    #     if not self.areas_file.exists() or not self.areas_file.is_file():
+    #         raise InvalidSubmittedDataset("The areas description file does not exist!")
+    #
+    #     if not self.matrices_files:
+    #         raise InvalidSubmittedDataset("There must be at least one matrices file!")
+    #
+    #     if any(not Path(f).exists() for f in self.matrices_files):
+    #         raise InvalidSubmittedDataset("The matrices files must all exist!")
 
     @staticmethod
     def from_record(record: dict[str, Any]) -> 'SubmittedDataset':
@@ -221,6 +224,41 @@ class SubmittedDataset:
             compute_metrics=bool(record['compute_metrics']),
             areas_file=Path(record['areas_path']),
             matrices_files=[Path(s) for s in record['matrices_paths'].split(';')])
+
+
+def _process_dataset(dataset: SubmittedDataset) -> Optional[str]:
+    try:
+        output_path = config.data_path / '1.zip'  # FIXME find a naming strategy
+
+        # compute the model from all sequences of matrices
+        command = ['python', '-m', 'fstg_toolkit', 'build',
+                   '--max-cpus', str(config.max_processing_cpus),
+                   '-o', str(output_path)]
+
+        if not dataset.include_raw:
+            command.append('--no-raw')
+
+        command += [str(dataset.areas_file),
+                    *list(map(lambda x: str(x), dataset.matrices_files))]
+        subprocess.run(command, check=True, capture_output=True)
+
+        # compute the metrics
+        if dataset.compute_metrics:
+            command = ['python', '-m', 'fstg_toolkit', 'metrics',
+                       '--max-cpus', str(config.max_processing_cpus),
+                       str(output_path)]
+            subprocess.run(command, check=True, capture_output=True)
+
+        # register output to get a token
+        return get_data_file_db().add(output_path)
+    except Exception:
+        raise
+    finally:
+        # TODO we could use async functions for IO (at least files) to improve performances
+        # clean input files
+        shutil.rmtree(dataset.areas_file.parent)
+        for p in set(map(lambda x: x.parent, dataset.matrices_files)):
+            shutil.rmtree(p)
 
 
 @dataclass(frozen=True)
@@ -262,10 +300,7 @@ class DatasetProcessingManager(SQLiteConnected):
                   str(dataset.areas_file), ";".join(str(p) for p in dataset.matrices_files), job_id))
 
     def submit(self, dataset: SubmittedDataset):
-        # TODO create the real processing task
-        task = lambda x: x
-        args = ["Test"]
-        job_id = get_processing_queue().submit(task, *args)
+        job_id = get_processing_queue().submit(_process_dataset, dataset)
         self.__insert_record(dataset, job_id)
 
     def list(self, limit: int = 30) -> list[DatasetResult]:
