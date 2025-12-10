@@ -232,13 +232,13 @@ def metrics(dataset_path: Path, max_cpus: int):
     dataset = GraphsDataset.from_filepath(dataset_path)
 
     # calculate spatial metrics
-    with click.progressbar(dataset.subjects.index, label="Calculating spatial metrics...", show_pos=True,
+    with click.progressbar(dataset.subjects.index, label="Calculating local metrics...", show_pos=True,
                            item_show_func=lambda a: '/'.join(a) if a is not None else None) as bar:
         spatial_df = gather_metrics(dataset, dataset.subjects.index, calculate_spatial_metrics,
                                     callback=lambda s: bar.update(1), max_cpus=max_cpus)
 
     # calculate temporal metrics
-    with click.progressbar(dataset.subjects.index, label="Calculating temporal metrics...", show_pos=True,
+    with click.progressbar(dataset.subjects.index, label="Calculating global metrics...", show_pos=True,
                            item_show_func=lambda a: '/'.join(a) if a is not None else None) as bar:
         temporal_df = gather_metrics(dataset, dataset.subjects.index, calculate_temporal_metrics,
                                      callback=lambda s: bar.update(1), max_cpus=max_cpus)

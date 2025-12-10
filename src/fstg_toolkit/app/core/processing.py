@@ -170,7 +170,7 @@ singleton_processing_queue: Optional[ProcessingQueue] = None
 def get_processing_queue() -> ProcessingQueue:
     global  singleton_processing_queue
 
-    if not singleton_processing_queue:
+    if not singleton_processing_queue and config.is_configured('db_path'):
         monitor = JobStatusMonitor(db_path=config.db_path)
         singleton_processing_queue = ProcessingQueue(
             max_workers=config.max_processing_queue_workers, listener=monitor)
@@ -321,7 +321,7 @@ singleton_processing_manager: Optional[DatasetProcessingManager] = None
 def get_dataset_processing_manager() -> DatasetProcessingManager:
     global singleton_processing_manager
 
-    if not singleton_processing_manager:
+    if not singleton_processing_manager and config.is_configured('db_path'):
         singleton_processing_manager = DatasetProcessingManager(config.db_path)
 
     return singleton_processing_manager

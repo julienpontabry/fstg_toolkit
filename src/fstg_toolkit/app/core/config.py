@@ -16,6 +16,9 @@ class __Config:
     max_processing_queue_workers: int = 1
     max_processing_cpus: int = 4
 
+    def is_configured(self, name) -> bool:
+        return super().__getattribute__(name) is not None
+
     def __getattribute__(self, name: str) -> Any:
         if value := super().__getattribute__(name):
             return value

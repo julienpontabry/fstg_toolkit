@@ -69,7 +69,8 @@ app = Dash(__name__, title="fSTG-View - A web-based viewer for spatio-temporal g
            suppress_callback_exceptions=True)
 
 # configuration of the uploader system
-du.configure_upload(app, str(config.upload_path))
+if config.is_configured('upload_path'):
+    du.configure_upload(app, str(config.upload_path))
 
 # app's main layout
 app.layout = html.Div([
@@ -104,20 +105,21 @@ def store_current_break_width(breakpoint_name, breakpoint_width):
 # Since those callbacks are not useful practical, they are used to pass the callbacks to stores
 # and other callbacks.
 
-@du.callback(
-    output=Output('store-last-uploaded-areas-file', 'data'),
-    id='upload-areas-file'
-)
-def on_areas_upload(status: du.uploadstatus):
-    return str(status.uploaded_files[0]) if status.uploaded_files else None
+if config.is_configured('upload_path'):
+    @du.callback(
+        output=Output('store-last-uploaded-areas-file', 'data'),
+        id='upload-areas-file'
+    )
+    def on_areas_upload(status: du.uploadstatus):
+        return str(status.uploaded_files[0]) if status.uploaded_files else None
 
 
-@du.callback(
-    output=Output('store-last-uploaded-matrices-files', 'data'),
-    id='upload-matrices-files'
-)
-def on_matrices_upload(status: du.uploadstatus):
-    return [str(f) for f in status.uploaded_files]
+    @du.callback(
+        output=Output('store-last-uploaded-matrices-files', 'data'),
+        id='upload-matrices-files'
+    )
+    def on_matrices_upload(status: du.uploadstatus):
+        return [str(f) for f in status.uploaded_files]
 
 
 # NOTE the following are additional routes
