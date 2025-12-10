@@ -31,7 +31,7 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Any
 
 import dash
@@ -69,7 +69,7 @@ def __make_status_badge(status: Optional[ProcessingJobStatus]) -> dbc.Badge:
 
 
 def __format_time_ago(timestamp: datetime) -> str:
-    diff = datetime.now() - timestamp
+    diff = datetime.now(timezone.utc) - timestamp
 
     if diff.days > 0:
         return f"{diff.days} day{'s' if diff.days > 1 else ''} ago"

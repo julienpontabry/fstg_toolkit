@@ -30,8 +30,9 @@
 #
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
+
 import shutil
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TypeVar, Callable, Optional, Dict, Any
 from dataclasses import dataclass
 from pathlib import Path
@@ -316,7 +317,7 @@ class DatasetProcessingManager(SQLiteConnected):
             return [DatasetResult(
                         dataset=SubmittedDataset.from_record(row),
                         job_status=ProcessingJobStatus.from_value(row['status']),
-                        submitted_at=datetime.fromisoformat(row['submitted_at']),
+                        submitted_at=datetime.fromisoformat(row['submitted_at']).replace(tzinfo=timezone.utc),
                         result=row['result'],
                         error=row['error'])
                     for row in rows]
