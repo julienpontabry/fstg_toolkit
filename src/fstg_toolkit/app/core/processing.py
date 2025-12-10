@@ -73,12 +73,12 @@ class ProcessingQueue:
         self.futures: Dict[str, Future] = {}
         self.listener = listener
 
-    def __process(self, job_id: str, func: Callable[..., T], *args, **kwargs) -> T:
+    def __process(self, job_id: str, func: Callable[[str, ...], T], *args, **kwargs) -> T:
         try:
             if self.listener:
                 self.listener.on_job_started(job_id)
 
-            result = func(*args, **kwargs)
+            result = func(job_id, *args, **kwargs)
 
             if self.listener:
                 self.listener.on_job_completed(job_id, result)
@@ -89,7 +89,7 @@ class ProcessingQueue:
                 self.listener.on_job_failed(job_id, ex)
             raise ex
 
-    def submit(self, func: Callable[..., T], *args, **kwargs) -> str:
+    def submit(self, func: Callable[[str, ...], T], *args, **kwargs) -> str:
         job_id = str(uuid.uuid4())
         self.futures[job_id] = self.executor.submit(self.__process, job_id, func, *args, **kwargs)
 
@@ -226,9 +226,9 @@ class SubmittedDataset:
             matrices_files=[Path(s) for s in record['matrices_paths'].split(';')])
 
 
-def _process_dataset(dataset: SubmittedDataset) -> Optional[str]:
+def _process_dataset(job_id: str, dataset: SubmittedDataset) -> Optional[str]:
     try:
-        output_path = config.data_path / '1.zip'  # FIXME find a naming strategy
+        output_path = config.data_path / f'{job_id}.zip'
 
         # compute the model from all sequences of matrices
         command = ['python', '-m', 'fstg_toolkit', 'build',
