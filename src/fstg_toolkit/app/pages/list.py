@@ -35,7 +35,7 @@ from datetime import datetime, timezone
 from typing import Optional, Any
 
 import dash
-from dash import html, callback, Input, Output, State, MATCH
+from dash import html, dcc, callback, Input, Output, State, MATCH
 import dash_bootstrap_components as dbc
 
 from fstg_toolkit.app.core.processing import get_dataset_processing_manager, DatasetResult
@@ -92,7 +92,9 @@ def __fill_quick_bar(result: DatasetResult) -> html.Small:
     elements: list[Any] = [f"Submitted {__format_time_ago(result.submitted_at)}"]
 
     if result.result is not None:
-        elements.append(html.A(html.I(className='bi bi-clipboard-data'), href=f'/dashboard/{result.result}', target='new'))
+        elements += [
+            html.A(html.I(className='bi bi-clipboard-data'), href=f'/dashboard/{result.result}', target='new'),
+            html.A(html.I(className='bi bi-download'), href=f'/download/{result.result}', download='dataset.zip')]
 
     return html.Small(join(elements, sep=html.I(className='bi bi-dot')), className='text-muted')
 
@@ -106,7 +108,6 @@ def layout():
             html.P("Click on the dashboard icon of a dataset to open its dashboard in a new tab. "
                    "Click on the left arrow to expand the dataset card and see additional information."),
             html.Hr(),
-            # TODO currently url token of result is missing
             dbc.Container(dbc.Stack([
                 dbc.Card([
                     dbc.CardHeader(
@@ -143,6 +144,7 @@ def layout():
                 for i, result in enumerate(manager.list())
             ], gap=3), style={'max-width': '800px', 'align': 'center'})
         ], fluid='xxl')
+
 
 @callback(
     Output({'type': 'dataset-sup-info', 'index': MATCH}, 'is_open'),

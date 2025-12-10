@@ -40,9 +40,10 @@ import dash_uploader as du
 import dash_bootstrap_components as dbc
 from dash_breakpoints import WindowBreakpoints
 import plotly.io as pio
+from flask import send_from_directory, abort
 
 from .core.config import config
-
+from .core.datafilesdb import get_data_file_db
 
 # use orsjon to make JSON 5-10x faster
 pio.json.config.default_engine = 'orjson'
@@ -117,3 +118,15 @@ def on_areas_upload(status: du.uploadstatus):
 )
 def on_matrices_upload(status: du.uploadstatus):
     return [str(f) for f in status.uploaded_files]
+
+
+# NOTE the following are additional routes
+@app.server.route('/download/<token>')
+def download_dataset(token):
+    if token is None:
+        abort(404)
+
+    if file_path := get_data_file_db().get(token):
+        return send_from_directory(config.data_path, file_path.relative_to(config.data_path))
+    else:
+        abort(404)
