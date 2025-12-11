@@ -188,13 +188,13 @@ def reset_dataset_form(_, areas_uploaded_file, matrices_uploaded_files):
     if areas_uploaded_file is not None:
         Path(areas_uploaded_file).unlink()
         set_props('store-last-uploaded-areas-file', {'data': None})
-        set_props("store-uploaded-areas-file", {"data": None})
+        set_props('store-uploaded-areas-file', {'data': None})
 
     if matrices_uploaded_files is not None and len(matrices_uploaded_files) > 0:
         for f in matrices_uploaded_files:
             Path(f).unlink()
         set_props('store-last-uploaded-matrices-files', {'data': None})
-        set_props("store-uploaded-matrices-files", {"data": None})
+        set_props('store-uploaded-matrices-files', {'data': None})
 
     return "", ['include_raw', 'compute_metrics']
 
@@ -218,7 +218,7 @@ def submit_dataset_form(_, name, options, areas_uploaded_file, matrices_uploaded
             matrices_files=[Path(f) for f in matrices_uploaded_files] if matrices_uploaded_files else None)
 
         # Submit the dataset (no live check that the submission is going well;
-        # user must monitor the progress on the list page.
+        # user must monitor the progress on the list page).
         manager = get_dataset_processing_manager()
         manager.submit(dataset)
         for comp in ('dataset-name-input', 'upload-areas-file', 'upload-matrices-files',
