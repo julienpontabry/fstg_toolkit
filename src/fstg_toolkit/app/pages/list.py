@@ -35,21 +35,22 @@ from datetime import datetime, timezone
 from typing import Optional, Any
 
 import dash
-from dash import html, dcc, callback, Input, Output, State, MATCH
 import dash_bootstrap_components as dbc
+from dash import html, callback, Input, Output, State, MATCH
 
+from fstg_toolkit.app.core.processing import ProcessingJobStatus
 from fstg_toolkit.app.core.processing import get_dataset_processing_manager, DatasetResult
 from fstg_toolkit.app.core.utils import join
 from fstg_toolkit.app.views.common import get_navbar
-from fstg_toolkit.app.core.processing import ProcessingJobStatus
-
 
 dash.register_page(__name__, path='/list')
 
 
 def __status2color(job_status: ProcessingJobStatus) -> str:
     match job_status:
-        case ProcessingJobStatus.PENDING|ProcessingJobStatus.RUNNING:
+        case ProcessingJobStatus.PENDING:
+            return "info"
+        case ProcessingJobStatus.RUNNING:
             return "warning"
         case ProcessingJobStatus.COMPLETED:
             return "success"
