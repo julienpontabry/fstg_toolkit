@@ -36,7 +36,7 @@ import unittest
 import pandas as pd
 
 from fstg_toolkit.metrics import calculate_spatial_metrics, calculate_temporal_metrics
-from fstg_toolkit.metrics import get_spatial_metrics_registry, get_temporal_metrics_registry
+from fstg_toolkit.metrics import get_metrics_registry
 from fstg_toolkit.io import load_spatio_temporal_graph
 from test_common import graph_path
 
@@ -48,7 +48,7 @@ class MetricsCalculationTestCase(unittest.TestCase):
     def test_calculate_metrics(self):
         df = pd.DataFrame.from_records(calculate_spatial_metrics(self.graph))
         
-        registry = list(get_spatial_metrics_registry())
+        registry = list(get_metrics_registry('local'))
         for metric, _ in registry:
             self.assertIn(metric, df.columns)
 
@@ -57,7 +57,7 @@ class MetricsCalculationTestCase(unittest.TestCase):
     def test_calculate_temporal_metrics(self):
         df = pd.DataFrame.from_records(calculate_temporal_metrics(self.graph))
 
-        registry = list(get_temporal_metrics_registry())
+        registry = list(get_metrics_registry('global'))
         for metric, _ in registry:
             self.assertIn(metric, df.columns)
 

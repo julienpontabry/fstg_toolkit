@@ -145,7 +145,7 @@ class SQLiteConnected:
         Example
         -------
         Whithin an object subclassing this feature, you can write
-        >>> with self._get_connection() as conn:
+        >>> with self._get_connection() as conn:  # doctest: +SKIP
         ...     cursor = conn.cursor()
         ...     cursor.execute("SELECT * FROM some_table")
         """
