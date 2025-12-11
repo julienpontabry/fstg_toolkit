@@ -45,5 +45,6 @@ layout = dbc.Container([
         get_navbar(),
         html.H1("Welcome to fSTG-View"),
         html.P("This is the home page of the fSTG-View application.")
+        # TODO add instruction for dataset
     ],
     fluid='xxl')
