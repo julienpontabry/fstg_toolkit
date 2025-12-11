@@ -101,6 +101,45 @@ def __fill_quick_bar(result: DatasetResult) -> html.Small:
 
 def layout():
     manager = get_dataset_processing_manager()
+    if results := manager.list():
+        content = dbc.Container(dbc.Stack([
+                    dbc.Card([
+                        dbc.CardHeader(
+                            dbc.Row([
+                                dbc.Col([
+                                    html.I(className='bi bi-caret-right-fill', id={'type': 'dataset-arrow', 'index': i},
+                                           style={'font-size': '1.5rem', 'color': 'gray', 'cursor': 'pointer'})
+                                ], width=1, align='center'),
+                                dbc.Col([
+                                    html.H4(result.dataset.name, className='card-title'),
+                                    __fill_quick_bar(result),
+                                ]),
+                                dbc.Col([
+                                    html.Div(__make_status_badge(result.job_status), className='text-end')
+                                ], width=3, align='center')
+                            ])
+                        ),
+                        dbc.Collapse(
+                            dbc.CardBody(html.Ul([
+                                html.Li([html.B("Include raw data: "), 'Yes' if result.dataset.include_raw else 'No']),
+                                html.Li([html.B("Compute metrics: "), 'Yes' if result.dataset.compute_metrics else 'No']),
+                                html.Li([html.B("Areas description file: "), html.I(result.dataset.areas_file.name)]),
+                                html.Li([
+                                    html.B("Matrices files: "),
+                                    html.Ul([
+                                        html.Li(html.I(str(mat_path.name)))
+                                        for mat_path in result.dataset.matrices_files
+                                    ])
+                                ]),
+                                *([html.Hr(), html.P(result.error if result.error else "", className="text-danger text-center")]
+                                if result.error else [])
+                            ]), className='card-text'), is_open=False, id={'type': 'dataset-sup-info', 'index': i}),
+                    ])
+                    for i, result in enumerate(results)
+                ], gap=3), style={'max-width': '800px', 'align': 'center'})
+    else:
+        content = dbc.Container(html.P("No dataset submitted."))
+
     return dbc.Container(
         [
             get_navbar("/list"),
@@ -108,41 +147,7 @@ def layout():
             html.P("Click on the dashboard icon of a dataset to open its dashboard in a new tab. "
                    "Click on the left arrow to expand the dataset card and see additional information."),
             html.Hr(),
-            dbc.Container(dbc.Stack([
-                dbc.Card([
-                    dbc.CardHeader(
-                        dbc.Row([
-                            dbc.Col([
-                                html.I(className='bi bi-caret-right-fill', id={'type': 'dataset-arrow', 'index': i},
-                                       style={'font-size': '1.5rem', 'color': 'gray', 'cursor': 'pointer'})
-                            ], width=1, align='center'),
-                            dbc.Col([
-                                html.H4(result.dataset.name, className='card-title'),
-                                __fill_quick_bar(result),
-                            ]),
-                            dbc.Col([
-                                html.Div(__make_status_badge(result.job_status), className='text-end')
-                            ], width=3, align='center')
-                        ])
-                    ),
-                    dbc.Collapse(
-                        dbc.CardBody(html.Ul([
-                            html.Li([html.B("Include raw data: "), 'Yes' if result.dataset.include_raw else 'No']),
-                            html.Li([html.B("Compute metrics: "), 'Yes' if result.dataset.compute_metrics else 'No']),
-                            html.Li([html.B("Areas description file: "), html.I(result.dataset.areas_file.name)]),
-                            html.Li([
-                                html.B("Matrices files: "),
-                                html.Ul([
-                                    html.Li(html.I(str(mat_path.name)))
-                                    for mat_path in result.dataset.matrices_files
-                                ])
-                            ]),
-                            *([html.Hr(), html.P(result.error if result.error else "", className="text-danger text-center")]
-                            if result.error else [])
-                        ]), className='card-text'), is_open=False, id={'type': 'dataset-sup-info', 'index': i}),
-                ])
-                for i, result in enumerate(manager.list())
-            ], gap=3), style={'max-width': '800px', 'align': 'center'})
+            content
         ], fluid='xxl')
 
 
