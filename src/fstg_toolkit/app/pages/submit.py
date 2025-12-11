@@ -36,7 +36,7 @@ from pathlib import Path
 import dash
 import dash_bootstrap_components as dbc
 import dash_uploader as du
-from dash import html, dcc, callback, Input, Output, State, set_props, callback_context
+from dash import html, dcc, callback, Input, Output, State, set_props, callback_context, ALL
 
 from fstg_toolkit.app.core.processing import SubmittedDataset, InvalidSubmittedDataset, get_dataset_processing_manager
 from fstg_toolkit.app.views.common import get_navbar
@@ -115,7 +115,7 @@ def layout():
 
 def __make_file_list(files: list[str], prefix: str) -> html.Ul:
     return html.Ul([
-        html.Li([Path(f).name, " ", html.A("", className='bi bi-trash',
+        html.Li([Path(f).name, " ", html.A("", className='bi bi-trash', href='#',
                                            id={'type': f'{prefix}-remove-uploaded-file', 'index': f})])
         for f in files
     ])
@@ -125,7 +125,7 @@ def __make_file_list(files: list[str], prefix: str) -> html.Ul:
     Output('upload-areas-file-output', 'children'),
     Output('store-uploaded-areas-file', 'data'),
     Input('store-last-uploaded-areas-file', 'data'),
-    Input({'type': 'areas-remove-uploaded-file', 'index': dash.ALL}, 'n_clicks'),
+    Input({'type': 'areas-remove-uploaded-file', 'index': ALL}, 'n_clicks'),
     State('store-uploaded-areas-file', 'data'),
     prevent_initial_callbacks=True
 )
@@ -153,7 +153,7 @@ def update_uploaded_areas_file(last_uploaded_file, n_clicks, uploaded_file):
     Output('upload-matrices-files-output', 'children'),
     Output('store-uploaded-matrices-files', 'data'),
     Input('store-last-uploaded-matrices-files', 'data'),
-    Input({'type': 'matrices-remove-uploaded-file', 'index': dash.ALL}, 'n_clicks'),
+    Input({'type': 'matrices-remove-uploaded-file', 'index': ALL}, 'n_clicks'),
     State('store-uploaded-matrices-files', 'data'),
     prevent_initial_callbacks=True
 )
@@ -228,9 +228,12 @@ def submit_dataset_form(_, name, options, areas_uploaded_file, matrices_uploaded
         # user must monitor the progress on the list page).
         manager = get_dataset_processing_manager()
         manager.submit(dataset)
+
         for comp in ('dataset-name-input', 'upload-areas-file', 'upload-matrices-files',
                      'submit-dataset-button', 'reset-dataset-button'):
             set_props(comp, {'disabled': True})
+        for comp in ('areas-remove-uploaded-file', 'matrices-remove-uploaded-file'):
+            set_props({'type': comp, 'index': ALL}, {'style': {'pointerEvents': 'none', 'opacity': 0.5, 'cursor': 'not-allowed'}})
 
         set_props('dataset-form-alert',{
             'children': ["The dataset has been submitted for processing. You can monitor the progress on the ",
