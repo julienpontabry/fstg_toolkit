@@ -32,20 +32,19 @@
 # knowledge of the CeCILL-B license and that you accept its terms.
 
 import shutil
-from datetime import datetime, timezone
-from typing import TypeVar, Callable, Optional, Dict, Any
-from dataclasses import dataclass
-from pathlib import Path
-from abc import ABC, abstractmethod
-from enum import Enum
-import uuid
-from concurrent.futures import ThreadPoolExecutor, Future
 import subprocess
+import uuid
+from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor, Future
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from enum import Enum
+from pathlib import Path
+from typing import TypeVar, Callable, Optional, Dict, Any
 
 from .config import config
 from .datafilesdb import get_data_file_db
 from .utils import SQLiteConnected
-
 
 T = TypeVar('T')
 
@@ -264,6 +263,12 @@ class DatasetResult:
 class DatasetProcessingManager(SQLiteConnected):
     def __init__(self, db_path: Path):
         super().__init__(db_path)
+
+        # NOTE Triggers processing queue and monitoring creation if not
+        # already created. It is necessary as the processing manager
+        # depends on monitoring database.
+        _ = get_processing_queue()
+
         self.__init_db()
 
     def __init_db(self):
