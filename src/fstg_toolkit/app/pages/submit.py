@@ -82,6 +82,7 @@ form_buttons = html.Div([
     ], className='mb-3')
 
 
+# FIXME make upload ids different at each submission; using same ids causes pending jobs to fail
 layout = dbc.Container([
         get_navbar('/submit'),
 
