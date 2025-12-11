@@ -123,6 +123,7 @@ if config.is_configured('upload_path'):
 
 
 # NOTE the following are additional routes
+
 @app.server.route('/download/<token>')
 def download_dataset(token):
     if token is None:

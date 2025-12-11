@@ -50,6 +50,7 @@ name_input = html.Div([
         dbc.FormText("A descriptive name for the dataset."),
     ], className='mb-3')
 
+
 options_input = html.Div([
         dbc.Label("Options"),
         dbc.Checklist(options=[
@@ -60,21 +61,26 @@ options_input = html.Div([
         dbc.FormText("Select what will be included in the dataset. Note that the spatio-temporal graph modeling is included anyway."),
     ], className='mb-3')
 
-areas_upload = html.Div([
-        dbc.Label("Areas description file (CSV)"),
-        du.Upload(id='upload-areas-file', text="Drag and drop or click to select a file to upload.",
-                  max_files=1, filetypes=['csv'], text_completed="Last upload: "),
-        html.Div("", id='upload-areas-file-output'),
-        dbc.FormText("The CSV file describing the areas and their regions they belong to."),
+
+def areas_upload():
+    return html.Div([
+            dbc.Label("Areas description file (CSV)"),
+            du.Upload(id='upload-areas-file', text="Drag and drop or click to select a file to upload.",
+                      max_files=1, filetypes=['csv'], text_completed="Last upload: "),
+            html.Div("", id='upload-areas-file-output'),
+            dbc.FormText("The CSV file describing the areas and their regions they belong to."),
+        ], className='mb-3')
+
+
+def matrices_upload():
+    return html.Div([
+        dbc.Label("Matrices files (NPZ/NPY)"),
+        du.Upload(id='upload-matrices-files', text="Drag and drop or click to select files to upload.",
+                  max_files=10, filetypes=['npy', 'npz'], text_completed="Last upload: "),
+        html.Div("", id='upload-matrices-files-output'),
+        dbc.FormText("One or multiple (max. 10) numpy pickle files containing the timeseries of correlation matrices."),
     ], className='mb-3')
 
-matrices_upload = html.Div([
-    dbc.Label("Matrices files (NPZ/NPY)"),
-    du.Upload(id='upload-matrices-files', text="Drag and drop or click to select files to upload.",
-              max_files=10, filetypes=['npy', 'npz'], text_completed="Last upload: "),
-    html.Div("", id='upload-matrices-files-output'),
-    dbc.FormText("One or multiple (max. 10) numpy pickle files containing the timeseries of correlation matrices."),
-], className='mb-3')
 
 form_buttons = html.Div([
         dbc.Button("Submit", id='submit-dataset-button', color='primary'),
@@ -82,29 +88,29 @@ form_buttons = html.Div([
     ], className='mb-3')
 
 
-# FIXME make upload ids different at each submission; using same ids causes pending jobs to fail
-layout = dbc.Container([
-        get_navbar('/submit'),
+def layout():
+    return dbc.Container([
+            get_navbar('/submit'),
 
-        # form's layout
-        html.H1("Submit a new dataset"),
-        html.P("Use the form below to submit a new dataset to the fSTG-View application."),
-        html.P("The dataset must contain at least:"),
-        html.Ul([
-            html.Li("a CSV file describing the areas and their regions they belong to;"),
-            html.Li("one or more numpy pickle files (NPZ or NPY) containing the timeseries of correlation matrices.")
-        ]),
-        html.Hr(),
-        dbc.Form([name_input, options_input, areas_upload, matrices_upload, form_buttons]),
-        dbc.Alert(id='dataset-form-alert', children="", dismissable=True, fade=True, is_open=False),
+            # form's layout
+            html.H1("Submit a new dataset"),
+            html.P("Use the form below to submit a new dataset to the fSTG-View application."),
+            html.P("The dataset must contain at least:"),
+            html.Ul([
+                html.Li("a CSV file describing the areas and their regions they belong to;"),
+                html.Li("one or more numpy pickle files (NPZ or NPY) containing the timeseries of correlation matrices.")
+            ]),
+            html.Hr(),
+            dbc.Form([name_input, options_input, areas_upload(), matrices_upload(), form_buttons]),
+            dbc.Alert(id='dataset-form-alert', children="", dismissable=True, fade=True, is_open=False),
 
-        # storage to keep track of uploaded files
-        dcc.Store(id='store-uploaded-areas-file', storage_type='memory'),
-        dcc.Store(id='store-last-uploaded-areas-file', storage_type='memory'),
-        dcc.Store(id='store-last-uploaded-matrices-files', storage_type='memory'),
-        dcc.Store(id='store-uploaded-matrices-files', storage_type='memory')
-    ],
-    fluid='xxl')
+            # storage to keep track of uploaded files
+            dcc.Store(id='store-uploaded-areas-file', storage_type='memory'),
+            dcc.Store(id='store-last-uploaded-areas-file', storage_type='memory'),
+            dcc.Store(id='store-last-uploaded-matrices-files', storage_type='memory'),
+            dcc.Store(id='store-uploaded-matrices-files', storage_type='memory')
+        ],
+        fluid='xxl')
 
 
 def __make_file_list(files: list[str], prefix: str) -> html.Ul:
