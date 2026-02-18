@@ -38,9 +38,9 @@ from itertools import chain
 from pathlib import Path
 from typing import Optional
 
-import click
 import numpy as np
 import pandas as pd
+import rich_click as click
 from matplotlib import pyplot as plt
 from screeninfo import get_monitors
 

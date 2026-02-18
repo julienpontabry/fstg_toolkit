@@ -1,6 +1,6 @@
 [project]
 name = "fSTG-Toolkit"
-version = "0.8.0"
+version = "0.8.1"
 description = "Aan Open-Source Software for Spatio-Temporal Graph Analysis of fMRI data."
 authors = [
     {name = "Julien PONTABRY",email = "jpontabry@unistra.fr"}
@@ -20,6 +20,7 @@ dependencies = [
     "dash-daq (>=0.6.0,<0.7.0)",
     "dash-breakpoints (>=0.1.0,<0.2.0)",
     "dash-uploader (==0.7.0a2)",
+    "rich-click (>=1.9.7,<2.0.0)",
 ]
 
 
