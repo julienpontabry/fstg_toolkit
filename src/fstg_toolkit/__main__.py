@@ -344,10 +344,9 @@ def multipartite(ctx: click.core.Context):
     go_on = True
     n = len(ctx.obj)
     if n >= 100:
-        click.echo(f"There are {n} nodes in this graph; the multipartite plot has "
-                   "not been optimized for big graphs!", err=True)
-        answer = click.prompt("Do you really want to continue?",
-                              type=click.Choice(["yes", "no"]), default="no")
+        console.print(f"[yellow]⚠️  There are {n} nodes in this graph; the multipartite plot has "
+                       "not been optimized for big graphs![/yellow]")
+        answer = Prompt.ask("Do you really want to continue?", choices=["yes", "no"], default="no")
         go_on = answer == 'yes'
 
     if go_on:
@@ -368,8 +367,8 @@ def spatial(ctx: click.core.Context, time: int):
     """
     max_time = ctx.obj.graph['max_time']
     if time > max_time:
-        click.echo(f"The graph as a maximum time of {max_time} and "
-                   f"requested time is greater ({time}>{max_time})!")
+        error_console.print(f"The graph as a maximum time of {max_time} and "
+                            f"requested time is greater ({time}>{max_time})!")
     else:
         time = min(time, max_time)
         fig, axe = plt.subplots(layout='constrained', **__figure_screen_setup())
