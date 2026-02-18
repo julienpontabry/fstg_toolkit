@@ -11,18 +11,23 @@ dependencies = [
     "networkx (>=3.4.2,<4.0.0)",
     "pandas (>=2.2.3,<3.0.0)",
     "numpy (>=2.2.3,<3.0.0)",
-    "matplotlib (>=3.10.1,<4.0.0)",
     "click (>=8.1.8,<9.0.0)",
+    "rich-click (>=1.9.7,<2.0.0)",
     "screeninfo (>=0.8.1,<0.9.0)",
+]
+
+[project.optional-dependencies]
+dashboard = [
     "orjson (>=3.10.16,<4.0.0)",
     "dash (>=3.0.2,<4.0.0)",
     "dash-bootstrap-components (>=2.0.0,<3.0.0)",
     "dash-daq (>=0.6.0,<0.7.0)",
     "dash-breakpoints (>=0.1.0,<0.2.0)",
     "dash-uploader (==0.7.0a2)",
-    "rich-click (>=1.9.7,<2.0.0)",
 ]
-
+plot = [
+    "matplotlib (>=3.10.1,<4.0.0)",
+]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
