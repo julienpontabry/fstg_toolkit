@@ -122,7 +122,8 @@ def _build_graph(name: str, matrix: np.ndarray, areas: pd.DataFrame, corr_thresh
             matrix, areas, corr_thr=corr_threshold, abs_thr=absolute_thresholding,
             area_col_name=areas_column_name, region_col_name=regions_column_name)
     except Exception as ex:
-        click.echo(f"Error while processing {name}: {ex}", err=True)
+        error_console.print(f"Error while processing {name}: {ex}")
+        error_console.print_exception()
         return name, None
 
 
@@ -192,9 +193,9 @@ def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], 
     keys = list(matrices.keys())
 
     if select:
-        click.echo("The following sequences of matrices are available from the file:")
-        click.echo(";\n".join(keys) + ".")
-        chosen = click.prompt("Which one to process?", default=keys[0])
+        console.print("The following sequences of matrices are available from the file:")
+        console.print(Panel.fit("\n".join(keys)))
+        chosen = Prompt.ask("Which one to process?", default=keys[0])
         selected = [chosen]
     else:
         selected = keys
@@ -244,7 +245,8 @@ def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], 
             saver.save(output)
         console.print(f"Dataset saved to '{output}'.")
     except OSError as ex:
-        click.echo(f"Error while saving to {output}: {ex}", err=True)
+        error_console.print(f"Error while saving to {output}: {ex}")
+        error_console.print_exception()
         exit(1)
 
 
