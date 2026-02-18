@@ -41,12 +41,16 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 import rich_click as click
-from matplotlib import pyplot as plt
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, TextColumn, MofNCompleteColumn, BarColumn, TimeRemainingColumn, TaskProgressColumn
 from rich.prompt import Prompt
 from screeninfo import get_monitors
+
+try:
+    from matplotlib import pyplot as plt
+except ImportError:
+    plt = None
 
 from fstg_toolkit import generate_pattern, SpatioTemporalGraphSimulator, CorrelationMatrixSequenceSimulator
 from .app.core.config import config
@@ -56,7 +60,11 @@ from .factory import spatio_temporal_graph_from_corr_matrices
 from .graph import SpatioTemporalGraph
 from .io import save_spatio_temporal_graph, DataSaver, DataLoader, save_metrics
 from .metrics import calculate_spatial_metrics, calculate_temporal_metrics, gather_metrics
-from .visualization import spatial_plot, temporal_plot, multipartite_plot, DynamicPlot
+
+try:
+    from .visualization import spatial_plot, temporal_plot, multipartite_plot, DynamicPlot
+except ImportError:
+    spatial_plot = temporal_plot = multipartite_plot = DynamicPlot = None
 
 console = Console()
 error_console = Console(stderr=True, style="bold red")
@@ -654,6 +662,9 @@ def serve(data_path: Path, upload_path: Path, debug: bool, port: int, db_path: P
 
 
 if __name__ == '__main__':
-    cli.add_command(plot)
+    # FIXME how to inform the user to install optional dependencies?
+    if plt is not None and DynamicPlot is not None:
+        cli.add_command(plot)
+
     cli.add_command(simulate)
     cli()

@@ -31,10 +31,14 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
-from .graph import SpatioTemporalGraph
 from .factory import spatio_temporal_graph_from_corr_matrices
+from .graph import SpatioTemporalGraph
 from .io import load_spatio_temporal_graph, save_spatio_temporal_graph
 from .simulation import CorrelationMatrixSequenceSimulator, generate_pattern, SpatioTemporalGraphSimulator
-from .visualization import multipartite_plot, spatial_plot, temporal_plot
+
+try:
+    from .visualization import multipartite_plot, spatial_plot, temporal_plot
+except ImportError:
+    pass
 
 __version__ = '0.8.0'
