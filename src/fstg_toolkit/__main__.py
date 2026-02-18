@@ -30,11 +30,11 @@
 #
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
+
 import multiprocessing
 import re
 import zipfile
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from itertools import chain
 from pathlib import Path
 from typing import Optional
 
@@ -42,6 +42,8 @@ import numpy as np
 import pandas as pd
 import rich_click as click
 from matplotlib import pyplot as plt
+from rich.console import Console
+from rich.progress import Progress, TextColumn, MofNCompleteColumn, BarColumn, TimeRemainingColumn, TaskProgressColumn
 from screeninfo import get_monitors
 
 from fstg_toolkit import generate_pattern, SpatioTemporalGraphSimulator, CorrelationMatrixSequenceSimulator
@@ -53,6 +55,9 @@ from .graph import SpatioTemporalGraph
 from .io import save_spatio_temporal_graph, DataSaver, DataLoader, save_metrics
 from .metrics import calculate_spatial_metrics, calculate_temporal_metrics, gather_metrics
 from .visualization import spatial_plot, temporal_plot, multipartite_plot, DynamicPlot
+
+console = Console()
+error_console = Console(stderr=True, style="bold red")
 
 
 @click.group(context_settings=dict(help_option_names=['-h', '--help']))
@@ -117,6 +122,19 @@ def _build_graph(name: str, matrix: np.ndarray, areas: pd.DataFrame, corr_thresh
         click.echo(f"Error while processing {name}: {ex}", err=True)
         return name, None
 
+
+def _progress_factory(description: str, steps: bool = False, transient: bool = False) -> Progress:
+    columns = [
+        TextColumn(description),
+        BarColumn(),
+        MofNCompleteColumn() if steps else TaskProgressColumn(),
+        TimeRemainingColumn(compact=True, elapsed_when_finished=True),
+        TextColumn("{task.description}")
+    ]
+
+    return Progress(*columns, transient=transient)
+
+
 @cli.command()
 @click.argument('areas_description_path', type=click.Path(exists=True, path_type=Path))
 @click.argument('correlation_matrices_path', type=click.Path(exists=True, path_type=Path), nargs=-1)
@@ -155,13 +173,16 @@ def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], 
 
     # read input matrices
     try:
-        click.echo(f"Reading {len(correlation_matrices_path)} files...")
-        for cm in correlation_matrices_path:
-            click.echo(f"\t- {cm.name}")
-        matrices = list(chain.from_iterable(__read_load_np(cm) for cm in correlation_matrices_path))
-        matrices = {name: matrix for name, matrix in matrices}
+        with console.status(f"Reading {len(correlation_matrices_path)} files..."):
+            matrices = {}
+            for cm in correlation_matrices_path:
+                for name, matrix in __read_load_np(cm):
+                    matrices[name] = matrix
+                console.print(f"- red '{cm.name}'")
+        console.print(f"Red {len(correlation_matrices_path)} files.")
     except Exception as ex:
-        click.echo(f"Error while reading matrices: {ex}", err=True)
+        error_console.print(f"Error while reading matrices: {ex}")
+        error_console.print_exception()
         exit(1)
 
     # select the matrices to process
@@ -185,14 +206,16 @@ def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], 
         areas = pd.read_csv(areas_description_path, index_col='Id_Area')
         saver.add(areas)
     except Exception as ex:
-        click.echo(f"Error while reading areas description: {ex}", err=True)
+        error_console.print(f"Error while reading areas description: {ex}")
+        error_console.print_exception()
         exit(1)
 
     # build the graphs
     graphs = {}
 
-    with click.progressbar(matrices.items(), label="Building ST graphs...", show_pos=True,
-                           item_show_func=lambda a: str(a[0]) if a is not None else None) as bar:
+    with _progress_factory("Building ST graphs...", steps=True, transient=True) as bar:
+        task = bar.add_task("", total=len(matrices))
+
         futures = []
         num_workers = min(len(matrices), max_cpus)
 
@@ -207,14 +230,16 @@ def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], 
                 name, graph = future.result()
                 if graph:
                     graphs[name] = graph
-                bar.update(1)
+                bar.update(task, advance=1, description=name)
 
     saver.add(graphs)
+    console.print(f"Built {len(graphs)} graphs.")
 
     # save the graphs into a single zip file
     try:
-        click.echo("Saving dataset...")
-        saver.save(output)
+        with console.status("Saving dataset..."):
+            saver.save(output)
+        console.print(f"Dataset saved to '{output}'.")
     except OSError as ex:
         click.echo(f"Error while saving to {output}: {ex}", err=True)
         exit(1)
