@@ -233,7 +233,7 @@ def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], 
                 bar.update(task, advance=1, description=name)
 
     saver.add(graphs)
-    console.print(f"Built {len(graphs)} graphs.")
+    console.print(f"Built {len(graphs)} ST graphs.")
 
     # save the graphs into a single zip file
     try:
@@ -256,36 +256,40 @@ def metrics(dataset_path: Path, max_cpus: int):
     """
     dataset = GraphsDataset.from_filepath(dataset_path)
 
-    # calculate spatial metrics
-    with click.progressbar(dataset.subjects.index, label="Calculating local metrics...", show_pos=True,
-                           item_show_func=lambda a: '/'.join(a) if a is not None else None) as bar:
+    with _progress_factory("Calculating local metrics...", steps=True, transient=True) as bar:
+        task = bar.add_task("", total=len(dataset.subjects))
         spatial_df = gather_metrics(dataset, dataset.subjects.index, calculate_spatial_metrics,
-                                    callback=lambda s: bar.update(1), max_cpus=max_cpus)
+                                    callback=lambda s: bar.update(task, advance=1), max_cpus=max_cpus)
+    console.print(f"Local metrics calculated on {len(spatial_df)} spatial graphs.")
 
-    # calculate temporal metrics
-    with click.progressbar(dataset.subjects.index, label="Calculating global metrics...", show_pos=True,
-                           item_show_func=lambda a: '/'.join(a) if a is not None else None) as bar:
+    with _progress_factory("Calculating global metrics...", steps=True, transient=True) as bar:
+        task = bar.add_task("", total=len(dataset.subjects))
         temporal_df = gather_metrics(dataset, dataset.subjects.index, calculate_temporal_metrics,
-                                     callback=lambda s: bar.update(1), max_cpus=max_cpus)
+                                     callback=lambda s: bar.update(task, advance=1), max_cpus=max_cpus)
+    console.print(f"Global metrics calculated on {len(temporal_df)} ST graphs.")
 
     # TODO modify the data saver to accepts those files
     # save the metrics into the dataset
     with zipfile.ZipFile(dataset_path, 'a') as zfp:
         try:
-            click.echo("Saving spatial metrics...")
             # TODO handle already present files
-            with zfp.open('metrics_local.csv', 'w') as fp:
-                save_metrics(fp, spatial_df)
+            with console.status("Saving local metrics..."):
+                with zfp.open('metrics_local.csv', 'w') as fp:
+                    save_metrics(fp, spatial_df)
+            console.print(f"Local metrics saved in '{dataset_path}'.")
         except OSError as ex:
-            click.echo(f"Error while saving spatial metrics to {dataset_path}: {ex}", err=True)
+            error_console.print(f"Error while saving local metrics to {dataset_path}: {ex}")
+            error_console.print_exception()
 
         try:
-            click.echo("Saving temporal metrics...")
             # TODO handle already present files
-            with zfp.open('metrics_global.csv', 'w') as fp:
-                save_metrics(fp, temporal_df)
+            with console.status("Saving global metrics..."):
+                with zfp.open('metrics_global.csv', 'w') as fp:
+                    save_metrics(fp, temporal_df)
+            console.print(f"Global metrics saved in '{dataset_path}'.")
         except OSError as ex:
-            click.echo(f"Error while saving temporal metrics to {dataset_path}: {ex}", err=True)
+            error_console.print(f"Error while saving global metrics to {dataset_path}: {ex}")
+            error_console.print_exception()
 
 
 ## plotting ###################################################################
