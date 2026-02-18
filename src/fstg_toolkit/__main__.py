@@ -55,7 +55,7 @@ from .metrics import calculate_spatial_metrics, calculate_temporal_metrics, gath
 from .visualization import spatial_plot, temporal_plot, multipartite_plot, DynamicPlot
 
 
-@click.group()
+@click.group(context_settings=dict(help_option_names=['-h', '--help']))
 def cli():
     """Build, plot and simulate spatio-temporal graphs for fMRI data."""
     pass
