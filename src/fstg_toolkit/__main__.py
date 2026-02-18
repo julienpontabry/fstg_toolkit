@@ -43,7 +43,9 @@ import pandas as pd
 import rich_click as click
 from matplotlib import pyplot as plt
 from rich.console import Console
+from rich.panel import Panel
 from rich.progress import Progress, TextColumn, MofNCompleteColumn, BarColumn, TimeRemainingColumn, TaskProgressColumn
+from rich.prompt import Prompt
 from screeninfo import get_monitors
 
 from fstg_toolkit import generate_pattern, SpatioTemporalGraphSimulator, CorrelationMatrixSequenceSimulator
@@ -76,11 +78,12 @@ def __load_graph(filepath: Path) -> SpatioTemporalGraph:
         if n == 1:
             chosen = filenames[0]
         else:
-            click.echo("The following graphs are available from the file:")
-            click.echo(";\n".join(filenames) + ".")
-            chosen = click.prompt("Which graph to load?", default=filenames[0])
+            console.print("The following graphs are available from the input dataset:")
+            console.print(Panel.fit("\n".join(filenames)))
+            chosen = Prompt.ask("Which graph to load?", default=filenames[0])
     else:
-        click.echo("No graph found in data file.", err=True)
+        error_console.print("No graph found in data file.")
+        error_console.print_exception()
         exit(1)
 
     areas = loader.load_areas()
