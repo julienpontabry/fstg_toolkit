@@ -618,7 +618,7 @@ def show(graphs_data: Path, debug: bool, port: int, no_browser: bool):
     if not no_browser:
         click.launch(f'http://127.0.0.1:8050/dashboard/{token}')
     else:
-        click.echo(f"Dashboard for file {graphs_data} is at URL http://127.0.0.1:8050/dashboard/{token}")
+        console.print(f"Dashboard for file {graphs_data} is at URL http://127.0.0.1:8050/dashboard/{token}")
 
     from .app.fstg_view import app
     app.run(debug=debug, port=port)
@@ -647,7 +647,7 @@ def serve(data_path: Path, upload_path: Path, debug: bool, port: int, db_path: P
 
     # set up and run the dash app
     from .app.fstg_view import app
-    click.echo(f"Dashboard serving data from {data_path} is at URL http://127.0.0.1:8050")
+    console.print(f"Dashboard serving data from {data_path} is at URL http://127.0.0.1:8050")
     app.run(debug=debug, port=port)
 
 
