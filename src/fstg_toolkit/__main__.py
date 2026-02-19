@@ -56,18 +56,24 @@ except ImportError:
     __help_epilog.append(f"⚠️  Install '{__package__}[plot]' to unlock the plotting commands.")
 
 from fstg_toolkit import generate_pattern, SpatioTemporalGraphSimulator, CorrelationMatrixSequenceSimulator
-from .app.core.config import config
-from .app.core.datafilesdb import get_data_file_db, MemoryDataFilesDB, SQLiteDataFilesDB
-from .app.core.io import GraphsDataset
 from .factory import spatio_temporal_graph_from_corr_matrices
 from .graph import SpatioTemporalGraph
 from .io import save_spatio_temporal_graph, DataSaver, DataLoader, save_metrics
+from .app.core.io import GraphsDataset
 from .metrics import calculate_spatial_metrics, calculate_temporal_metrics, gather_metrics
 
 try:
     from .visualization import spatial_plot, temporal_plot, multipartite_plot, DynamicPlot
 except ImportError:
     spatial_plot = temporal_plot = multipartite_plot = DynamicPlot = None
+
+try:
+    from .app.fstg_view import app
+    from .app.core.config import config
+    from .app.core.datafilesdb import get_data_file_db, MemoryDataFilesDB, SQLiteDataFilesDB
+except ImportError as e:
+    app = config = get_data_file_db = MemoryDataFilesDB = SQLiteDataFilesDB = None
+    __help_epilog.append(f"⚠️  Install '{__package__}[dashboard]' to unlock the dashboard commands.")
 
 console = Console()
 error_console = Console(stderr=True, style="bold red")
@@ -614,7 +620,11 @@ def correlations(ctx: click.core.Context, graph_path: Path, threshold: float):
 
 ## showing #################################################################
 
-@cli.command()
+@click.group()
+def dashboard():
+    """Show dashboards for visualizing spatio-temporal graphs."""
+
+@dashboard.command()
 @click.argument('graphs-data',
                 type=click.Path(exists=True, dir_okay=False, readable=True, executable=False, path_type=Path))
 @click.option('--debug', is_flag=True, default=False,
@@ -634,11 +644,10 @@ def show(graphs_data: Path, debug: bool, port: int, no_browser: bool):
     else:
         console.print(f"Dashboard for file {graphs_data} is at URL http://127.0.0.1:8050/dashboard/{token}")
 
-    from .app.fstg_view import app
     app.run(debug=debug, port=port)
 
 
-@cli.command()
+@dashboard.command()
 @click.argument('data_path', type=click.Path(exists=True, file_okay=False, readable=True, writable=True, path_type=Path))
 @click.argument('upload_path', type=click.Path(exists=True, file_okay=False, readable=True, writable=True, path_type=Path))
 @click.option('--debug', is_flag=True, default=False,
@@ -660,14 +669,17 @@ def serve(data_path: Path, upload_path: Path, debug: bool, port: int, db_path: P
     get_data_file_db(requested_type=SQLiteDataFilesDB, db_path=db_path, debug=debug)
 
     # set up and run the dash app
-    from .app.fstg_view import app
     console.print(f"Dashboard serving data from {data_path} is at URL http://127.0.0.1:8050")
     app.run(debug=debug, port=port)
 
 
 if __name__ == '__main__':
-    if plt is not None and DynamicPlot is not None:
+    cli.add_command(simulate)
+
+    if plt is not None:
         cli.add_command(plot)
 
-    cli.add_command(simulate)
+    if app is not None:
+        cli.add_command(dashboard)
+
     cli()
