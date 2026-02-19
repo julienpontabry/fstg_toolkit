@@ -111,6 +111,13 @@ def __load_graph(filepath: Path) -> SpatioTemporalGraph:
 
 ## building and computing #####################################################
 
+
+@click.group()
+def graph():
+    """Build, calculate metrics and simulate graphs."""
+    pass
+
+
 def __read_load_np(path: Path) -> list[tuple[str, np.ndarray]]:
     """
     Reads a numpy file (.npz or .npy) and returns a list of tuples containing the matrices and their names.
@@ -158,7 +165,7 @@ def _progress_factory(description: str, steps: bool = False, transient: bool = F
     return Progress(*columns, transient=transient)
 
 
-@cli.command()
+@graph.command()
 @click.argument('areas_description_path', type=click.Path(exists=True, path_type=Path))
 @click.argument('correlation_matrices_path', type=click.Path(exists=True, path_type=Path), nargs=-1)
 @click.option('-o', '--output', type=click.Path(writable=True, path_type=Path),
@@ -269,7 +276,7 @@ def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], 
         exit(1)
 
 
-@cli.command
+@graph.command()
 @click.argument('dataset_path', type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option('--max-cpus', type=click.IntRange(1, multiprocessing.cpu_count()-1), default=multiprocessing.cpu_count()-1,
               help="Set the number of CPUs to use for the processing.")
@@ -542,7 +549,7 @@ class GraphSequenceDescription(click.ParamType):
 GRAPH_SEQUENCE_DESCRIPTION = GraphSequenceDescription()
 
 
-@click.group()
+@graph.group()
 @click.option('-o', '--output_path', type=click.Path(writable=True),
               default="output", show_default="a file named 'output' in the current directory",
               help="Path where to write the simulated output.")
@@ -675,7 +682,7 @@ def serve(data_path: Path, upload_path: Path, debug: bool, port: int, db_path: P
 
 
 if __name__ == '__main__':
-    cli.add_command(simulate)
+    cli.add_command(graph)
 
     if plt is not None:
         cli.add_command(plot)

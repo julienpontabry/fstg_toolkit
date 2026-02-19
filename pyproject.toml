@@ -1,6 +1,6 @@
 [project]
 name = "fSTG-Toolkit"
-version = "0.8.5"
+version = "0.8.6"
 description = "Aan Open-Source Software for Spatio-Temporal Graph Analysis of fMRI data."
 authors = [
     {name = "Julien PONTABRY",email = "jpontabry@unistra.fr"}
