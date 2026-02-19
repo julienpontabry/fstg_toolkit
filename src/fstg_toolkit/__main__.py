@@ -45,7 +45,8 @@ import pandas as pd
 import rich_click as click
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress import Progress, TextColumn, MofNCompleteColumn, BarColumn, TimeRemainingColumn, TaskProgressColumn
+from rich.progress import Progress, TextColumn, MofNCompleteColumn, BarColumn, TimeRemainingColumn, TaskProgressColumn, \
+    SpinnerColumn
 from rich.prompt import Prompt
 from screeninfo import get_monitors
 
@@ -158,8 +159,10 @@ def _build_graph(name: str, matrix: np.ndarray, areas: pd.DataFrame, corr_thresh
         return name, None
 
 
-def _progress_factory(description: str, steps: bool = False, transient: bool = False) -> Progress:
-    columns = [
+def _progress_factory(description: str, steps: bool = False, transient: bool = False,
+                      spinner: bool = True) -> Progress:
+    columns = [SpinnerColumn()] if spinner else []
+    columns += [
         TextColumn(description),
         BarColumn(),
         MofNCompleteColumn() if steps else TaskProgressColumn(),
