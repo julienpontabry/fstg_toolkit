@@ -31,6 +31,8 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
+__help_epilog = []
+
 import multiprocessing
 import re
 import zipfile
@@ -51,6 +53,7 @@ try:
     from matplotlib import pyplot as plt
 except ImportError:
     plt = None
+    __help_epilog.append(f"⚠️  Install '{__package__}[plot]' to unlock the plotting commands.")
 
 from fstg_toolkit import generate_pattern, SpatioTemporalGraphSimulator, CorrelationMatrixSequenceSimulator
 from .app.core.config import config
@@ -70,7 +73,8 @@ console = Console()
 error_console = Console(stderr=True, style="bold red")
 
 
-@click.group(context_settings=dict(help_option_names=['-h', '--help']))
+@click.group(context_settings=dict(help_option_names=['-h', '--help']),
+             epilog="\n".join(__help_epilog))
 def cli():
     """Build, plot and simulate spatio-temporal graphs for fMRI data."""
     pass
@@ -662,7 +666,6 @@ def serve(data_path: Path, upload_path: Path, debug: bool, port: int, db_path: P
 
 
 if __name__ == '__main__':
-    # FIXME how to inform the user to install optional dependencies?
     if plt is not None and DynamicPlot is not None:
         cli.add_command(plot)
 
