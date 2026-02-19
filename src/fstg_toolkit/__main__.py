@@ -81,6 +81,7 @@ error_console = Console(stderr=True, style="bold red")
 
 @click.group(context_settings=dict(help_option_names=['-h', '--help']),
              epilog="\n".join(__help_epilog))
+@click.version_option(None, '--version', '-v', package_name=__package__, prog_name=__package__)
 def cli():
     """Build, plot and simulate spatio-temporal graphs for fMRI data."""
     pass
