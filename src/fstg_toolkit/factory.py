@@ -101,7 +101,7 @@ def graph_from_corr_matrix(matrix: np.array, areas_desc: pd.DataFrame, corr_thr:
         for j in range(i):
             corr = float(matrix[i, j])
 
-            if corr_trans(corr) > corr_thr:
+            if corr_trans(corr) >= corr_thr:
                 graph.add_edge(i+1, j+1, correlation=corr)
 
     return graph
