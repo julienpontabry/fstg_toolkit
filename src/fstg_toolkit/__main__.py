@@ -79,8 +79,13 @@ console = Console()
 error_console = Console(stderr=True, style="bold red")
 
 
+class OrderedGroup(click.RichGroup):
+    def list_commands(self, ctx):
+        return list(self.commands)
+
+
 @click.group(context_settings=dict(help_option_names=['-h', '--help']),
-             epilog="\n".join(__help_epilog))
+             cls=OrderedGroup, epilog="\n".join(__help_epilog))
 @click.version_option(None, '--version', '-v', package_name=__package__, prog_name=__package__)
 def cli():
     """Build, plot and simulate spatio-temporal graphs for fMRI data."""
