@@ -187,7 +187,10 @@ def density(graph: SpatioTemporalGraph) -> float:
 @metric('local', "Modularity")
 def modularity(graph: SpatioTemporalGraph) -> float:
     communities = nx.community.greedy_modularity_communities(graph)
-    return nx.community.modularity(graph, communities)
+    try:
+        return nx.community.modularity(graph, communities)
+    except ZeroDivisionError:
+        return 0.0
 
 
 # @metric('local', "Mean number of areas")
