@@ -38,7 +38,7 @@ import re
 import zipfile
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple, Any, List
 
 import numpy as np
 import pandas as pd
@@ -85,7 +85,7 @@ class __OrderedGroup(click.RichGroup):
         return list(self.commands)
 
 
-@click.group(context_settings=dict(help_option_names=['-h', '--help']),
+@click.group(context_settings={'help_option_names': ['-h', '--help']},
              cls=__OrderedGroup, epilog="\n".join(__help_epilog))
 @click.version_option(None, '--version', '-v', package_name=__package__, prog_name=__package__)
 def cli():
@@ -124,7 +124,7 @@ def graph():
     pass
 
 
-def __read_load_np(path: Path) -> list[tuple[str, np.ndarray]]:
+def __read_load_np(path: Path) -> List[Tuple[str, np.ndarray]]:
     """
     Reads a numpy file (.npz or .npy) and returns a list of tuples containing the matrices and their names.
 
@@ -135,7 +135,7 @@ def __read_load_np(path: Path) -> list[tuple[str, np.ndarray]]:
 
     Returns
     -------
-    list[tuple[str, np.ndarray]]
+    List[Tuple[str, np.ndarray]]
         List of tuples (matrix, name) extracted from the file.
     """
     red = np.load(path)
@@ -148,7 +148,7 @@ def __read_load_np(path: Path) -> list[tuple[str, np.ndarray]]:
 
 def _build_graph(name: str, matrix: np.ndarray, areas: pd.DataFrame, corr_threshold: float,
                  absolute_thresholding: bool, areas_column_name: str,
-                 regions_column_name: str) -> tuple[str, Optional[SpatioTemporalGraph]]:
+                 regions_column_name: str) -> Tuple[str, Optional[SpatioTemporalGraph]]:
     try:
         return name, spatio_temporal_graph_from_corr_matrices(
             matrix, areas, corr_thr=corr_threshold, abs_thr=absolute_thresholding,
@@ -194,7 +194,7 @@ def _progress_factory(description: str, steps: bool = False, transient: bool = F
               help="Do not save the raw data along with the graphs.")
 @click.option('--max-cpus', type=click.IntRange(1, multiprocessing.cpu_count()-1), default=multiprocessing.cpu_count()-1,
               help="Set the number of CPUs to use for the processing.")
-def build(areas_description_path: Path, correlation_matrices_path: tuple[Path], output: Path,
+def build(areas_description_path: Path, correlation_matrices_path: Tuple[Path], output: Path,
           corr_threshold: float, absolute_thresholding: bool, areas_column_name: str, regions_column_name: str,
           select: bool, no_raw: bool, max_cpus: int):
     """Build spatio-temporal graphs from sequences of correlation matrices.
@@ -354,7 +354,7 @@ def __figure_screen_setup(res_factor: float = 0.75, size_factor: float = 0.75):
     dpi = max(monitor.width / screen_width, monitor.height / screen_height) * res_factor
     width = screen_width * size_factor / res_factor
     height = screen_height * size_factor / res_factor
-    return dict(figsize=(width, height), dpi=dpi)
+    return {'figsize': (width, height), 'dpi': dpi}
 
 
 @click.group()
@@ -386,7 +386,7 @@ def multipartite(ctx: click.core.Context):
         go_on = answer == 'yes'
 
     if go_on:
-        fig, axe = plt.subplots(layout='constrained', **__figure_screen_setup())
+        _, axe = plt.subplots(layout='constrained', **__figure_screen_setup())
         multipartite_plot(ctx.obj, ax=axe)
         plt.show()
 
@@ -407,7 +407,7 @@ def spatial(ctx: click.core.Context, time: int):
                             f"requested time is greater ({time}>{max_time})!")
     else:
         time = min(time, max_time)
-        fig, axe = plt.subplots(layout='constrained', **__figure_screen_setup())
+        _, axe = plt.subplots(layout='constrained', **__figure_screen_setup())
         spatial_plot(ctx.obj, time, ax=axe)
         plt.show()
 
@@ -419,7 +419,7 @@ def temporal(ctx: click.core.Context):
 
     Displays all nodes and only the temporal edges.
     """
-    fig, axe = plt.subplots(layout='constrained', **__figure_screen_setup())
+    _, axe = plt.subplots(layout='constrained', **__figure_screen_setup())
     temporal_plot(ctx.obj, ax=axe)
     plt.show()
 
@@ -445,10 +445,10 @@ class GraphElementsDescription(click.ParamType):
         self.main_regex = re.compile(self.main_desc)
         self.elem_regex = re.compile(self.elem_desc)
 
-    def _convert_from_match(self, match: re.Match[str]) -> tuple[any,...]:
+    def _convert_from_match(self, match: re.Match[str]) -> Tuple[Any,...]:
         pass
 
-    def convert(self, value: any, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> any:
+    def convert(self, value: Any, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> Any:
         elements = []
 
         try:
@@ -471,7 +471,7 @@ class GraphElementsDescription(click.ParamType):
 class _NetworkDescription(GraphElementsDescription):
     elem_desc = r'\s*(?P<range>\d+(:\d+)?),(?P<id>\d+),(?P<strength>-?\d*.?\d+)'
 
-    def _convert_from_match(self, match: re.Match[str]) -> tuple[any, ...]:
+    def _convert_from_match(self, match: re.Match[str]) -> Tuple[Any, ...]:
         tmp = match.group('range').split(':')
         areas = int(tmp[0]) if len(tmp) == 1 else (int(tmp[0]), int(tmp[1]))
         region = int(match.group('id'))
@@ -482,7 +482,7 @@ class _NetworkDescription(GraphElementsDescription):
 class NetworksDescription(click.ParamType):
     _delegate = _NetworkDescription()
 
-    def convert(self, value: any, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> any:
+    def convert(self, value: Any, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> Any:
         if not isinstance(value, str):
             self.fail(f"{value!r} is not a valid networks description!")
         return [self._delegate.convert(network_desc, param, ctx)
@@ -494,7 +494,7 @@ NETWORKS_DESCRIPTION = NetworksDescription()
 class SpatialEdgesDescription(GraphElementsDescription):#click.ParamType):
     elem_desc = r'(?P<n1>\d+),(?P<n2>\d+),(?P<corr>-?\d*.\d+)'
 
-    def _convert_from_match(self, match: re.Match[str]) -> tuple[any,...]:
+    def _convert_from_match(self, match: re.Match[str]) -> Tuple[Any,...]:
         node1 = int(match.group('n1'))
         node2 = int(match.group('n2'))
         correlation = float(match.group('corr'))
@@ -508,14 +508,14 @@ class TemporalEdgesDescription(GraphElementsDescription):
     elem_desc = r'(?P<n1>\d+(-\d+)?),(?P<n2>\d+(-\d+)?)'
 
     @staticmethod
-    def __build_range(s: str) -> tuple[int, int] | int:
+    def __build_range(s: str) -> Tuple[int, int] | int:
         if '-' in s:
             tmp = s.split('-')
             return int(tmp[0]), int(tmp[1])
         else:
             return int(s)
 
-    def _convert_from_match(self, match: re.Match[str]) -> tuple[any,...]:
+    def _convert_from_match(self, match: re.Match[str]) -> Tuple[Any,...]:
         node1 = TemporalEdgesDescription.__build_range(match.group('n1'))
         node2 = TemporalEdgesDescription.__build_range(match.group('n2'))
 
@@ -537,7 +537,7 @@ TEMPORAL_EDGES_DESCRIPTION = TemporalEdgesDescription()
 
 
 class GraphSequenceDescription(click.ParamType):
-    def convert(self, value: any, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> any:
+    def convert(self, value: Any, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> Any:
         if not isinstance(value, str):
             self.fail(f"{value!r} is not a valid description!")
 
@@ -571,9 +571,9 @@ def simulate(ctx: click.core.Context, output_path: Path):
 @click.argument('spatial_edges', type=SPATIAL_EDGES_DESCRIPTION, required=False)
 @click.argument('temporal_edges', type=TEMPORAL_EDGES_DESCRIPTION, required=False)
 @click.pass_context
-def pattern(ctx: click.core.Context, networks: list[list[tuple[tuple[int, int], int, float]]],
-            spatial_edges: list[tuple[int, int, float]] | None,
-            temporal_edges: list[tuple[int, int, str]] | None):
+def pattern(ctx: click.core.Context, networks: List[List[Tuple[Tuple[int, int], int, float]]],
+            spatial_edges: List[Tuple[int, int, float]] | None,
+            temporal_edges: List[Tuple[int, int, str]] | None):
     """Generate a spatio-temporal graph pattern from a description.
 
     The input strings for networks, spatial edges, and temporal edges must follow specific formats.
@@ -606,7 +606,7 @@ def pattern(ctx: click.core.Context, networks: list[list[tuple[tuple[int, int], 
 @click.argument('patterns', nargs=-1, type=click.Path(exists=True))
 @click.argument('sequence_description', type=GRAPH_SEQUENCE_DESCRIPTION)
 @click.pass_context
-def sequence(ctx: click.core.Context, patterns: tuple[Path], sequence_description: list[str | int]):
+def sequence(ctx: click.core.Context, patterns: Tuple[Path], sequence_description: List[str | int]):
     """Generate a spatio-temporal graph from a sequence of patterns.
 
     PATTERNS are the paths to the pattern files used to generate the graph.
