@@ -32,16 +32,15 @@
 # knowledge of the CeCILL-B license and that you accept its terms.
 
 """Defines helpers for inputs/outputs."""
+import json
 from dataclasses import dataclass, field
-from io import BytesIO
 from pathlib import Path
 from typing import Optional, Callable, List, Tuple, Dict, LiteralString, IO
-from zipfile import ZipFile, ZIP_DEFLATED
-import json
+from zipfile import ZipFile
 
+import networkx as nx
 import numpy as np
 import pandas as pd
-import networkx as nx
 
 from .graph import RC5, SpatioTemporalGraph
 
@@ -263,6 +262,10 @@ class DataLoader:
         Load areas and list available graph and matrix filenames.
     """
     filepath: Path
+
+    def __post_init__(self):
+        if not self.filepath.exists() or self.filepath.is_dir():
+            raise FileNotFoundError()
 
     @property
     def __within_archive(self):
