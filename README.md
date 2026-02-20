@@ -1,3 +1,4 @@
+![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fjulienpontabry%2Ffstg_toolkit%2Frefs%2Fheads%2Fmain%2Fpyproject.toml)
 [![CI](https://github.com/julienpontabry/fstg_toolkit/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/julienpontabry/fstg_toolkit/actions/workflows/ci.yml)
 
 # fSTG Toolkit: an Open-Source Software for Spatio-Temporal Graph Analysis of fMRI data
