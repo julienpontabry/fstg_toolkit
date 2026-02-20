@@ -1,0 +1,9 @@
+services:
+  spminer:
+    build: .
+    container_name: spminer
+    volumes:
+      - ./results_batch:/app/results_batch
+    ports:
+      - "8080:8080"
+  
