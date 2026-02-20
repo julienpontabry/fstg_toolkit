@@ -164,12 +164,12 @@ def subgraph_nodes(graph: nx.Graph, **conditions: Any) -> nx.Graph:
     NodeView((1, 2, 3, 4))
     """
     return graph.subgraph([n for n, d in graph.nodes(data=True)
-                           if all([__check_data(d, k, v) for k, v in conditions.items()])])
+                           if all(__check_data(d, k, v) for k, v in conditions.items())])
 
 
 def subgraph_edges(graph: nx.Graph, **conditions: Any) -> nx.Graph:
     return graph.edge_subgraph([(n1, n2) for n1, n2, d in graph.edges(data=True)
-                                if all([__check_data(d, k, v) for k, v in conditions.items()])])
+                                if all(__check_data(d, k, v) for k, v in conditions.items())])
 
 
 class SpatioTemporalGraph(nx.DiGraph):
