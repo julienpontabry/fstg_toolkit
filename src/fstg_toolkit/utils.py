@@ -31,5 +31,35 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
-# TODO wrapper call to spminer
-# TODO add frequent patterns classes
+from dataclasses import dataclass
+from pathlib import Path
+
+import docker
+
+
+@dataclass(frozen=True)
+class DockerImage:
+    image: docker.models.images.Image
+
+
+@dataclass(frozen=True)
+class DockerClient:
+    client: docker.DockerClient = docker.from_env()
+
+    def is_available(self) -> bool:
+        try:
+            self.client.ping()
+            return True
+        except docker.errors.DockerException:
+            return False
+
+    def load_image(self, tag: str, path: Path) -> DockerImage:
+        try:
+            return DockerImage(self.client.images.get(tag))
+        except docker.errors.ImageNotFound:
+            # TODO how to display on CLI that it is building (spinner display)
+            image, logs = self.client.images.build(path=str(path), tag=tag)
+            for chunk in logs:
+                if 'stream' in chunk:
+                    print(chunk['stream'], end='', flush=True)
+            return DockerImage(image)
