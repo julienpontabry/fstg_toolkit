@@ -105,6 +105,14 @@ class RC5(Enum):
         else:
             raise ValueError(f"Unable to find a transition named \"{name}\"!")
 
+    @staticmethod
+    def includes(name: str) -> bool:
+        try:
+            RC5.from_name(name)
+            return True
+        except ValueError:
+            return False
+
     def __str__(self) -> str:
         return self.name
 

@@ -35,7 +35,7 @@
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, Callable, List, Tuple, Dict, LiteralString, IO
+from typing import Optional, Callable, List, Tuple, Dict, LiteralString, IO, Any
 from zipfile import ZipFile
 
 import networkx as nx
@@ -191,6 +191,12 @@ def save_spatio_temporal_graph(graph: SpatioTemporalGraph, filepath: Path | str)
 def save_metrics(path_or_buf: str | Path | IO[bytes], metrics: pd.DataFrame) -> None:
     df: pd.DataFrame = metrics.copy()
 
+    # TODO better handle the (de)serialization of metrics
+    # serialize dictionaries if any
+    for col in df.select_dtypes(include=['object']).columns:
+        if any(isinstance(x, dict) and any(isinstance(k, RC5) for k in x.keys()) for x in df[col].dropna()):
+            df[col] = df[col].apply(lambda x: json.dumps({k.name: v for k, v in x.items()}) if isinstance(x, dict) else x)
+
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = ['.'.join(c) for c in df.columns]
 
@@ -201,8 +207,20 @@ def save_metrics(path_or_buf: str | Path | IO[bytes], metrics: pd.DataFrame) -> 
     df.to_csv(path_or_buf)
 
 
+def __to_rc5_if_possible(d: Dict[str, Any]) -> Dict[str|RC5, Any]:
+    return {RC5.from_name(k): v for k, v in d.items() if RC5.includes(k)}
+
+
 def load_metrics(path_or_buf: str | Path | IO[bytes]) -> pd.DataFrame:
     df = pd.read_csv(path_or_buf, index_col=0)
+
+    # TODO better handle the (de)serialization of metrics
+    # deserialize dictionaries if any
+    for col in df.select_dtypes(include=['object']).columns:
+        if any(isinstance(x, str) and x.strip().startswith('{') and x.strip().endswith('}')
+               for x in df[col].dropna()):
+            df[col] = df[col].apply(lambda x: __to_rc5_if_possible(json.loads(x))
+                if isinstance(x, str) and x.strip().startswith('{') and x.strip().endswith('}') else x)
 
     if '.' in df.index.name and all('.' in idx for idx in df.index):
         df.index = pd.MultiIndex.from_tuples([[int(i) if i.isdigit() else i for i in idx.split('.')]
