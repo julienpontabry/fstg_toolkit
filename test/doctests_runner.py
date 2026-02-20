@@ -34,12 +34,13 @@
 if __name__ == '__main__':
     import doctest
 
-    from fstg_toolkit import graph, factory, io, simulation
+    from fstg_toolkit import graph, factory, io, simulation, metrics, visualization
     from fstg_toolkit.app.core import utils
 
+    MODULES_TO_TEST = (graph, factory, io, simulation, utils, metrics, visualization)
     total_failed = 0
 
-    for module in (graph, factory, io, simulation, utils):
+    for module in MODULES_TO_TEST:
         result = doctest.testmod(module, optionflags=doctest.NORMALIZE_WHITESPACE)
         total_failed += result.failed
 
