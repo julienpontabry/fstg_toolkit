@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  unit-tests:
+  docstring-tests:
     runs-on: ubuntu-latest
     container:
       image: mambaorg/micromamba:bookworm-slim
@@ -24,7 +24,7 @@ jobs:
       - name: Run doctests
         run: micromamba run python test/doctests_runner.py
 
-  docstring-tests:
+  unit-tests:
     runs-on: ubuntu-latest
     container:
       image: mambaorg/micromamba:bookworm-slim
