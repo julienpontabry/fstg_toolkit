@@ -438,9 +438,12 @@ class EdgeCaseMetricsTestCase(unittest.TestCase):
         graph.graph['max_time'] = 0
         
         st_disconnected = SpatioTemporalGraph(graph, self.areas)
+        local_metrics = calculate_spatial_metrics(st_disconnected)
 
-        with self.assertRaises(ZeroDivisionError):
-            calculate_spatial_metrics(st_disconnected)
-
-
-# TODO test also the metrics
+        expected_metrics = [
+            {'Time': 0, 'Average degree': 3.0, 'Assortativity': float('nan'),
+             'Clustering coefficient': 0.0, 'Global efficiency': 0.0,
+             'Density': 0, 'Modularity': 0.0}]
+        for key in local_metrics[0]:
+            if not np.isnan(local_metrics[0][key]):
+                self.assertEqual(local_metrics[0][key], expected_metrics[0][key])
