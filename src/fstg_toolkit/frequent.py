@@ -31,5 +31,39 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
-# TODO wrapper call to spminer
+from pathlib import Path
+
+from utils import DockerClient, DockerNotAvailableException, DockerImage
+
+
+class SPMinerService:
+    def __init__(self):
+        try:
+            self.__docker_client = DockerClient()
+        except DockerNotAvailableException as e:
+            raise RuntimeError("Unable to initialize SPMiner service.") from e
+
+        self.__docker_image: DockerImage = None
+
+    def prepare(self):
+        if self.__docker_image is None:
+            tag = 'spminer:latest'
+            build_path = Path(__file__).parent / 'spminer'
+            self.__docker_image = self.__docker_client.load_local_image(tag, build_path)
+
+    def run(self):
+        input_dir: Path = Path('/tmp/input')
+        output_dir: Path = Path('/tmp/output')
+
+        self.__docker_image.run(
+            command='',
+            volumes={str(input_dir.resolve()): {'bind': '/app/data', 'mode': 'ro'},
+                     str(output_dir.resolve()): {'bind': '/app/results_batch', 'mode': 'rw'}},
+            remove=True,
+            stdout=True,
+            stderr=True
+        )
+
+        # TODO parse the logs to get progress
+
 # TODO add frequent patterns classes
