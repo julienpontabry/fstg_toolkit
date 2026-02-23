@@ -255,7 +255,7 @@ def main():
     print(f"  Node anchored: {NODE_ANCHORED}")
     print("="*70)
     
-    json_files = sorted(Path(DATA_FOLDER).glob('*.json'))
+    json_files = sorted(Path(DATA_FOLDER).rglob('*.json'))
     
     if not json_files:
         print(f"\n No JSON files found in {DATA_FOLDER}/")
