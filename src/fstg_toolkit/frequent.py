@@ -32,6 +32,7 @@
 # knowledge of the CeCILL-B license and that you accept its terms.
 
 from pathlib import Path
+from typing import Optional
 
 from .utils import DockerClient, DockerNotAvailableException, DockerImage
 
@@ -43,7 +44,7 @@ class SPMinerService:
         except DockerNotAvailableException as e:
             raise RuntimeError("Unable to initialize SPMiner service.") from e
 
-        self.__docker_image: DockerImage = None
+        self.__docker_image: Optional[DockerImage] = None
 
     def prepare(self):
         if self.__docker_image is None:
@@ -52,6 +53,8 @@ class SPMinerService:
             self.__docker_image = self.__docker_client.load_local_image(tag, build_path)
 
     def run(self):
+        self.prepare()  # makes sure docker image is set
+
         input_dir: Path = Path('/tmp/input')
         output_dir: Path = Path('/tmp/output')
 
