@@ -33,7 +33,7 @@
 
 from pathlib import Path
 
-from utils import DockerClient, DockerNotAvailableException, DockerImage
+from .utils import DockerClient, DockerNotAvailableException, DockerImage
 
 
 class SPMinerService:
