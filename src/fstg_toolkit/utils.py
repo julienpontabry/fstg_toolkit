@@ -33,7 +33,7 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Generator
+from typing import Generator, Any
 
 import docker
 
@@ -53,15 +53,28 @@ class DockerImage:
     client: docker.DockerClient
     image_tag: str
 
+    @staticmethod
+    def __get_rm_or_default(kwargs: dict, key: str, default: Any = None) -> Any:
+        if key in kwargs:
+            output = kwargs[key]
+            del kwargs[key]
+            return output
+        else:
+            return default
+
     def run(self, **kwargs) -> Generator[str, None, None]:
         if 'command' in kwargs and len(kwargs['command']) > 0:
             kwargs['command'] = kwargs['command'].split(' ')
 
+        stdout = self.__get_rm_or_default(kwargs, 'stdout', True)
+        stderr = self.__get_rm_or_default(kwargs, 'stderr', True)
+
         try:
             container = self.client.containers.create(image=self.image_tag, **kwargs)
             container.start()
-            for chunk in container.logs(stream=True, stderr=True, stdout=True, follow=True):
+            for chunk in container.logs(stream=True, stderr=stderr, stdout=stdout, follow=True):
                 yield chunk.decode()
+            container.remove()
         except docker.errors.ContainerError as e:
             raise DockerImageException("Container exited with non-zero code.") from e
         except docker.errors.ImageNotFound as e:
