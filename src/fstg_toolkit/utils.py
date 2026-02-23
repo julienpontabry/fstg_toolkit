@@ -88,7 +88,7 @@ class DockerNotAvailableException(DockerException):
         super().__init__("Docker is not available.")
 
 
-class DockerClient:
+class DockerLoader:
     def __init__(self):
         try:
             self.client = docker.from_env()
@@ -105,4 +105,4 @@ class DockerClient:
             for chunk in logs:
                 if 'stream' in chunk:
                     print(chunk['stream'], end='', flush=True)
-            return DockerImage(self, tag)
+            return DockerImage(self.client, tag)

@@ -34,13 +34,13 @@
 from pathlib import Path
 from typing import Optional
 
-from .utils import DockerClient, DockerNotAvailableException, DockerImage
+from .utils import DockerLoader, DockerNotAvailableException, DockerImage
 
 
 class SPMinerService:
     def __init__(self):
         try:
-            self.__docker_client = DockerClient()
+            self.__docker_loader = DockerLoader()
         except DockerNotAvailableException as e:
             raise RuntimeError("Unable to initialize SPMiner service.") from e
 
@@ -51,7 +51,7 @@ class SPMinerService:
             # TODO use an external config file?
             tag = 'spminer:latest'
             build_path = Path(__file__).parent.parent / 'spminer'
-            self.__docker_image = self.__docker_client.load_local_image(tag, build_path)
+            self.__docker_image = self.__docker_loader.load_local_image(tag, build_path)
 
     def run(self, input_dir: Path, output_dir: Path):
         self.prepare()  # makes sure docker image is set
