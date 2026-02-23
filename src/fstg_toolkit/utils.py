@@ -37,20 +37,36 @@ from pathlib import Path
 import docker
 
 
+class DockerException(Exception):
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class DockerImageException(DockerException):
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
 @dataclass(frozen=True)
 class DockerImage:
-    image: docker.models.images.Image
+    client: docker.DockerClient
+    image_tag: str
 
-
-class DockerException(Exception):
-    def __init__(self, message: str, original_exception: Exception):
-        super().__init__(message)
-        self.original_exception = original_exception
+    def run(self, command: str, **kwargs):
+        try:
+            output = self.client.containers.run(image=self.image_tag, command=command.split(' '), **kwargs)
+            return output.decode()
+        except docker.errors.ContainerError as e:
+            raise DockerImageException("Container exited with non-zero code.") from e
+        except docker.errors.ImageNotFound as e:
+            raise DockerImageException("Image not found.") from e
+        except docker.errors.APIError as e:
+            raise DockerException("Docker server returned an error.") from e
 
 
 class DockerNotAvailableException(DockerException):
-    def __init__(self, exception: Exception):
-        super().__init__(f"Docker is not available: {str(exception)}.", exception)
+    def __init__(self):
+        super().__init__("Docker is not available.")
 
 
 @dataclass(frozen=True)
@@ -61,14 +77,15 @@ class DockerClient:
         try:
             self.client.ping()
         except docker.errors.DockerException as e:
-            raise DockerNotAvailableException(e)
+            raise DockerNotAvailableException() from e
 
-    def load_image(self, tag: str, path: Path) -> DockerImage:
+    def load_local_image(self, tag: str, path: Path) -> DockerImage:
         try:
-            return DockerImage(self.client.images.get(tag))
+            _ = self.client.images.get(tag)
+            return DockerImage(self.client, tag)
         except docker.errors.ImageNotFound:
-            image, logs = self.client.images.build(path=str(path), tag=tag)
+            _, logs = self.client.images.build(path=str(path), tag=tag)
             for chunk in logs:
                 if 'stream' in chunk:
                     print(chunk['stream'], end='', flush=True)
-            return DockerImage(image)
+            return DockerImage(self, tag)
