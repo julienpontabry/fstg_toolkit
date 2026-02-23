@@ -35,6 +35,7 @@ __help_epilog = []
 
 import multiprocessing
 import re
+import tempfile
 import zipfile
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
@@ -350,11 +351,41 @@ def frequent(dataset_path: Path):
     DATASET_PATH is the path to spatio-temporal graphs built with the command 'build'.
     """
 
+    # load SPMiner service
     service = SPMinerService()
 
     with console.status("Loading SPMiner service..."):
         service.prepare()
     console.print("SPMiner service loaded.")
+
+    # process graphs in dataset
+    with tempfile.TemporaryDirectory() as input_dir:
+        input_dir = Path(input_dir)
+
+        # extract dataset's graphs in the input temporary directory
+        with console.status("Preparing dataset..."):
+            # TODO parallelize the graph extraction
+            # TODO display a progress bar
+            # FIXME better handle IO for datasets
+            with zipfile.ZipFile(dataset_path, 'r') as zfp:
+                for file in zfp.namelist():
+                    if Path(file).suffix == '.json':
+                        zfp.extract(file, input_dir)
+        console.print("Dataset prepared.")
+
+        # run service and gather output files
+        with tempfile.TemporaryDirectory() as output_dir:
+            output_dir = Path(output_dir)
+
+            with console.status("Running SPMiner analysis..."):
+                service.run(input_dir, output_dir)
+            console.print("SPMiner analysis completed.")
+
+            # TODO insert frequent patterns files into dataset
+            outputs = list(output_dir.rglob('*.json'))
+            print(len(outputs))
+            print(outputs)
+            # FIXME permission denied to remove the temporary file
 
 ## plotting ###################################################################
 
