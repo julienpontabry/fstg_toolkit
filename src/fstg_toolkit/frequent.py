@@ -53,21 +53,18 @@ class SPMinerService:
             build_path = Path(__file__).parent.parent / 'spminer'
             self.__docker_image = self.__docker_client.load_local_image(tag, build_path)
 
-    def run(self):
+    def run(self, input_dir: Path, output_dir: Path):
         self.prepare()  # makes sure docker image is set
 
-        input_dir: Path = Path('/tmp/input')
-        output_dir: Path = Path('/tmp/output')
-
-        self.__docker_image.run(
-            command='',
+        output = self.__docker_image.run(
             volumes={str(input_dir.resolve()): {'bind': '/app/data', 'mode': 'ro'},
                      str(output_dir.resolve()): {'bind': '/app/results_batch', 'mode': 'rw'}},
-            remove=True,
             stdout=True,
             stderr=True
         )
 
         # TODO parse the logs to get progress
+        for line in output:
+            print(line, end='', flush=True)
 
 # TODO add frequent patterns classes
