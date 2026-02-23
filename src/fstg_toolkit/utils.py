@@ -42,22 +42,31 @@ class DockerImage:
     image: docker.models.images.Image
 
 
+class DockerException(Exception):
+    def __init__(self, message: str, original_exception: Exception):
+        super().__init__(message)
+        self.original_exception = original_exception
+
+
+class DockerNotAvailableException(DockerException):
+    def __init__(self, exception: Exception):
+        super().__init__(f"Docker is not available: {str(exception)}.", exception)
+
+
 @dataclass(frozen=True)
 class DockerClient:
     client: docker.DockerClient = docker.from_env()
 
-    def is_available(self) -> bool:
+    def __post_init__(self):
         try:
             self.client.ping()
-            return True
-        except docker.errors.DockerException:
-            return False
+        except docker.errors.DockerException as e:
+            raise DockerNotAvailableException(e)
 
     def load_image(self, tag: str, path: Path) -> DockerImage:
         try:
             return DockerImage(self.client.images.get(tag))
         except docker.errors.ImageNotFound:
-            # TODO how to display on CLI that it is building (spinner display)
             image, logs = self.client.images.build(path=str(path), tag=tag)
             for chunk in logs:
                 if 'stream' in chunk:
