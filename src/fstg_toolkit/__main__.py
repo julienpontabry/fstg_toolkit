@@ -76,6 +76,12 @@ except ImportError as e:
     app = config = get_data_file_db = MemoryDataFilesDB = SQLiteDataFilesDB = None
     __help_epilog.append(f"⚠️  Install '{__package__}[dashboard]' to unlock the dashboard commands.")
 
+try:
+    from .frequent import SPMinerService
+except ImportError as e:
+    SPMinerService = None
+    __help_epilog.append(f"⚠️  Install '{__package__}[frequent]' to unlock the frequent patterns analysis command.")
+
 console = Console()
 error_console = Console(stderr=True, style="bold red")
 
@@ -330,6 +336,25 @@ def metrics(dataset_path: Path, max_cpus: int):
             error_console.print(f"Error while saving global metrics to {dataset_path}: {ex}")
             error_console.print_exception()
 
+
+@click.command()
+@click.argument('dataset_path', type=click.Path(exists=True, dir_okay=False, path_type=Path))
+def frequent(dataset_path: Path):
+    """Perform a frequent patterns analysis.
+
+    It relies on the SPMiner package. Frequent patterns will be written into the given dataset.
+
+    Note that loading the SPMiner docker service for the first time can take a while, as its
+    docker image is built at the first use. Later call will be much faster.
+
+    DATASET_PATH is the path to spatio-temporal graphs built with the command 'build'.
+    """
+
+    service = SPMinerService()
+
+    with console.status("Loading SPMiner service..."):
+        service.prepare()
+    console.print("SPMiner service loaded.")
 
 ## plotting ###################################################################
 
@@ -697,5 +722,8 @@ if __name__ == '__main__':
 
     if app is not None:
         cli.add_command(dashboard)
+
+    if SPMinerService is not None:
+        graph.add_command(frequent)
 
     cli()
