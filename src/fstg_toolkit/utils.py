@@ -69,12 +69,10 @@ class DockerNotAvailableException(DockerException):
         super().__init__("Docker is not available.")
 
 
-@dataclass(frozen=True)
 class DockerClient:
-    client: docker.DockerClient = docker.from_env()
-
-    def __post_init__(self):
+    def __init__(self):
         try:
+            self.client = docker.from_env()
             self.client.ping()
         except docker.errors.DockerException as e:
             raise DockerNotAvailableException() from e
