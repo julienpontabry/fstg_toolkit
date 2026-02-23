@@ -92,7 +92,7 @@ class __OrderedGroup(click.RichGroup):
 
 
 @click.group(context_settings={'help_option_names': ['-h', '--help']},
-             cls=__OrderedGroup, epilog="\n".join(__help_epilog))
+             cls=__OrderedGroup, epilog="\n\n".join(__help_epilog))
 @click.version_option(None, '--version', '-v', package_name=__package__, prog_name=__package__)
 def cli():
     """Build, plot and simulate spatio-temporal graphs for fMRI data."""
