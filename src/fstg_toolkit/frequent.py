@@ -48,8 +48,9 @@ class SPMinerService:
 
     def prepare(self):
         if self.__docker_image is None:
+            # TODO use an external config file?
             tag = 'spminer:latest'
-            build_path = Path(__file__).parent / 'spminer'
+            build_path = Path(__file__).parent.parent / 'spminer'
             self.__docker_image = self.__docker_client.load_local_image(tag, build_path)
 
     def run(self):
