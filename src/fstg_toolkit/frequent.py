@@ -31,6 +31,7 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -45,6 +46,7 @@ class SPMinerService:
             raise RuntimeError("Unable to initialize SPMiner service.") from e
 
         self.__docker_image: Optional[DockerImage] = None
+        self.__progress_reg = re.compile(r'^\[(\d+)/(\d+)]')
 
     def prepare(self):
         if self.__docker_image is None:
@@ -63,8 +65,11 @@ class SPMinerService:
             stderr=True
         )
 
-        # TODO parse the logs to get progress
         for line in output:
-            print(line, end='', flush=True)
+            if len(line) < 10:
+                if match := self.__progress_reg.match(line):
+                    # FIXME why does it slow down/block the output after the first one?
+                    print(int(match.group(1)), match.group(2))
+            # print(line, end='', flush=True)
 
 # TODO add frequent patterns classes
