@@ -375,20 +375,28 @@ def frequent(dataset_path: Path):
                     bar.update(task, advance=1, total=len(files))
         console.print("Dataset prepared.")
 
-        # run service and gather output files
         with tempfile.TemporaryDirectory() as output_dir:
             output_dir = Path(output_dir)
 
+            # run service and gather output files
             with _progress_factory("Running SPMiner...", steps=True, transient=True) as bar:
                 task = bar.add_task("", total=None)
                 for completed, total in service.run(input_dir, output_dir):
                     bar.update(task, completed=completed, total=total)
             console.print("SPMiner analysis completed.")
 
-            # TODO insert frequent patterns files into dataset
-            outputs = list(output_dir.rglob('*.json'))
-            print(len(outputs))
-            print(outputs)
+            # save found frequent patterns into the dataset
+            # TODO parallelize the patterns inclusion
+            # FIXME better handle IO for datasets
+            with _progress_factory("Saving frequent patterns...", steps=True, transient=True) as bar:
+                task = bar.add_task("", total=None)
+
+                with zipfile.ZipFile(dataset_path, 'a') as zfp:
+                    files = list(output_dir.rglob('*.json'))
+                    for file in files:
+                        zfp.write(str(file), str(file.relative_to(output_dir)))
+                        bar.update(task, advance=1, total=len(files))
+            console.print(f"Frequent patterns saved to dataset '{dataset_path}'.")
 
 ## plotting ###################################################################
 
