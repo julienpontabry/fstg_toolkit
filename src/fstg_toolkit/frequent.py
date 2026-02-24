@@ -31,11 +31,14 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
+import logging
 import re
 from pathlib import Path
 from typing import Optional
 
 from .utils import DockerHelper, DockerNotAvailableException, DockerImage
+
+logger = logging.getLogger()
 
 
 class SPMinerService:
@@ -69,7 +72,6 @@ class SPMinerService:
             if len(line) < 10:
                 if match := self.__progress_reg.match(line):
                     yield int(match.group('completed'))-1, int(match.group('total'))
-            # TODO log the full trace
-            # print(line, end='', flush=True)
+            logger.debug(line[:-1] if line[-1] == '\n' else line)
 
 # TODO add frequent patterns classes

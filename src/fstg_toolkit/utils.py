@@ -39,12 +39,15 @@ errors. It is designed to support the FSTG toolkit's functionality that requires
 Docker integration.
 """
 
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Generator, Any
 
 import docker
+
+logger = logging.getLogger()
 
 
 class DockerException(Exception):
@@ -199,5 +202,5 @@ class DockerHelper:
             _, logs = self.__client.images.build(path=str(path), tag=tag)
             for chunk in logs:
                 if 'stream' in chunk:
-                    print(chunk['stream'], end='', flush=True)
+                    logger.debug(chunk['stream'][:-1] if chunk['stream'][-1] == '\n' else chunk['stream'])
             return DockerImage(self.__client, tag)

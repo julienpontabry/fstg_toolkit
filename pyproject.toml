@@ -1,6 +1,6 @@
 [project]
 name = "fSTG-Toolkit"
-version = "0.8.6"
+version = "0.9.0"
 description = "Aan Open-Source Software for Spatio-Temporal Graph Analysis of fMRI data."
 authors = [
     {name = "Julien PONTABRY",email = "jpontabry@unistra.fr"}
@@ -14,6 +14,7 @@ dependencies = [
     "click (>=8.1.8,<9.0.0)",
     "rich-click (>=1.9.7,<2.0.0)",
     "screeninfo (>=0.8.1,<0.9.0)",
+    "pyyaml (>=6.0.3,<7.0.0)",
 ]
 
 [project.optional-dependencies]
@@ -34,6 +35,9 @@ frequent = [
 test = [
     "coverage (>=7.13.4,<8.0.0)"
 ]
+
+[tool.setuptools.package-data]
+fstg_toolkit = ["logging.yml"]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

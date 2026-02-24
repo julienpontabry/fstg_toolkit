@@ -33,17 +33,20 @@
 
 __help_epilog = []
 
+import logging.config
 import multiprocessing
 import re
 import tempfile
 import zipfile
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from importlib.resources import files
 from pathlib import Path
 from typing import Optional, Tuple, Any, List, Generator, Callable
 
 import numpy as np
 import pandas as pd
 import rich_click as click
+import yaml
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, TextColumn, MofNCompleteColumn, BarColumn, TimeRemainingColumn, TaskProgressColumn, \
@@ -82,6 +85,7 @@ try:
 except ImportError as e:
     SPMinerService = None
     __help_epilog.append(f"⚠️  Install '{__package__}[frequent]' to unlock the frequent patterns analysis command.")
+
 
 console = Console()
 error_console = Console(stderr=True, style="bold red")
@@ -765,6 +769,13 @@ def serve(data_path: Path, upload_path: Path, debug: bool, port: int, db_path: P
 
 
 if __name__ == '__main__':
+    # setup logging
+    logging_config_path = files(__package__).joinpath('logging.yml')
+    with logging_config_path.open() as f:
+        logging_config = yaml.safe_load(f.read())
+        logging.config.dictConfig(logging_config)
+
+    # setup CLI
     cli.add_command(graph)
 
     if plt is not None:
