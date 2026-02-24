@@ -363,14 +363,16 @@ def frequent(dataset_path: Path):
         input_dir = Path(input_dir)
 
         # extract dataset's graphs in the input temporary directory
-        with console.status("Preparing dataset..."):
+        with _progress_factory("Preparing dataset...", steps=True, transient=True) as bar:
+            task = bar.add_task("",  total=None)
+
             # TODO parallelize the graph extraction
-            # TODO display a progress bar
             # FIXME better handle IO for datasets
             with zipfile.ZipFile(dataset_path, 'r') as zfp:
-                for file in zfp.namelist():
-                    if Path(file).suffix == '.json':
-                        zfp.extract(file, input_dir)
+                files = [file for file in zfp.namelist() if Path(file).suffix == '.json']
+                for file in files:
+                    zfp.extract(file, input_dir)
+                    bar.update(task, advance=1, total=len(files))
         console.print("Dataset prepared.")
 
         # run service and gather output files
