@@ -389,7 +389,6 @@ def frequent(dataset_path: Path):
             outputs = list(output_dir.rglob('*.json'))
             print(len(outputs))
             print(outputs)
-            # FIXME permission denied to remove the temporary file
 
 ## plotting ###################################################################
 
