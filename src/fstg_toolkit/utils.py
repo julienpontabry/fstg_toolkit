@@ -31,6 +31,7 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Generator, Any
@@ -70,7 +71,10 @@ class DockerImage:
         stderr = self.__get_rm_or_default(kwargs, 'stderr', True)
 
         try:
-            container = self.client.containers.create(image=self.image_tag, **kwargs)
+            container = self.client.containers.create(
+                image=self.image_tag,
+                user=f'{os.getuid()}:{os.getgid()}',
+                **kwargs)
             container.start()
             for chunk in container.logs(stream=True, stderr=stderr, stdout=stdout, follow=True):
                 yield chunk.decode()

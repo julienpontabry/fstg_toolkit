@@ -45,5 +45,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# 5. Setup the permissions
+RUN chmod 1777 data_preprocessed_batch
+
 ## select either "t" or "st" 
 CMD ["python", "batch_process.py", "t"]
