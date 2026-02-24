@@ -46,7 +46,7 @@ class SPMinerService:
             raise RuntimeError("Unable to initialize SPMiner service.") from e
 
         self.__docker_image: Optional[DockerImage] = None
-        self.__progress_reg = re.compile(r'^\[(?P<advance>\d+)/(?P<total>\d+)]')
+        self.__progress_reg = re.compile(r'^\[(?P<completed>\d+)/(?P<total>\d+)]')
 
     def prepare(self):
         if self.__docker_image is None:
@@ -68,7 +68,7 @@ class SPMinerService:
         for line in output:
             if len(line) < 10:
                 if match := self.__progress_reg.match(line):
-                    yield int(match.group('advance'))-1, int(match.group('total'))
+                    yield int(match.group('completed'))-1, int(match.group('total'))
             # TODO log the full trace
             # print(line, end='', flush=True)
 

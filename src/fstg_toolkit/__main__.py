@@ -381,8 +381,8 @@ def frequent(dataset_path: Path):
 
             with _progress_factory("Running SPMiner...", steps=True, transient=True) as bar:
                 task = bar.add_task("", total=None)
-                for advance, total in service.run(input_dir, output_dir):
-                    bar.update(task, advance=advance, total=total)
+                for completed, total in service.run(input_dir, output_dir):
+                    bar.update(task, completed=completed, total=total)
             console.print("SPMiner analysis completed.")
 
             # TODO insert frequent patterns files into dataset
