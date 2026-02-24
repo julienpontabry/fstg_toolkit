@@ -79,13 +79,11 @@ class DockerImage:
     
     Attributes
     ----------
-    client : docker.DockerClient
-        The Docker client instance.
-    image_tag : str
+    tag : str
         The tag/name of the Docker image.
     """
-    client: docker.DockerClient
-    image_tag: str
+    __client: docker.DockerClient
+    tag: str
 
     @staticmethod
     def __get_rm_or_default(kwargs: dict, key: str, default: Any = None) -> Any:
@@ -117,7 +115,7 @@ class DockerImage:
         
         Parameters
         ----------
-        **kwargs : dict
+        **kwargs
             Additional arguments to pass to container creation.
             
         Yields
@@ -139,8 +137,8 @@ class DockerImage:
         stderr = self.__get_rm_or_default(kwargs, 'stderr', True)
 
         try:
-            container = self.client.containers.create(
-                image=self.image_tag,
+            container = self.__client.containers.create(
+                image=self.tag,
                 user=f'{os.getuid()}:{os.getgid()}',
                 **kwargs)
             container.start()
@@ -162,17 +160,11 @@ class DockerNotAvailableException(DockerException):
         super().__init__("Docker is not available.")
 
 
-class DockerLoader:
-    """A class for loading Docker images, either from local cache or by building them.
-    
-    Attributes
-    ----------
-    client : docker.DockerClient
-        The Docker client instance.
-    """
+class DockerHelper:
+    """A class for loading Docker images, either from local cache or by building them."""
 
     def __init__(self):
-        """Initialize the DockerLoader by creating a Docker client and testing the connection.
+        """Initialize the DockerHelper by creating a Docker client and testing the connection.
         
         Raises
         ------
@@ -180,8 +172,8 @@ class DockerLoader:
             If Docker is not available or cannot be accessed.
         """
         try:
-            self.client = docker.from_env()
-            self.client.ping()
+            self.__client = docker.from_env()
+            self.__client.ping()
         except docker.errors.DockerException as e:
             raise DockerNotAvailableException() from e
 
@@ -201,11 +193,11 @@ class DockerLoader:
             An instance of DockerImage representing the loaded image.
         """
         try:
-            _ = self.client.images.get(tag)
-            return DockerImage(self.client, tag)
+            _ = self.__client.images.get(tag)
+            return DockerImage(self.__client, tag)
         except docker.errors.ImageNotFound:
-            _, logs = self.client.images.build(path=str(path), tag=tag)
+            _, logs = self.__client.images.build(path=str(path), tag=tag)
             for chunk in logs:
                 if 'stream' in chunk:
                     print(chunk['stream'], end='', flush=True)
-            return DockerImage(self.client, tag)
+            return DockerImage(self.__client, tag)
