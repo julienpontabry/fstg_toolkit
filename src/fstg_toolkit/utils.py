@@ -31,6 +31,14 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
+"""Utility module for the FSTG toolkit.
+
+This module provides helper classes and functions for interacting with Docker containers,
+including loading Docker images, running containers, and handling Docker-related
+errors. It is designed to support the FSTG toolkit's functionality that requires
+Docker integration.
+"""
+
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -40,22 +48,63 @@ import docker
 
 
 class DockerException(Exception):
+    """Base exception class for Docker-related errors.
+    
+    Parameters
+    ----------
+    message : str
+        The error message describing the Docker-related issue.
+    """
+
     def __init__(self, message: str):
         super().__init__(message)
 
 
 class DockerImageException(DockerException):
+    """Exception class for Docker image-related errors.
+    
+    Parameters
+    ----------
+    message : str
+        The error message describing the Docker image-related issue.
+    """
+
     def __init__(self, message: str):
         super().__init__(message)
 
 
 @dataclass(frozen=True)
 class DockerImage:
+    """A class representing a Docker image with methods to run the image into containers.
+    
+    Attributes
+    ----------
+    client : docker.DockerClient
+        The Docker client instance.
+    image_tag : str
+        The tag/name of the Docker image.
+    """
     client: docker.DockerClient
     image_tag: str
 
     @staticmethod
     def __get_rm_or_default(kwargs: dict, key: str, default: Any = None) -> Any:
+        """Helper method to get and remove a key from kwargs dictionary.
+        
+        Parameters
+        ----------
+        kwargs : dict
+            The dictionary to search in.
+        key : str
+            The key to look for.
+        default : Any, optional
+            Default value to return if key is not found. Defaults to None.
+            
+        Returns
+        -------
+        Any
+            The value associated with the key, or the default value if key not found.
+        """
         if key in kwargs:
             output = kwargs[key]
             del kwargs[key]
@@ -64,6 +113,25 @@ class DockerImage:
             return default
 
     def run(self, **kwargs) -> Generator[str, None, None]:
+        """Run a container from this Docker image.
+        
+        Parameters
+        ----------
+        **kwargs : dict
+            Additional arguments to pass to container creation.
+            
+        Yields
+        ------
+        str
+            Output chunks from the container logs.
+            
+        Raises
+        ------
+        DockerImageException
+            If container exits with non-zero code or image is not found.
+        DockerException
+            If Docker server returns an error.
+        """
         if 'command' in kwargs and len(kwargs['command']) > 0:
             kwargs['command'] = kwargs['command'].split(' ')
 
@@ -88,12 +156,29 @@ class DockerImage:
 
 
 class DockerNotAvailableException(DockerException):
+    """Exception raised when Docker is not available or cannot be accessed."""
+
     def __init__(self):
         super().__init__("Docker is not available.")
 
 
 class DockerLoader:
+    """A class for loading Docker images, either from local cache or by building them.
+    
+    Attributes
+    ----------
+    client : docker.DockerClient
+        The Docker client instance.
+    """
+
     def __init__(self):
+        """Initialize the DockerLoader by creating a Docker client and testing the connection.
+        
+        Raises
+        ------
+        DockerNotAvailableException
+            If Docker is not available or cannot be accessed.
+        """
         try:
             self.client = docker.from_env()
             self.client.ping()
@@ -101,6 +186,20 @@ class DockerLoader:
             raise DockerNotAvailableException() from e
 
     def load_local_image(self, tag: str, path: Path) -> DockerImage:
+        """Load a Docker image, either from cache or by building it from a local path.
+        
+        Parameters
+        ----------
+        tag : str
+            The tag to assign to the Docker image.
+        path : Path
+            The path to the directory containing the Dockerfile.
+            
+        Returns
+        -------
+        DockerImage
+            An instance of DockerImage representing the loaded image.
+        """
         try:
             _ = self.client.images.get(tag)
             return DockerImage(self.client, tag)
