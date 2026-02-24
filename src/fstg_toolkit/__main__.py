@@ -39,7 +39,7 @@ import tempfile
 import zipfile
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-from typing import Optional, Tuple, Any, List
+from typing import Optional, Tuple, Any, List, Generator, Callable
 
 import numpy as np
 import pandas as pd
@@ -165,9 +165,12 @@ def _build_graph(name: str, matrix: np.ndarray, areas: pd.DataFrame, corr_thresh
         error_console.print_exception()
         return name, None
 
+from contextlib import contextmanager
 
-def _progress_factory(description: str, steps: bool = False, transient: bool = False,
-                      spinner: bool = True) -> Progress:
+@contextmanager
+def _progress_factory(description: str, message_after: Optional[str|Callable[[], str]] = None,
+                      steps: bool = False, transient: bool = False,
+                      spinner: bool = True) -> Generator[Progress, None, None]:
     columns = [SpinnerColumn()] if spinner else []
     columns += [
         TextColumn(description),
@@ -177,7 +180,12 @@ def _progress_factory(description: str, steps: bool = False, transient: bool = F
         TextColumn("{task.description}")
     ]
 
-    return Progress(*columns, transient=transient)
+    try:
+        with Progress(*columns, transient=transient) as bar:
+            yield bar
+    finally:
+        if message_after:
+            console.print(message_after if isinstance(message_after, str) else message_after())
 
 
 @graph.command()
@@ -258,7 +266,8 @@ def build(areas_description_path: Path, correlation_matrices_path: Tuple[Path], 
     # build the graphs
     graphs = {}
 
-    with _progress_factory("Building ST graphs...", steps=True, transient=True) as bar:
+    with _progress_factory("Building ST graphs...", lambda: f"Built {len(graphs)} ST graphs.",
+                           steps=True, transient=True) as bar:
         task = bar.add_task("", total=len(matrices))
 
         futures = []
@@ -278,7 +287,6 @@ def build(areas_description_path: Path, correlation_matrices_path: Tuple[Path], 
                 bar.update(task, advance=1, description=name)
 
     saver.add(graphs)
-    console.print(f"Built {len(graphs)} ST graphs.")
 
     # save the graphs into a single zip file
     try:
@@ -302,17 +310,19 @@ def metrics(dataset_path: Path, max_cpus: int):
     """
     dataset = GraphsDataset.from_filepath(dataset_path)
 
-    with _progress_factory("Calculating local metrics...", steps=True, transient=True) as bar:
+    with _progress_factory("Calculating local metrics...",
+                           lambda: f"Local metrics calculated on {len(spatial_df)} spatial graphs.",
+                           steps=True, transient=True) as bar:
         task = bar.add_task("", total=len(dataset.subjects))
         spatial_df = gather_metrics(dataset, dataset.subjects.index, calculate_spatial_metrics,
                                     callback=lambda s: bar.update(task, advance=1), max_cpus=max_cpus)
-    console.print(f"Local metrics calculated on {len(spatial_df)} spatial graphs.")
 
-    with _progress_factory("Calculating global metrics...", steps=True, transient=True) as bar:
+    with _progress_factory("Calculating global metrics...",
+                           lambda: f"Global metrics calculated on {len(temporal_df)} ST graphs.",
+                           steps=True, transient=True) as bar:
         task = bar.add_task("", total=len(dataset.subjects))
         temporal_df = gather_metrics(dataset, dataset.subjects.index, calculate_temporal_metrics,
                                      callback=lambda s: bar.update(task, advance=1), max_cpus=max_cpus)
-    console.print(f"Global metrics calculated on {len(temporal_df)} ST graphs.")
 
     # TODO modify the data saver to accepts those files
     # save the metrics into the dataset
@@ -363,32 +373,31 @@ def frequent(dataset_path: Path):
         input_dir = Path(input_dir)
 
         # extract dataset's graphs in the input temporary directory
-        with _progress_factory("Preparing dataset...", steps=True, transient=True) as bar:
+        with _progress_factory("Preparing dataset...", "Dataset prepared.", steps=True, transient=True) as bar:
             task = bar.add_task("",  total=None)
 
             # TODO parallelize the graph extraction
             # FIXME better handle IO for datasets
             with zipfile.ZipFile(dataset_path, 'r') as zfp:
-                files = [file for file in zfp.namelist() if Path(file).suffix == '.json']
+                files = [file for file in zfp.namelist() if Path(file).suffix == '.json' and Path(file).stem != 'motifs_enriched_t']
                 for file in files:
                     zfp.extract(file, input_dir)
                     bar.update(task, advance=1, total=len(files))
-        console.print("Dataset prepared.")
 
         with tempfile.TemporaryDirectory() as output_dir:
             output_dir = Path(output_dir)
 
             # run service and gather output files
-            with _progress_factory("Running SPMiner...", steps=True, transient=True) as bar:
+            with _progress_factory("Running SPMiner...", "SPMiner analysis completed.", steps=True, transient=True) as bar:
                 task = bar.add_task("", total=None)
                 for completed, total in service.run(input_dir, output_dir):
                     bar.update(task, completed=completed, total=total)
-            console.print("SPMiner analysis completed.")
 
             # save found frequent patterns into the dataset
             # TODO parallelize the patterns inclusion
             # FIXME better handle IO for datasets
-            with _progress_factory("Saving frequent patterns...", steps=True, transient=True) as bar:
+            with _progress_factory("Saving frequent patterns...", f"Frequent patterns saved to dataset '{dataset_path}'.",
+                                   steps=True, transient=True) as bar:
                 task = bar.add_task("", total=None)
 
                 with zipfile.ZipFile(dataset_path, 'a') as zfp:
@@ -396,7 +405,6 @@ def frequent(dataset_path: Path):
                     for file in files:
                         zfp.write(str(file), str(file.relative_to(output_dir)))
                         bar.update(task, advance=1, total=len(files))
-            console.print(f"Frequent patterns saved to dataset '{dataset_path}'.")
 
 ## plotting ###################################################################
 
