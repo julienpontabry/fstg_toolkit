@@ -185,17 +185,18 @@ def run_spminer(pkl_path, json_path, output_dir, mode, node_anchored=True):
     print(f'\n        SPMiner completed successfully')
     return True
 
-def process_single_graph(json_file, graph_name, mode):
+def process_single_graph(json_file, relative_path, mode):
     print(f'\n{"="*70}')
-    print(f'Processing: {graph_name} (mode: {mode})')
+    print(f'Processing: {relative_path.stem} (mode: {mode})')
     print(f'{"="*70}')
     
     try:
-        pkl_path = os.path.join(PREPROCESSED_FOLDER, f'{graph_name}_{mode}.pkl')
-        G = preprocess_graph(json_file, pkl_path, mode)
-        
-        graph_output_dir = os.path.join(OUTPUT_FOLDER, graph_name)
-        os.makedirs(graph_output_dir, exist_ok=True)
+        pkl_path = Path(PREPROCESSED_FOLDER) / relative_path.with_name(f'{relative_path.stem}_{mode}.pkl')
+        pkl_path.parent.mkdir(parents=True, exist_ok=True)
+        _ = preprocess_graph(json_file, pkl_path, mode)
+
+        graph_output_dir = Path(OUTPUT_FOLDER) / relative_path.with_suffix('')
+        graph_output_dir.mkdir(parents=True, exist_ok=True)
         
         success = run_spminer(pkl_path, str(json_file), graph_output_dir, mode, NODE_ANCHORED)
         
@@ -273,12 +274,12 @@ def main():
     task_num = 0
     
     for json_file in json_files:
-        graph_name = json_file.stem
+        relative_path = json_file.relative_to(DATA_FOLDER)
         
         for mode in modes:
             task_num += 1
             print(f'\n[{task_num}/{total_tasks}] ', end='')
-            process_single_graph(json_file, graph_name, mode)
+            process_single_graph(json_file, relative_path, mode)
     
     print(f'\n{"="*70}')
     print(' ALL GRAPHS PROCESSED')
