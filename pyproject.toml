@@ -6,6 +6,8 @@ authors = [
     {name = "Julien PONTABRY",email = "jpontabry@unistra.fr"}
 ]
 readme = "README.md"
+license = "CECILL-B"
+license-files = ["LICENSE"]
 requires-python = ">=3.12,<4.0"
 dependencies = [
     "networkx (>=3.4.2,<4.0.0)",
