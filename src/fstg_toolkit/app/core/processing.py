@@ -221,7 +221,7 @@ def _process_dataset(job_id: str, dataset: SubmittedDataset) -> Optional[str]:
         output_path = config.data_path / f'{job_id}.zip'
 
         # compute the model from all sequences of matrices
-        command = ['python', '-m', 'fstg_toolkit', 'build',
+        command = ['python', '-m', 'fstg_toolkit', 'graph', 'build',
                    '--max-cpus', str(config.max_processing_cpus),
                    '-o', str(output_path)]
 
@@ -234,7 +234,7 @@ def _process_dataset(job_id: str, dataset: SubmittedDataset) -> Optional[str]:
 
         # compute the metrics
         if dataset.compute_metrics:
-            command = ['python', '-m', 'fstg_toolkit', 'metrics',
+            command = ['python', '-m', 'fstg_toolkit', 'graph', 'metrics',
                        '--max-cpus', str(config.max_processing_cpus),
                        str(output_path)]
             subprocess.run(command, check=True, capture_output=True)
