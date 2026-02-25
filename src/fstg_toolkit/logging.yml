@@ -15,7 +15,7 @@ handlers:
     class: logging.handlers.RotatingFileHandler
     formatter: detailed
     filename: fstg_toolkit.log
-    maxBytes: 1024
+    maxBytes: 1_048_576
     backupCount: 3
 
 root:
