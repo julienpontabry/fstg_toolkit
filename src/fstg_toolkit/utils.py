@@ -40,12 +40,15 @@ Docker integration.
 """
 
 import logging
+import logging.config
 import os
 from dataclasses import dataclass
+from importlib.resources import files
 from pathlib import Path
-from typing import Generator, Any
+from typing import Generator, Any, Optional
 
 import docker
+import yaml
 
 logger = logging.getLogger()
 
@@ -204,3 +207,28 @@ class DockerHelper:
                 if 'stream' in chunk:
                     logger.debug(chunk['stream'][:-1] if chunk['stream'][-1] == '\n' else chunk['stream'])
             return DockerImage(self.__client, tag)
+
+
+def setup_logging(level: Optional[str], verbose: bool):
+    """Setup logging configuration for the package.
+
+    Parameters
+    ----------
+    level : str
+        The logging level. It should be a lower or upper case string matching a level of the logging package.
+    verbose : bool
+        The logging verbosity. If true, the logs will appear in the console as well.
+    """
+    if level is None:
+        return  # no logging in that case
+
+    config_path = files(__package__).joinpath('logging.yml')
+    with config_path.open('r') as file:
+        config = yaml.safe_load(file)
+
+    config['root']['level'] = level.upper()
+
+    if not verbose:  # console handler used only when verbose
+        config['root']['handlers'] = ['file']
+
+    logging.config.dictConfig(config)

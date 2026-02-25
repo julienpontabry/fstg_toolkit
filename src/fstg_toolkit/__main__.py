@@ -33,20 +33,17 @@
 
 __help_epilog = []
 
-import logging.config
 import multiprocessing
 import re
 import tempfile
 import zipfile
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from importlib.resources import files
 from pathlib import Path
 from typing import Optional, Tuple, Any, List, Generator, Callable
 
 import numpy as np
 import pandas as pd
 import rich_click as click
-import yaml
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, TextColumn, MofNCompleteColumn, BarColumn, TimeRemainingColumn, TaskProgressColumn, \
@@ -66,6 +63,7 @@ from .graph import SpatioTemporalGraph
 from .io import save_spatio_temporal_graph, DataSaver, DataLoader, save_metrics
 from .app.core.io import GraphsDataset
 from .metrics import calculate_spatial_metrics, calculate_temporal_metrics, gather_metrics
+from .utils import setup_logging
 
 try:
     from .visualization import spatial_plot, temporal_plot, multipartite_plot, DynamicPlot
@@ -98,10 +96,13 @@ class __OrderedGroup(click.RichGroup):
 
 @click.group(context_settings={'help_option_names': ['-h', '--help']},
              cls=__OrderedGroup, epilog="\n\n".join(__help_epilog))
-@click.version_option(None, '--version', '-v', package_name=__package__, prog_name=__package__)
-def cli():
+@click.version_option(package_name=__package__, prog_name=__package__)
+@click.option('--log-level', '-l', type=click.Choice(['debug', 'info', 'error']),
+              default=None, help="Set the logging level.")
+@click.option('--verbose', '-v', is_flag=True, default=False, help="Show logs into the console.")
+def cli(log_level: str, verbose: bool):
     """Build, plot and simulate spatio-temporal graphs for fMRI data."""
-    pass
+    setup_logging(log_level, verbose)
 
 
 ## data utils #################################################################
@@ -713,7 +714,7 @@ def correlations(ctx: click.core.Context, graph_path: Path, threshold: float):
     np.savez_compressed(ctx.obj, simulated=matrices)
 
 
-## showing #################################################################
+## showing ####################################################################
 
 @click.group()
 def dashboard():
@@ -768,14 +769,9 @@ def serve(data_path: Path, upload_path: Path, debug: bool, port: int, db_path: P
     app.run(debug=debug, port=port)
 
 
-if __name__ == '__main__':
-    # setup logging
-    logging_config_path = files(__package__).joinpath('logging.yml')
-    with logging_config_path.open() as f:
-        logging_config = yaml.safe_load(f.read())
-        logging.config.dictConfig(logging_config)
+## main entry point ###########################################################
 
-    # setup CLI
+if __name__ == '__main__':
     cli.add_command(graph)
 
     if plt is not None:
