@@ -35,11 +35,11 @@ import traceback as tb
 from pathlib import Path
 
 import dash
-from dash import Dash, set_props, html, dcc, callback, Input, Output, State
-import dash_uploader as du
 import dash_bootstrap_components as dbc
-from dash_breakpoints import WindowBreakpoints
+import dash_uploader as du
 import plotly.io as pio
+from dash import Dash, set_props, html, dcc, callback, Input, Output, State
+from dash_breakpoints import WindowBreakpoints
 from flask import send_from_directory, abort
 
 from .core.config import config
@@ -51,9 +51,9 @@ pio.json.config.default_engine = 'orjson'
 
 # handling of errors messages
 def callback_error(err):
-    set_props('message-toast', dict(
-        is_open=True, header="Error", icon="danger", duration=None,
-        children=str(err)))
+    set_props('message-toast', {
+        'is_open': True, 'header': "Error", 'icon': "danger", 'duration': None,
+        'children': str(err)})
     print(err)
 
     if err_tb := getattr(err, '__traceback__', None):

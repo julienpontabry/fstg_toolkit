@@ -129,8 +129,7 @@ def __find_networks_per_region(graph: nx.Graph, regions: list[str]) -> list[tupl
                            for node, data in graph.nodes.items()
                            if data['region'] == region]
         region_subgraph = graph.subgraph(nodes_in_region)
-        networks_nodes += list(map(lambda nodes: (region, nodes),
-                                   nx.connected_components(region_subgraph)))
+        networks_nodes += [(region, nodes) for nodes in nx.connected_components(region_subgraph)]
 
     return networks_nodes
 

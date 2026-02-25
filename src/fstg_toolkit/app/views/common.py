@@ -31,13 +31,16 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
-from dash.exceptions import PreventUpdate
-from dash import dcc
 import dash_bootstrap_components as dbc
+from dash import dcc
+from dash.exceptions import PreventUpdate
 
 from fstg_toolkit.app.core.io import GraphsDataset
 
-plotly_config = dict(displayModeBar='hover', displaylogo=False)
+plotly_config = {
+    'displayModeBar': 'hover',
+    'displaylogo': False
+}
 
 
 def update_factor_controls(prefix: str, factors: list[set[str]], multi: bool = True) -> list[dbc.Row]:
@@ -47,7 +50,7 @@ def update_factor_controls(prefix: str, factors: list[set[str]], multi: bool = T
     controls = []
 
     for i, factor in enumerate(factors):
-        factor_values = sorted(list(factor))
+        factor_values = sorted(factor)
 
         if len(factor_values) > 0:
             value = factor_values if multi else factor_values[0]

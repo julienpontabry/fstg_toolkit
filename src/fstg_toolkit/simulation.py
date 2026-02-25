@@ -297,7 +297,7 @@ def generate_pattern(networks_list: list[list[tuple[tuple[int, int], int, float]
 
     k = 1
     all_areas = set()
-    areas_regions = dict()
+    areas_regions = {}
     for t, networks in enumerate(networks_list):
         for areas_def, region_id, strength in networks:
             areas = __def2areas(areas_def)
@@ -318,7 +318,7 @@ def generate_pattern(networks_list: list[list[tuple[tuple[int, int], int, float]
         for source, target, rc5 in __trans(*temporal_link):
             g.add_edge(source, target, transition=rc5, type='temporal')
 
-    all_areas = sorted(list(all_areas))
+    all_areas = sorted(all_areas)
     areas = pd.DataFrame({'Id_Area': all_areas,
                           'Name_Area': [f"Area {a}" for a in all_areas],
                           'Name_Region': [areas_regions[a] for a in all_areas]})
@@ -394,8 +394,7 @@ class SpatioTemporalGraphSimulator:
                          (n2 + m, n1 + m, d)]
                          for (n1, n2), d in last_out.edges.items()
                          if d['type'] == 'spatial'], []))
-                    g.add_edges_from([(n + i * k, n + m,
-                                       dict(transition=RC5.EQ, type='temporal'))
+                    g.add_edges_from([(n + i * k, n + m, {'transition': RC5.EQ, 'type': 'temporal'})
                                       for n in sorted(last_out.nodes)])
 
                 g.graph['max_time'] += next_pattern

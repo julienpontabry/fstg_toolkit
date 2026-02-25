@@ -35,7 +35,7 @@
 from cmath import isclose
 from dataclasses import dataclass
 from functools import cache
-from typing import Callable
+from typing import Callable, Any
 
 import networkx as nx
 import numpy as np
@@ -44,6 +44,7 @@ from matplotlib import colormaps as cm
 from matplotlib import pyplot as plt
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
+from matplotlib.backend_bases import MouseEvent, Event
 from matplotlib.collections import LineCollection
 from matplotlib.gridspec import GridSpec
 from matplotlib.lines import Line2D
@@ -103,7 +104,7 @@ def multipartite_plot(g: SpatioTemporalGraph, ax: Axes = None) -> None:
     node_color = [d['internal_strength']
                   for _, d in g.nodes.items()]
     edge_color = []
-    edge_labels = dict()
+    edge_labels = {}
     edge_widths = []
     for e, d in g.edges.items():
         if d['type'] == 'temporal':
@@ -167,9 +168,9 @@ def __readable_angled_annotation(angle: float) -> dict[str, float | str]:
         The properties for areas annotation.
     """
     if angle <= 90 or angle >= 270:
-        return dict(rotation=angle, ha='left')
+        return {'rotation': angle, 'ha': 'left'}
     else:
-        return dict(rotation=angle+180, ha='right')
+        return {'rotation': angle+180, 'ha': 'right'}
 
 
 def __edge_con_style(angle1: float, angle2: float, bending: float = 5) -> str:
@@ -301,7 +302,6 @@ def _spatial_plot_artists(graph: SpatioTemporalGraph, t: float,
     # networks node
     cmap = cm.get_cmap('coolwarm')
     nodes_angles = {}
-    nodes_angles_map = {}
     nodes_coords = {}
     areas_network_map = {}
     networks_markers = []
@@ -315,7 +315,6 @@ def _spatial_plot_artists(graph: SpatioTemporalGraph, t: float,
         if isclose(closest_node[1], 0):
             angle += 2*np.pi/n/2
         nodes_angles[node] = angle
-        nodes_angles_map |= {i: angle for i in indices}
 
         x, y = __polar2cart(angle, 1)
         corr = data['internal_strength']
@@ -370,14 +369,13 @@ def _spatial_plot_background(graph: SpatioTemporalGraph, ax: Axes = None, show_r
 
     # plot regions in a pie
     regions_cmap = cm.get_cmap('tab20')
-    reg_labels = dict(labels=regions) if show_regions else dict()
     ax.pie([len(rels[rels['Name_Region'] == region]) / n
             for region in regions],
            radius=2.25, startangle=-360 / n / 2,
            labels=regions if show_regions else None,
            labeldistance=1.1, rotatelabels=False,
            colors=[regions_cmap(i) for i in range(len(regions))],
-           wedgeprops=dict(width=1, edgecolor='w', alpha=0.2))
+           wedgeprops={'width': 1, 'edgecolor': 'w', 'alpha': 0.2})
     limit_val = 3 if show_regions else 2.5
     ax.set_xlim(-limit_val, limit_val)
     ax.set_ylim(-limit_val, limit_val)
@@ -480,7 +478,7 @@ class __CoordinatesGenerator:
         dict[int, tuple[int, int]]
             A dictionary mapping a node to its time/height coordinates.
         """
-        self.__max_heights = dict()
+        self.__max_heights = {}
         self.__coords = {n: (self.g.nodes[n]['t'], base_y + i) for i, n in enumerate(nodes)}
 
         for i, node in enumerate(nodes):
@@ -554,8 +552,8 @@ class __PathDrawer:
             The initial height location of the path.
         """
         self.__done = set()
-        self.__lines = list()
-        self.__colors = list()
+        self.__lines = []
+        self.__colors = []
 
         for i, node in enumerate(nodes):
             trans_list = self.__next_temp_trans(node)
@@ -680,7 +678,7 @@ class DynamicTimeCursor(Cursor):
             marker1.remove()
         self.__markers.clear()
 
-        if not self.ax.contains(event)[0]:
+        if isinstance(event, MouseEvent) and not self.ax.contains(event)[0]:
             self.linev.set_visible(False)
             self.lineh.set_visible(False)
 
@@ -690,12 +688,7 @@ class DynamicTimeCursor(Cursor):
             return
 
         # set up the time cursor
-        self.needclear = True
-        xdata, ydata = self._get_data_coords(event)
-        self.linev.set_xdata((xdata, xdata))
-        self.linev.set_visible(self.visible and self.vertOn)
-        self.lineh.set_ydata((ydata, ydata))
-        self.lineh.set_visible(self.visible and self.horizOn)
+        xdata, ydata = self.__setup_time_cursor(event)
         if not (self.visible and (self.vertOn or self.horizOn)):
             return
 
@@ -706,7 +699,16 @@ class DynamicTimeCursor(Cursor):
             self.__markers += self.ax.plot(*list(zip(*coord)), 'sr')
             self.__markers += self.ax.plot(t, y, 'sg')
 
-        # Redraw.
+        self.__redraw()
+
+        # callback with the time position
+
+        if self.__last_t != t:
+            self.__callback(t)
+            self.__last_t = t
+        event.xdata = t
+
+    def __redraw(self):
         if self.useblit:
             if self.background is not None:
                 self.canvas.restore_region(self.background)
@@ -723,12 +725,14 @@ class DynamicTimeCursor(Cursor):
         else:
             self.canvas.draw_idle()
 
-        # callback with the time position
-
-        if self.__last_t != t:
-            self.__callback(t)
-            self.__last_t = t
-        event.xdata = t
+    def __setup_time_cursor(self, event: Event | MouseEvent) -> tuple[Any, Any]:
+        self.needclear = True
+        xdata, ydata = self._get_data_coords(event)
+        self.linev.set_xdata((xdata, xdata))
+        self.linev.set_visible(self.visible and self.vertOn)
+        self.lineh.set_ydata((ydata, ydata))
+        self.lineh.set_visible(self.visible and self.horizOn)
+        return xdata, ydata
 
 
 @dataclass

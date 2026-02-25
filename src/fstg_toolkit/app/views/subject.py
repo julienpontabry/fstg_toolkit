@@ -31,15 +31,15 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
-from dash.exceptions import PreventUpdate
-from dash.dependencies import ALL
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, callback, dcc, html, clientside_callback, ClientsideFunction
+from dash.dependencies import ALL
+from dash.exceptions import PreventUpdate
 
-from ..figures.subject import build_subject_figure, generate_temporal_graph_props, build_spatial_figure, generate_spatial_graph_props
 from .common import update_factor_controls, plotly_config
 from ..core.io import GraphsDataset
-
+from ..figures.subject import build_subject_figure, generate_temporal_graph_props, build_spatial_figure, \
+    generate_spatial_graph_props
 
 layout = [
     html.Div([], id='subject-factors-block'),
@@ -108,7 +108,7 @@ def factors_changed(factor_values, store_dataset, current_selection):
     n = len(store_dataset['factors'])
     ids = [tuple(record.values()) for record in store_dataset['subjects']]
     filtered_ids = filter(lambda k: all(f in factor_values for f in k[:n]), ids)
-    filtered_ids = sorted(map(lambda k: k[n], filtered_ids))
+    filtered_ids = sorted([k[n] for k in filtered_ids])
 
     # do not select a new subject in the filtered list if the old one is also in the filtered list
     selection = current_selection if current_selection in filtered_ids else next(iter(filtered_ids), None)

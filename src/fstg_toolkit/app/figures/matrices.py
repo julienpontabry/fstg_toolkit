@@ -65,13 +65,13 @@ def build_matrices_figure(matrices, t, desc, n_cols=3, vs_ratio=0.1, hs_ratio=0.
         fig.add_trace(hm, row=row, col=col)
 
     # set up the layout
-    fig.update_layout(coloraxis=dict(
-            colorscale='RdBu_r', cmin=-1, cmax=1,
-            colorbar=dict(
-                orientation='h', yanchor='bottom',
-                title=dict(text="Correlation", side='top')
-            )
-        ), showlegend=False)
+    fig.update_layout(coloraxis={
+            'colorscale': 'RdBu_r', 'cmin': -1, 'cmax': 1,
+            'colorbar': {
+                'orientation': 'h', 'yanchor': 'bottom',
+                'title': {'text': "Correlation", 'side': 'top'}
+            }
+        }, showlegend=False)
     fig.update_xaxes(showticklabels=False)
     fig.update_yaxes(showticklabels=False, autorange='reversed')
 

@@ -57,7 +57,7 @@ def subjects_per_factors_figure(records: list[dict[str, str]], factors: list[str
         df = pd.DataFrame(df.count(), columns=["All"]).T
         labels['index'] = ""
 
-    params = {param: factor for param, factor in zip(('x', 'color'), factors)}
+    params = dict(zip(('x', 'color'), factors))
     return px.bar(df, y='Subject', **params, height=500,
                   labels=labels,
                   title="Distribution of subjects per factors")
