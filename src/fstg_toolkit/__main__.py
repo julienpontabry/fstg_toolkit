@@ -71,11 +71,10 @@ except ImportError:
     spatial_plot = temporal_plot = multipartite_plot = DynamicPlot = None
 
 try:
-    from .app.fstg_view import app
-    from .app.core.config import config
+    from .app.core.config import config as app_config
     from .app.core.datafilesdb import get_data_file_db, MemoryDataFilesDB, SQLiteDataFilesDB
 except ImportError as e:
-    app = config = get_data_file_db = MemoryDataFilesDB = SQLiteDataFilesDB = None
+    app_config = get_data_file_db = MemoryDataFilesDB = SQLiteDataFilesDB = None
     __help_epilog.append(f"⚠️  Install '{__package__}[dashboard]' to unlock the dashboard commands.")
 
 try:
@@ -740,6 +739,7 @@ def show(graphs_data: Path, debug: bool, port: int, no_browser: bool):
     else:
         console.print(f"Dashboard for file {graphs_data} is at URL http://127.0.0.1:8050/dashboard/{token}")
 
+    from .app.fstg_view import app  # import it now so it has been configured correctly
     app.run(debug=debug, port=port)
 
 
@@ -757,14 +757,15 @@ def serve(data_path: Path, upload_path: Path, debug: bool, port: int, db_path: P
     """Serve a dashboard for visualizing spatio-temporal graphs from a data directory."""
 
     # set up the configuration
-    config.data_path = data_path
-    config.upload_path = upload_path
-    config.db_path = db_path
+    app_config.data_path = data_path
+    app_config.upload_path = upload_path
+    app_config.db_path = db_path
 
     # set up the data file database
     get_data_file_db(requested_type=SQLiteDataFilesDB, db_path=db_path, debug=debug)
 
     # set up and run the dash app
+    from .app.fstg_view import app  # import it now so it has been configured correctly
     console.print(f"Dashboard serving data from {data_path} is at URL http://127.0.0.1:8050")
     app.run(debug=debug, port=port)
 
@@ -777,7 +778,7 @@ if __name__ == '__main__':
     if plt is not None:
         cli.add_command(plot)
 
-    if app is not None:
+    if app_config is not None:
         cli.add_command(dashboard)
 
     if SPMinerService is not None:
