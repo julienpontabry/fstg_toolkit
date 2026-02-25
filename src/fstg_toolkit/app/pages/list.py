@@ -124,6 +124,7 @@ def layout():
                             dbc.CardBody(html.Ul([
                                 html.Li([html.B("Include raw data: "), 'Yes' if result.dataset.include_raw else 'No']),
                                 html.Li([html.B("Compute metrics: "), 'Yes' if result.dataset.compute_metrics else 'No']),
+                                html.Li([html.B("Compute frequent patterns: "), 'Yes' if result.dataset.compute_frequent else 'No']),
                                 html.Li([html.B("Areas description file: "), html.I(result.dataset.areas_file.name)]),
                                 html.Li([
                                     html.B("Matrices files: "),

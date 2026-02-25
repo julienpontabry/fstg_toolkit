@@ -187,6 +187,7 @@ class SubmittedDataset:
     name: str
     include_raw: bool
     compute_metrics: bool
+    compute_frequent: bool
     areas_file: Path
     matrices_files: list[Path]
 
@@ -212,6 +213,7 @@ class SubmittedDataset:
             name=record['name'],
             include_raw=bool(record['include_raw']),
             compute_metrics=bool(record['compute_metrics']),
+            compute_frequent=bool(record['compute_frequent']),
             areas_file=Path(record['areas_path']),
             matrices_files=[Path(s) for s in record['matrices_paths'].split(';')])
 
@@ -237,6 +239,11 @@ def _process_dataset(job_id: str, dataset: SubmittedDataset) -> Optional[str]:
             command = ['python', '-m', 'fstg_toolkit', 'graph', 'metrics',
                        '--max-cpus', str(config.max_processing_cpus),
                        str(output_path)]
+            subprocess.run(command, check=True, capture_output=True)
+
+        # compute frequent patterns
+        if dataset.compute_frequent:
+            command = ['python', '-m', 'fstg_toolkit', 'graph', 'frequent', str(output_path)]
             subprocess.run(command, check=True, capture_output=True)
 
         # register output to get a token
@@ -277,6 +284,7 @@ class DatasetProcessingManager(SQLiteConnected):
                     name TEXT NOT NULL,
                     include_raw INTEGER NOT NULL,
                     compute_metrics INTEGER NOT NULL,
+                    compute_frequent INTEGER NOT NULL,
                     areas_path TEXT NOT NULL,
                     matrices_paths TEXT NOT NULL,
                     job_id TEXT UNIQUE,
@@ -288,9 +296,9 @@ class DatasetProcessingManager(SQLiteConnected):
     def __insert_record(self, dataset: SubmittedDataset, job_id: str):
         with self._get_connection() as conn:
             conn.execute('''
-                INSERT INTO datasets (name, include_raw, compute_metrics, areas_path, matrices_paths, job_id)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (dataset.name, int(dataset.include_raw), int(dataset.compute_metrics),
+                INSERT INTO datasets (name, include_raw, compute_metrics, compute_frequent, areas_path, matrices_paths, job_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (dataset.name, int(dataset.include_raw), int(dataset.compute_metrics), int(dataset.compute_frequent),
                   str(dataset.areas_file), ";".join(str(p) for p in dataset.matrices_files), job_id))
 
     def submit(self, dataset: SubmittedDataset):

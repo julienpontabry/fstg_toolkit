@@ -56,8 +56,10 @@ options_input = html.Div([
         dbc.Checklist(options=[
                 {'label': 'Include raw matrices', 'value': 'include_raw'},
                 {'label': 'Compute metrics', 'value': 'compute_metrics'},
+                {'label': 'Compute frequent patterns', 'value': 'compute_frequent'},
             ],
-            value=['include_raw', 'compute_metrics'], id='dataset-options-input', inline=True, switch=True),
+            value=['include_raw', 'compute_metrics'],
+            id='dataset-options-input', inline=True, switch=True),
         dbc.FormText("Select what will be included in the dataset. Note that the spatio-temporal graph modeling is included anyway."),
     ], className='mb-3')
 
@@ -221,6 +223,7 @@ def submit_dataset_form(_, name, options, areas_uploaded_file, matrices_uploaded
             name=name,
             include_raw='include_raw' in options,
             compute_metrics='compute_metrics' in options,
+            compute_frequent='compute_frequent' in options,
             areas_file=Path(areas_uploaded_file) if areas_uploaded_file else None,
             matrices_files=[Path(f) for f in matrices_uploaded_files] if matrices_uploaded_files else None)
 
