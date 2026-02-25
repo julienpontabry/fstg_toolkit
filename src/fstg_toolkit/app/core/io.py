@@ -31,10 +31,9 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
-from typing import Any, List, Dict, Set, Tuple, Optional
 from dataclasses import dataclass
-
 from pathlib import Path
+from typing import Any, List, Dict, Set, Tuple, Optional
 
 import numpy as np
 import pandas as pd
@@ -190,7 +189,7 @@ class GraphsDataset:
         GraphsDataset
             An instance of GraphsDataset created from the provided data.
         """
-        filepath = data['filepath']
+        filepath = Path(data['filepath'])
         n = len(data['factors'])
         subjects = pd.DataFrame(data['subjects'])
         return GraphsDataset(loader=DataLoader(filepath),
