@@ -144,11 +144,11 @@ def layout():
                                     html.Ul([
                                         html.Li(html.I(str(mat_path.name)))
                                         for mat_path in result.dataset.matrices_files
-                                    ])
+                                    ], className='list-unstyled')
                                 ]),
                                 *([html.Hr(), html.P(result.error if result.error else "", className="text-danger text-center")]
                                 if result.error else [])
-                            ], className='card-text'), is_open=False, id={'type': 'dataset-sup-info', 'index': i}),
+                            ], className='card-text text-center'), is_open=False, id={'type': 'dataset-sup-info', 'index': i}),
                     ])
                     for i, result in enumerate(results)
                 ], gap=3), style={'max-width': '800px', 'align': 'center'})
