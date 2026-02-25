@@ -100,6 +100,17 @@ def __fill_quick_bar(result: DatasetResult) -> html.Small:
     return html.Small(join(elements, sep=html.I(className='bi bi-dot')), className='text-muted')
 
 
+def __icon_text(icon: str, text: str) -> html.Div:
+    return html.Div([
+        html.I(className=f'bi bi-{icon}'),
+        " " + text
+    ], className='d-inline-flex align-items-center gap-1')
+
+
+def __option_icon_text(included: bool, text: str) -> html.Div:
+    return __icon_text('toggle-on' if included else 'toggle-off', text)
+
+
 def layout():
     manager = get_dataset_processing_manager()
     if results := manager.list():
@@ -121,12 +132,14 @@ def layout():
                             ])
                         ),
                         dbc.Collapse(
-                            dbc.CardBody(html.Ul([
-                                html.Li([html.B("Include raw data: "), 'Yes' if result.dataset.include_raw else 'No']),
-                                html.Li([html.B("Compute metrics: "), 'Yes' if result.dataset.compute_metrics else 'No']),
-                                html.Li([html.B("Compute frequent patterns: "), 'Yes' if result.dataset.compute_frequent else 'No']),
-                                html.Li([html.B("Areas description file: "), html.I(result.dataset.areas_file.name)]),
-                                html.Li([
+                            dbc.CardBody([
+                                html.P(join([
+                                    __option_icon_text(result.dataset.include_raw, "raw data"),
+                                    __option_icon_text(result.dataset.compute_metrics, "metrics"),
+                                    __option_icon_text(result.dataset.compute_frequent, "frequent patterns")
+                                ], sep=html.I(className='bi bi-dot')), className='small'),
+                                html.P([html.B("Areas description file: "), html.I(result.dataset.areas_file.name)]),
+                                html.P([
                                     html.B("Matrices files: "),
                                     html.Ul([
                                         html.Li(html.I(str(mat_path.name)))
@@ -135,7 +148,7 @@ def layout():
                                 ]),
                                 *([html.Hr(), html.P(result.error if result.error else "", className="text-danger text-center")]
                                 if result.error else [])
-                            ]), className='card-text'), is_open=False, id={'type': 'dataset-sup-info', 'index': i}),
+                            ], className='card-text'), is_open=False, id={'type': 'dataset-sup-info', 'index': i}),
                     ])
                     for i, result in enumerate(results)
                 ], gap=3), style={'max-width': '800px', 'align': 'center'})
