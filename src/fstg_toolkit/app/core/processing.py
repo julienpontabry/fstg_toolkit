@@ -229,7 +229,7 @@ def _process_dataset(job_id: str, dataset: SubmittedDataset) -> Optional[str]:
             command.append('--no-raw')
 
         command += [str(dataset.areas_file),
-                    *list(map(lambda x: str(x), dataset.matrices_files))]
+                    *[str(file) for file in dataset.matrices_files]]
         subprocess.run(command, check=True, capture_output=True)
 
         # compute the metrics
@@ -241,13 +241,11 @@ def _process_dataset(job_id: str, dataset: SubmittedDataset) -> Optional[str]:
 
         # register output to get a token
         return get_data_file_db().add(output_path)
-    except Exception:
-        raise
     finally:
         # TODO we could use async functions for IO (at least files) to improve performances
         # clean input files
         shutil.rmtree(dataset.areas_file.parent)
-        for p in set(map(lambda x: x.parent, dataset.matrices_files)):
+        for p in {file.parent for file in dataset.matrices_files}:
             shutil.rmtree(p)
 
 
