@@ -116,7 +116,7 @@ def _process_parallel(subject, dataset, calculator):
 
 
 def gather_metrics(dataset: GraphsDataset, selection: Sequence[tuple[str, ...]],
-                   calculator: MetricsCalculator, callback: Optional[Callable[[str], None]] = lambda s: None,
+                   calculator: MetricsCalculator, callback: Optional[Callable[[tuple[str, ...]], None]] = lambda s: None,
                    max_cpus: int = multiprocessing.cpu_count() - 1) -> pd.DataFrame:
     n_factors = len(dataset.factors)
     all_records = []
@@ -133,6 +133,10 @@ def gather_metrics(dataset: GraphsDataset, selection: Sequence[tuple[str, ...]],
         for future in as_completed(futures):
             subject, records = future.result()
             all_records += records
+
+            if not isinstance(subject, tuple):
+                subject = (subject,)
+
             all_idx += [subject] * len(records)
             callback(subject)
 

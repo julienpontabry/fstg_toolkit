@@ -319,14 +319,14 @@ def metrics(dataset_path: Path, max_cpus: int):
                            steps=True, transient=True) as bar:
         task = bar.add_task("", total=len(dataset.subjects))
         spatial_df = gather_metrics(dataset, dataset.subjects.index, calculate_spatial_metrics,
-                                    callback=lambda s: bar.update(task, advance=1), max_cpus=max_cpus)
+                                    callback=lambda _: bar.update(task, advance=1), max_cpus=max_cpus)
 
     with _progress_factory("Calculating global metrics...",
                            lambda: f"Global metrics calculated on {len(temporal_df)} ST graphs.",
                            steps=True, transient=True) as bar:
         task = bar.add_task("", total=len(dataset.subjects))
         temporal_df = gather_metrics(dataset, dataset.subjects.index, calculate_temporal_metrics,
-                                     callback=lambda s: bar.update(task, advance=1), max_cpus=max_cpus)
+                                     callback=lambda _: bar.update(task, advance=1), max_cpus=max_cpus)
 
     # TODO modify the data saver to accepts those files
     # save the metrics into the dataset

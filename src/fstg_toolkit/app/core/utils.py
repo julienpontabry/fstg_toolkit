@@ -30,13 +30,13 @@
 #
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
-from itertools import chain
-from typing import Iterable, Optional, Any
-from dataclasses import dataclass
-from pathlib import Path
+import re
 import sqlite3
 from contextlib import contextmanager
-import re
+from dataclasses import dataclass
+from itertools import chain
+from pathlib import Path
+from typing import Iterable, Optional, Any
 
 
 def split_factors_from_name(names: Iterable[str],
@@ -93,14 +93,17 @@ def split_factors_from_name(names: Iterable[str],
             factors.append(s)
             identifiers.append(parts)
 
-    idx_ids = max(enumerate(factors), key=lambda s: len(s[1]))[0]
-    del factors[idx_ids]
+    if factors and identifiers:
+        idx_ids = max(enumerate(factors), key=lambda s: len(s[1]))[0]
+        del factors[idx_ids]
 
-    ids = identifiers[idx_ids]
-    del identifiers[idx_ids]
-    identifiers.append(ids)
+        ids = identifiers[idx_ids]
+        del identifiers[idx_ids]
+        identifiers.append(ids)
 
-    return factors, list(zip(*identifiers))
+        return factors, list(zip(*identifiers))
+    else:
+        return factors, [(name,) for name in names]
 
 
 # TODO use pooled connections to handle moderate to large traffic
