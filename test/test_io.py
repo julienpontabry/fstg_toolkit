@@ -94,6 +94,9 @@ class DataLoaderTestCase(unittest.TestCase):
             graph_dict = nx.json_graph.node_link_data(self.graph, edges='edges')
             graph_json = json.dumps(graph_dict, cls=_SpatioTemporalGraphEncoder)
             zf.writestr('test_graph.json', graph_json)
+
+            # Save frequent patterns style (use same graph; not important for those tests)
+            zf.writestr('test_graph/motifs_enriched_t.json', graph_json)
             
             # Save matrix
             with zf.open('test_matrix.npy', 'w') as f:
@@ -140,6 +143,14 @@ class DataLoaderTestCase(unittest.TestCase):
         
         self.assertEqual(len(filenames), 1)
         self.assertEqual(filenames[0], 'test_graph.json')
+
+    def test_lazy_load_frequent_patterns(self):
+        """Test lazy loading of frequent patterns."""
+        loader = DataLoader(self.zip_path)
+        filenames = loader.lazy_load_frequent_patterns()
+
+        self.assertEqual(len(filenames), 1)
+        self.assertEqual(filenames[0], 'test_graph/motifs_enriched_t.json')
     
     def test_lazy_load_matrices(self):
         """Test lazy loading of matrix filenames."""

@@ -280,6 +280,7 @@ class DataLoader:
         Load areas and list available graph and matrix filenames.
     """
     filepath: Path
+    frequent_patterns_subname: str = 'motifs_enriched'
 
     def __post_init__(self):
         if not self.filepath.exists() or self.filepath.is_dir():
@@ -319,7 +320,7 @@ class DataLoader:
 
         with self.__within_archive as zfp:
             for name in zfp.namelist():
-                if name.endswith('.json'):
+                if name.endswith('.json') and self.frequent_patterns_subname not in name:
                     with zfp.open(name, 'r') as fp:
                         graph_dict = json.load(fp, object_hook=_spatio_temporal_object_hook)
                         graph = nx.json_graph.node_link_graph(graph_dict, edges='edges')
@@ -346,9 +347,18 @@ class DataLoader:
 
         return matrices
 
-    def __get_filenames(self, ext: LiteralString) -> List[LiteralString]:
+    def __get_filenames(self, ext: LiteralString, sub: Optional[str] = None,
+                        no_sub: Optional[str] = None) -> List[LiteralString]:
         with self.__within_archive as zfp:
-            return list(filter(lambda n: n.endswith(ext), zfp.namelist()))
+            filtered = filter(lambda n: n.endswith(ext), zfp.namelist())
+
+            if sub is not None:
+                filtered = filter(lambda n: sub in n, filtered)
+
+            if no_sub is not None:
+                filtered = filter(lambda n: no_sub not in n, filtered)
+
+            return list(filtered)
 
     def lazy_load_graphs(self) -> List[LiteralString]:
         """List available graph filenames in the archive.
@@ -358,7 +368,7 @@ class DataLoader:
         list[str]
             A list of filenames (with '.json' extension) of all spatio-temporal graphs.
         """
-        return self.__get_filenames('.json')
+        return self.__get_filenames('.json', no_sub=self.frequent_patterns_subname)
 
     def lazy_load_matrices(self) -> List[LiteralString]:
         """List available matrix filenames in the archive.
@@ -456,6 +466,15 @@ class DataLoader:
             with zfp.open(f'metrics_{name}.csv', 'r') as fp:
                 return load_metrics(fp)
 
+    def lazy_load_frequent_patterns(self) -> List[LiteralString]:
+        """List available frequent patterns in the archive.
+
+        Returns
+        -------
+        list[str]
+            A list of filenames (with '.json' extension) of all spatial, temporal and spatio-temporal patterns.
+        """
+        return self.__get_filenames('.json', sub=self.frequent_patterns_subname)
 
 
 type SavableDataElement = pd.DataFrame | SpatioTemporalGraphsDict | CorrelationMatricesDict
