@@ -56,6 +56,20 @@ class _SpatioTemporalGraphEncoder(json.JSONEncoder):
     """
 
     def default(self, obj):
+        """Serialize RC5 enum values and sets to JSON-compatible types.
+
+        Parameters
+        ----------
+        obj: Any
+            The object to serialize.
+
+        Returns
+        -------
+        Any
+            The JSON-serializable representation: the RC5 name string for
+            :class:`RC5` instances, a list for sets, or the default encoding
+            for all other types.
+        """
         if isinstance(obj, RC5):
             return obj.name
         elif isinstance(obj, set):
@@ -212,7 +226,21 @@ def save_metrics(path_or_buf: str | Path | IO[bytes], metrics: pd.DataFrame) -> 
     df.to_csv(path_or_buf)
 
 
-def __to_rc5_if_possible(d: Dict[str, Any]) -> Dict[str|RC5, Any]:
+def __to_rc5_if_possible(d: Dict[str, Any]) -> Dict[str | RC5, Any]:
+    """Convert string keys that match RC5 transition names to actual RC5 enum members.
+
+    Parameters
+    ----------
+    d: dict[str, Any]
+        A dictionary whose keys may be RC5 transition name strings.
+
+    Returns
+    -------
+    dict[RC5, Any]
+        A new dictionary with RC5-recognisable keys replaced by the
+        corresponding :class:`RC5` enum members. Keys that do not match any
+        RC5 transition are dropped.
+    """
     return {RC5.from_name(k): v for k, v in d.items() if RC5.includes(k)}
 
 
@@ -288,11 +316,19 @@ class DataLoader:
     frequent_patterns_subname: str = 'motifs_enriched'
 
     def __post_init__(self):
+        """Validate that the provided filepath points to an existing file.
+
+        Raises
+        ------
+        FileNotFoundError
+            If the path does not exist or is a directory.
+        """
         if not self.filepath.exists() or self.filepath.is_dir():
             raise FileNotFoundError()
 
     @property
     def __within_archive(self):
+        """Open the zip archive for reading and return the ZipFile context manager."""
         return ZipFile(str(self.filepath), 'r')
 
     def load_areas(self) -> Optional[pd.DataFrame]:
@@ -355,6 +391,22 @@ class DataLoader:
 
     def __get_filenames(self, ext: LiteralString, sub: Optional[str] = None,
                         no_sub: Optional[str] = None) -> List[LiteralString]:
+        """List filenames in the archive filtered by extension and optional substrings.
+
+        Parameters
+        ----------
+        ext: str
+            Required file extension (e.g. ``'.json'``).
+        sub: str, optional
+            If provided, only filenames containing this substring are returned.
+        no_sub: str, optional
+            If provided, filenames containing this substring are excluded.
+
+        Returns
+        -------
+        list[str]
+            Filenames satisfying all filter criteria.
+        """
         with self.__within_archive as zfp:
             filtered = filter(lambda n: n.endswith(ext), zfp.namelist())
 
@@ -524,18 +576,45 @@ class DataSaver:
 
     @staticmethod
     def __save_areas(areas: pd.DataFrame, zfp: ZipFile) -> None:
+        """Serialise a brain-areas DataFrame as ``areas.csv`` inside the archive.
+
+        Parameters
+        ----------
+        areas: pandas.DataFrame
+            The areas description DataFrame (index: ``Id_Area``).
+        zfp: ZipFile
+            An open, writable :class:`zipfile.ZipFile` instance.
+        """
         with zfp.open('areas.csv', 'w') as fp:
             areas.to_csv(fp)
 
     @staticmethod
-    def __save_graphs(graphs: SpatioTemporalGraphsDict, zfp: ZipFile):
+    def __save_graphs(graphs: SpatioTemporalGraphsDict, zfp: ZipFile) -> None:
+        """Serialise a dictionary of spatio-temporal graphs as JSON files inside the archive.
+
+        Parameters
+        ----------
+        graphs: dict[str, SpatioTemporalGraph]
+            Mapping of graph name to :class:`~graph.SpatioTemporalGraph`.
+        zfp: ZipFile
+            An open, writable :class:`zipfile.ZipFile` instance.
+        """
         for name, graph in graphs.items():
             graph_dict = nx.json_graph.node_link_data(graph, edges='edges')
             graph_json = json.dumps(graph_dict, cls=_SpatioTemporalGraphEncoder)
             zfp.writestr(f'{name}.json', data=graph_json)
 
     @staticmethod
-    def __save_matrices(matrices: CorrelationMatricesDict, zfp: ZipFile):
+    def __save_matrices(matrices: CorrelationMatricesDict, zfp: ZipFile) -> None:
+        """Serialise a dictionary of correlation matrices as ``.npy`` files inside the archive.
+
+        Parameters
+        ----------
+        matrices: dict[str, numpy.ndarray]
+            Mapping of matrix name to NumPy array.
+        zfp: ZipFile
+            An open, writable :class:`zipfile.ZipFile` instance.
+        """
         for name, matrix in matrices.items():
             with zfp.open(f'{name}.npy', 'w') as fp:
                 np.save(fp, matrix)

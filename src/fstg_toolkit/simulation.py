@@ -46,6 +46,17 @@ from .graph import RC5, SpatioTemporalGraph, subgraph_nodes
 
 
 def _fill_matrix(connections, correlations, matrix):
+    """Fill a correlation matrix in-place with the given connection values.
+
+    Parameters
+    ----------
+    connections: list[tuple[int, int]]
+        Pairs of area indices (1-based) to connect.
+    correlations: list[float]
+        Correlation value for each connection pair.
+    matrix: numpy.ndarray
+        The square correlation matrix to update (modified in-place).
+    """
     for (e1, e2), corr in zip(connections, correlations):
         i = e1 - 1
         j = e2 - 1
@@ -54,10 +65,40 @@ def _fill_matrix(connections, correlations, matrix):
 
 @dataclass(frozen=True)
 class _CorrelationMatrixNetworksEdgesFiller:
+    """Fills intra-network (within-region) correlations in a correlation matrix.
+
+    For each network (node) in a spatial graph, randomly samples a set of
+    connected area pairs and assigns correlation values whose mean matches the
+    network's internal strength.
+
+    Parameters
+    ----------
+    threshold: float
+        The correlation threshold; intra-network correlations are constrained
+        to remain above this value in absolute terms.
+    rng: numpy.random.Generator
+        A NumPy random number generator used for reproducible sampling.
+    """
+
     threshold: float
     rng: np.random.Generator
 
     def __choose_connections(self, network: list[int]) -> list[tuple[int, int]]:
+        """Randomly select a connected set of area pairs within a network.
+
+        Repeatedly samples random subsets of all pairwise combinations until a
+        connected graph can be formed, guaranteeing that every area is reachable.
+
+        Parameters
+        ----------
+        network: list[int]
+            Area identifiers (1-based) belonging to the network.
+
+        Returns
+        -------
+        list[tuple[int, int]]
+            A list of area-pair edges forming a connected subgraph of the network.
+        """
         def __new_graph(trial_connections: list[tuple[int, int]]) -> nx.Graph:
             g = nx.Graph()
             g.add_nodes_from(network)
@@ -86,6 +127,24 @@ class _CorrelationMatrixNetworksEdgesFiller:
         return list(trial_graph.edges)
 
     def __mean_corr_sampler(self, size: int, mean: float) -> list[float]:
+        """Sample ``size`` correlation values whose empirical mean equals ``mean``.
+
+        Values are sampled uniformly within a symmetric interval around ``mean``
+        and then shifted so that their mean matches exactly. The interval is
+        constrained to keep all values on the same side of ``threshold``.
+
+        Parameters
+        ----------
+        size: int
+            Number of correlation values to sample.
+        mean: float
+            Target mean correlation value.
+
+        Returns
+        -------
+        list[float]
+            A list of ``size`` correlation values with the exact requested mean.
+        """
         def __sample(low: float, high: float) -> np.array:
             values = self.rng.uniform(low=low, high=high, size=size)
             return values + mean - values.mean()
@@ -100,6 +159,16 @@ class _CorrelationMatrixNetworksEdgesFiller:
         return samples.tolist()
 
     def fill(self, spatial_graph: nx.DiGraph, matrix: np.array) -> None:
+        """Fill intra-network correlations for all networks in the spatial graph.
+
+        Parameters
+        ----------
+        spatial_graph: nx.DiGraph
+            A single time-point spatial graph whose nodes represent networks
+            (each carrying ``areas`` and ``internal_strength`` attributes).
+        matrix: numpy.ndarray
+            The square correlation matrix to update in-place.
+        """
         networks = [(data['areas'], data['internal_strength'])
                     for _, data in spatial_graph.nodes.items()]
 
@@ -111,10 +180,42 @@ class _CorrelationMatrixNetworksEdgesFiller:
 
 @dataclass(frozen=True)
 class _CorrelationMatrixInterRegionEdgesFiller:
+    """Fills inter-network (cross-region) correlations in a correlation matrix.
+
+    For each spatial edge between two networks, randomly samples area pairs
+    across the two networks and assigns correlation values whose maximum (in
+    absolute terms) matches the edge's correlation attribute.
+
+    Parameters
+    ----------
+    threshold: float
+        The correlation threshold; inter-region correlations are constrained
+        to remain above this value in absolute terms.
+    rng: numpy.random.Generator
+        A NumPy random number generator used for reproducible sampling.
+    """
+
     threshold: float
     rng: np.random.Generator
 
     def __max_correlation_sampler(self, size: int, target: float) -> list[float]:
+        """Sample ``size`` correlation values whose extreme value equals ``target``.
+
+        The extreme is the maximum for positive targets and the minimum for
+        negative targets, so that the inter-region edge correlation is reproduced.
+
+        Parameters
+        ----------
+        size: int
+            Number of correlation values to sample.
+        target: float
+            The desired extreme correlation value.
+
+        Returns
+        -------
+        list[float]
+            A list of ``size`` correlation values with the exact requested extreme.
+        """
         sample_fun = np.max if target >= 0 else np.min
 
         def __sample(low: float, high: float) -> np.array:
@@ -133,6 +234,23 @@ class _CorrelationMatrixInterRegionEdgesFiller:
         return samples
 
     def __choose_inter_region_connections(self, network1: set, network2: set) -> list[tuple[int, int]]:
+        """Randomly select area pairs connecting two distinct networks.
+
+        For each area in ``network1``, a Poisson-distributed number of areas from
+        ``network2`` are selected as targets (at least one per source area).
+
+        Parameters
+        ----------
+        network1: set[int]
+            Area identifiers (1-based) of the source network.
+        network2: set[int]
+            Area identifiers (1-based) of the target network.
+
+        Returns
+        -------
+        list[tuple[int, int]]
+            A list of (source_area, target_area) pairs.
+        """
         def __choose_inter_region_connection(k: int, network: set, n: int) -> list[tuple[int, int]]:
             combs = list(zip([k]*len(network), network))
             selected = []
@@ -152,6 +270,16 @@ class _CorrelationMatrixInterRegionEdgesFiller:
         return connections
 
     def fill(self, spatial_graph: nx.DiGraph, matrix: np.array) -> None:
+        """Fill inter-network correlations for all edges in the spatial graph.
+
+        Parameters
+        ----------
+        spatial_graph: nx.DiGraph
+            A single time-point spatial graph whose edges carry a ``correlation``
+            attribute describing the inter-network correlation strength.
+        matrix: numpy.ndarray
+            The square correlation matrix to update in-place.
+        """
         for (node1, node2), data in spatial_graph.edges.items():
             connections = self.__choose_inter_region_connections(
                 spatial_graph.nodes[node1]['areas'], spatial_graph.nodes[node2]['areas'])
@@ -189,6 +317,24 @@ class CorrelationMatrixSequenceSimulator:
 
     def __init__(self, graph: SpatioTemporalGraph, threshold: float = 0.4,
                  rng: np.random.Generator = np.random.default_rng()) -> None:
+        """Initialise the simulator.
+
+        Parameters
+        ----------
+        graph: SpatioTemporalGraph
+            The reference spatio-temporal graph from which correlation
+            matrices will be back-generated.
+        threshold: float, optional
+            Minimum absolute correlation required for spatial edges to be
+            considered significant (default 0.4, must be in [0, 1]).
+        rng: numpy.random.Generator, optional
+            Random number generator for reproducible results.
+
+        Raises
+        ------
+        ValueError
+            If ``threshold`` is outside [0, 1].
+        """
         self.graph = graph
         self.threshold = threshold
 
@@ -199,10 +345,32 @@ class CorrelationMatrixSequenceSimulator:
         self.__init_validation__()
 
     def __init_validation__(self):
+        """Validate constructor parameters.
+
+        Raises
+        ------
+        ValueError
+            If ``threshold`` is not in [0, 1].
+        """
         if self.threshold < 0 or self.threshold > 1:
             raise ValueError("The threshold must be within range [0, 1]!")
 
     def __simulate_corr_matrix(self, spatial_graph: nx.DiGraph) -> np.array:
+        """Generate a single correlation matrix from a one-time-point spatial graph.
+
+        Fills intra-network and inter-network correlations, then randomises
+        any remaining zero entries with sub-threshold uniform noise.
+
+        Parameters
+        ----------
+        spatial_graph: nx.DiGraph
+            The spatial subgraph at a single time point.
+
+        Returns
+        -------
+        numpy.ndarray
+            A square symmetric correlation matrix of shape ``(n_areas, n_areas)``.
+        """
         matrix = np.eye(len(self.graph.areas))
 
         self.__network_edges_filler.fill(spatial_graph, matrix)
@@ -227,6 +395,23 @@ class CorrelationMatrixSequenceSimulator:
 
 
 def __trans(sources: Iterable[int] | int, targets: Iterable[int] | int, kind: str) -> list[tuple[int, int, RC5]]:
+    """Expand a human-readable transition description into a list of (source, target, RC5) triples.
+
+    Parameters
+    ----------
+    sources: int or Iterable[int]
+        Source node(s). For a ``'merge'`` transition this must be an iterable.
+    targets: int or Iterable[int]
+        Target node(s). For a ``'split'`` transition this must be an iterable.
+    kind: str
+        Transition type: ``'split'`` (:attr:`RC5.PPi`), ``'merge'`` (:attr:`RC5.PP`),
+        ``'eq'`` (:attr:`RC5.EQ`), or any other string for :attr:`RC5.PO`.
+
+    Returns
+    -------
+    list[tuple[int, int, RC5]]
+        A list of ``(source_node, target_node, transition)`` tuples.
+    """
     if kind.lower() == 'split':
         return [(sources, target, RC5.PPi) for target in targets]
     elif kind.lower() == 'merge':
@@ -237,6 +422,21 @@ def __trans(sources: Iterable[int] | int, targets: Iterable[int] | int, kind: st
 
 
 def __def2areas(areas_def: tuple[int, int] | Iterable[int] | int) -> set[int]:
+    """Convert a compact area definition to a set of area identifiers.
+
+    Parameters
+    ----------
+    areas_def: tuple[int, int] | Iterable[int] | int
+        - A 2-tuple ``(start, end)`` is expanded to the inclusive range
+          ``{start, start+1, ..., end}``.
+        - Any other iterable is converted directly to a set.
+        - A single integer is wrapped in a singleton set.
+
+    Returns
+    -------
+    set[int]
+        The corresponding set of area identifiers.
+    """
     if isinstance(areas_def, tuple) and len(areas_def) == 2:
         start, end = areas_def
         return set(range(start, end + 1))
@@ -358,9 +558,33 @@ class SpatioTemporalGraphSimulator:
     (12, 15), (13, 16), (14, 12), (14, 17), (15, 17), (15, 18), (16, 18), (17, 15), (17, 19), (18, 19), (19, 18)])
     """
     def __init__(self, **patterns: SpatioTemporalGraph) -> None:
+        """Initialise the simulator with a set of named patterns.
+
+        Parameters
+        ----------
+        **patterns: SpatioTemporalGraph
+            Keyword arguments mapping pattern names (str) to their
+            :class:`~graph.SpatioTemporalGraph` definitions.
+        """
         self.__patterns = patterns
 
     def _simulate_areas_descriptions(self, patterns: list[str | int]) -> pd.DataFrame:
+        """Merge the areas DataFrames of all named patterns in the sequence.
+
+        Integer entries (repeat counts) are ignored; only string entries that
+        reference registered patterns contribute their areas.
+
+        Parameters
+        ----------
+        patterns: list[str | int]
+            The pattern sequence (same format accepted by :meth:`simulate`).
+
+        Returns
+        -------
+        pandas.DataFrame
+            A deduplicated DataFrame containing area descriptions from all
+            referenced patterns.
+        """
         areas_descriptions = [self.__patterns[pattern].areas
                               for pattern in patterns
                               if isinstance(pattern, str)]
@@ -368,16 +592,69 @@ class SpatioTemporalGraphSimulator:
 
     @staticmethod
     def __shift_node_data(data: dict[str, any], dt: int) -> dict[str, any]:
+        """Return a copy of a node's data dictionary with the time attribute shifted.
+
+        Parameters
+        ----------
+        data: dict[str, any]
+            Original node data (must contain a ``'t'`` key).
+        dt: int
+            Time offset to add.
+
+        Returns
+        -------
+        dict[str, any]
+            A shallow copy of ``data`` with ``t`` incremented by ``dt``.
+        """
         tmp = dict(data)
         tmp['t'] += dt
         return tmp
 
     @staticmethod
     def __shift_nodes(nodes: NodeView, dt: int, k: int) -> list[tuple[int, dict[str, any]]]:
+        """Shift node identifiers and time attributes for graph concatenation.
+
+        Parameters
+        ----------
+        nodes: NodeView
+            The nodes to shift.
+        dt: int
+            Time offset added to each node's ``t`` attribute.
+        k: int
+            Integer offset added to each node identifier to avoid collisions
+            with existing nodes.
+
+        Returns
+        -------
+        list[tuple[int, dict[str, any]]]
+            A sorted list of ``(new_node_id, shifted_data)`` pairs.
+        """
         return [(n + k, SpatioTemporalGraphSimulator.__shift_node_data(d, dt))
                 for n, d in sorted(nodes.items(), key=lambda x: x[0])]
 
     def _simulate_graph_from_patterns(self, patterns: list[str | int]) -> nx.DiGraph:
+        """Build a directed graph by concatenating patterns and optional repeats.
+
+        Patterns are chained sequentially: node identifiers and time steps are
+        shifted to avoid collisions. An integer element inserts that many EQ-linked
+        copies of the last time-point of the preceding pattern.
+
+        Parameters
+        ----------
+        patterns: list[str | int]
+            Sequence of pattern names (str) and repeat counts (int).
+
+        Returns
+        -------
+        nx.DiGraph
+            The assembled directed graph with updated ``min_time`` / ``max_time``
+            graph attributes.
+
+        Raises
+        ------
+        ValueError
+            If a sequence element is neither a ``str`` nor an ``int``.
+        """
         g = nx.DiGraph(self.__patterns[patterns[0]])
 
         for next_pattern in patterns[1:]:

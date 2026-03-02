@@ -57,30 +57,105 @@ T = TypeVar('T')
 
 
 class ProcessingQueueListener(ABC):
+    """Abstract observer interface for :class:`ProcessingQueue` lifecycle events.
+
+    Implement this interface to receive notifications when jobs are submitted,
+    started, completed, or failed.
+    """
+
     @abstractmethod
     def on_job_submitted(self, job_id: str):
+        """Called immediately after a job is submitted to the queue.
+
+        Parameters
+        ----------
+        job_id: str
+            The unique identifier of the submitted job.
+        """
         pass
 
     @abstractmethod
     def on_job_started(self, job_id: str):
+        """Called when a worker thread picks up the job and starts executing it.
+
+        Parameters
+        ----------
+        job_id: str
+            The unique identifier of the started job.
+        """
         pass
 
     @abstractmethod
     def on_job_completed(self, job_id: str, result: Optional[T]):
+        """Called when a job finishes successfully.
+
+        Parameters
+        ----------
+        job_id: str
+            The unique identifier of the completed job.
+        result: any or None
+            The return value of the job function.
+        """
         pass
 
     @abstractmethod
     def on_job_failed(self, job_id: str, error: Exception):
+        """Called when a job raises an unhandled exception.
+
+        Parameters
+        ----------
+        job_id: str
+            The unique identifier of the failed job.
+        error: Exception
+            The exception that caused the failure.
+        """
         pass
 
 
 class ProcessingQueue:
+    """A thread-pool-backed job queue with optional lifecycle event notifications.
+
+    Each submitted callable receives a unique job ID as its first argument.
+    An optional :class:`ProcessingQueueListener` is notified at each stage of
+    a job's lifecycle (submitted, started, completed, failed).
+    """
+
     def __init__(self, max_workers: int = 1, listener: Optional[ProcessingQueueListener] = None):
+        """Initialise the processing queue.
+
+        Parameters
+        ----------
+        max_workers: int, optional
+            Maximum number of concurrent worker threads (default 1).
+        listener: ProcessingQueueListener or None, optional
+            Observer to notify on job lifecycle events.
+        """
         self.executor = ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix='ProcessingQueueWorkers')
         self.futures: Dict[str, Future] = {}
         self.listener = listener
 
     def __process(self, job_id: str, func: Callable[[str, ...], T], *args, **kwargs) -> T:
+        """Execute a job function and dispatch lifecycle notifications.
+
+        Parameters
+        ----------
+        job_id: str
+            The unique identifier of the job.
+        func: Callable
+            The function to execute; receives ``job_id`` as its first argument.
+        *args, **kwargs:
+            Additional arguments forwarded to ``func``.
+
+        Returns
+        -------
+        T
+            The return value of ``func``.
+
+        Raises
+        ------
+        Exception
+            Re-raises any exception raised by ``func`` after notifying the listener.
+        """
         try:
             if self.listener:
                 self.listener.on_job_started(job_id)
@@ -97,6 +172,21 @@ class ProcessingQueue:
             raise ex
 
     def submit(self, func: Callable[[str, ...], T], *args, **kwargs) -> str:
+        """Submit a callable for asynchronous execution.
+
+        Parameters
+        ----------
+        func: Callable
+            The function to execute. It will receive a unique job ID string as
+            its first positional argument, followed by ``*args`` and ``**kwargs``.
+        *args, **kwargs:
+            Additional arguments forwarded to ``func``.
+
+        Returns
+        -------
+        str
+            The UUID string identifying the submitted job.
+        """
         job_id = str(uuid.uuid4())
         self.futures[job_id] = self.executor.submit(self.__process, job_id, func, *args, **kwargs)
 

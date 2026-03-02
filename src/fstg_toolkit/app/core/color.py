@@ -31,23 +31,59 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
-from dataclasses import dataclass
-from abc import ABC, abstractmethod
 import colorsys
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 
 class ColorsInterpolator(ABC):
+    """Abstract base class for color interpolators that generate a palette of ``n`` colors."""
+
     @abstractmethod
     def sample(self, n: int) -> list[tuple[float, float, float]]:
+        """Generate ``n`` evenly-distributed colors.
+
+        Parameters
+        ----------
+        n: int
+            Number of colors to generate.
+
+        Returns
+        -------
+        list[tuple[float, float, float]]
+            A list of ``n`` RGB tuples with components in [0, 1].
+        """
         raise RuntimeError("Class not meant to be instantiated!")
 
 
 @dataclass(frozen=True)
 class HueInterpolator(ColorsInterpolator):
+    """Color interpolator that steps evenly through the HSV hue wheel.
+
+    Parameters
+    ----------
+    saturation: float, optional
+        HSV saturation for all generated colors (default 0.7).
+    value: float, optional
+        HSV value (brightness) for all generated colors (default 0.9).
+    """
+
     saturation: float = 0.7
     value: float = 0.9
 
     def sample(self, n: int) -> list[tuple[float, float, float]]:
+        """Generate ``n`` colors by stepping uniformly through the hue wheel.
+
+        Parameters
+        ----------
+        n: int
+            Number of colors to generate.
+
+        Returns
+        -------
+        list[tuple[float, float, float]]
+            A list of ``n`` RGB tuples with components in [0, 1].
+        """
         colors = []
 
         for i in range(n):

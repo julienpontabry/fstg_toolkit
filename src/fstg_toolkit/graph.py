@@ -107,6 +107,18 @@ class RC5(Enum):
 
     @staticmethod
     def includes(name: str) -> bool:
+        """Check whether a name corresponds to a valid RC5 transition.
+
+        Parameters
+        ----------
+        name: str
+            The name to test.
+
+        Returns
+        -------
+        bool
+            True if `name` matches one of the RC5 transitions; False otherwise.
+        """
         try:
             RC5.from_name(name)
             return True
@@ -118,6 +130,25 @@ class RC5(Enum):
 
 
 def __check_data(data: dict[str, Any], key: str, value: Any) -> bool:
+    """Check whether a data dictionary satisfies a key/value condition.
+
+    If the key is absent from `data` the condition is considered satisfied.
+    When `value` is an iterable the check tests membership; otherwise it tests equality.
+
+    Parameters
+    ----------
+    data: dict[str, Any]
+        The node or edge data dictionary to inspect.
+    key: str
+        The attribute key to check.
+    value: Any
+        The expected value or iterable of accepted values.
+
+    Returns
+    -------
+    bool
+        True if the condition is satisfied; False otherwise.
+    """
     if key not in data:
         return True
 
@@ -168,12 +199,50 @@ def subgraph_nodes(graph: nx.Graph, **conditions: Any) -> nx.Graph:
 
 
 def subgraph_edges(graph: nx.Graph, **conditions: Any) -> nx.Graph:
+    """Take the subgraph induced by edges that match the conditions.
+
+    Parameters
+    ----------
+    graph: nx.Graph
+        The initial graph.
+    conditions: dict[str, Any]
+        Conditions on the edge data as keyword arguments. As value, any single value
+        or iterable of values is supported.
+
+    Returns
+    -------
+    nx.Graph
+        The edge-induced subgraph matching the specified conditions.
+    """
     return graph.edge_subgraph([(n1, n2) for n1, n2, d in graph.edges(data=True)
                                 if all(__check_data(d, k, v) for k, v in conditions.items())])
 
 
 class SpatioTemporalGraph(nx.DiGraph):
+    """A spatio-temporal graph wrapping a directed NetworkX graph.
+
+    Nodes carry brain area/region metadata; spatial edges carry correlation values;
+    temporal edges carry :class:`RC5` transition types.
+
+    Parameters
+    ----------
+    graph: nx.Graph, optional
+        An existing NetworkX graph to initialise from.
+    areas: pandas.DataFrame, optional
+        A DataFrame describing brain areas with columns ``Name_Area`` and ``Name_Region``,
+        indexed by ``Id_Area``.
+    """
+
     def __init__(self, graph: nx.Graph = None, areas: pd.DataFrame = None) -> None:
+        """Initialise the spatio-temporal graph.
+
+        Parameters
+        ----------
+        graph: nx.Graph, optional
+            An existing NetworkX graph to initialise from.
+        areas: pandas.DataFrame, optional
+            A DataFrame describing brain areas (index: ``Id_Area``).
+        """
         super().__init__(graph)
         self.areas = areas
 
@@ -219,20 +288,56 @@ class SpatioTemporalGraph(nx.DiGraph):
     def sub_temporal(self) -> 'SpatioTemporalGraph':
         return self.sub(type='temporal')
 
-    def __eq__(self, other: 'SpatioTemporalGraph') -> 'SpatioTemporalGraph':
+    def __eq__(self, other: 'SpatioTemporalGraph') -> bool:
+        """Test equality with another spatio-temporal graph.
+
+        Two graphs are equal when their nodes, edges (including data) and
+        areas DataFrames are all equal.
+
+        Parameters
+        ----------
+        other: SpatioTemporalGraph
+            The graph to compare against.
+
+        Returns
+        -------
+        bool
+            True if both graphs are structurally and data-wise identical.
+        """
         return nx.utils.graphs_equal(self, other) and self.areas.equals(other.areas)
 
     def __str__(self) -> str:
+        """Return a human-readable summary of the spatio-temporal graph."""
         return f"SpatioTemporalGraph(#areas={len(self.areas)}, #regions={len(set(self.areas['Name_Region']))}, "\
                     f"#nodes={len(self.nodes)}, #spatial edges={len([_ for _, _, d in self.edges(data=True) if d['type'] == 'spatial'])}, "\
                     f"#temporal edges={len([_ for _, _, d in self.edges(data=True) if d['type'] == 'temporal'])})"
 
     def __repr__(self) -> str:
+        """Return the canonical string representation (same as __str__)."""
         return str(self)
 
 
-def __data_almost_equal(data1: dict[str, any], data2: dict[str, any],
-                        rel_tol: float = 1e-9, abs_tol: float = 0.0):
+def __data_almost_equal(data1: dict[str, Any], data2: dict[str, Any],
+                        rel_tol: float = 1e-9, abs_tol: float = 0.0) -> bool:
+    """Check if two data dictionaries are almost equal, with tolerance on numeric values.
+
+    Parameters
+    ----------
+    data1: dict[str, any]
+        First data dictionary.
+    data2: dict[str, any]
+        Second data dictionary.
+    rel_tol: float, optional
+        Relative tolerance for numeric comparisons (default 1e-9).
+    abs_tol: float, optional
+        Absolute tolerance for numeric comparisons (default 0.0).
+
+    Returns
+    -------
+    bool
+        True if both dicts have the same keys and their values are equal
+        (with numeric tolerance for numeric types).
+    """
     if len(data1) != len(data2):
         return False
 

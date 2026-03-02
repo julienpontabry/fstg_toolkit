@@ -56,15 +56,45 @@ type MetricsCalculator = Callable[[SpatioTemporalGraph], list[MetricRecord]]
 
 @dataclass(frozen=True)
 class MetricsRegistry:
+    """A named registry that maps metric names to their computation functions.
+
+    Metrics are stored in an internal dictionary and can be added, removed, and
+    iterated over. The registry is frozen at the dataclass level, but the internal
+    dict is mutable to allow dynamic registration of metrics.
+    """
+
     __registry: dict[str, MetricFunction] = field(default_factory=lambda: {})
 
     def add(self, name: str, func: MetricFunction) -> None:
+        """Register a metric function under the given name.
+
+        Parameters
+        ----------
+        name: str
+            The display name of the metric.
+        func: MetricFunction
+            A callable that accepts a :class:`~graph.SpatioTemporalGraph` and
+            returns a metric value.
+        """
         self.__registry[name] = func
 
     def remove(self, name: str) -> None:
+        """Unregister the metric with the given name.
+
+        Parameters
+        ----------
+        name: str
+            The name of the metric to remove.
+
+        Raises
+        ------
+        KeyError
+            If no metric with that name exists in the registry.
+        """
         del self.__registry[name]
 
     def __iter__(self):
+        """Iterate over ``(name, func)`` pairs in the registry."""
         return iter(self.__registry.items())
 
 
@@ -72,6 +102,19 @@ metrics_registry: dict[str, MetricsRegistry] = {}
 
 
 def get_metrics_registry(name: str) -> MetricsRegistry:
+    """Return (or create) the named :class:`MetricsRegistry`.
+
+    Parameters
+    ----------
+    name: str
+        The registry name, e.g. ``'local'`` or ``'global'``.
+
+    Returns
+    -------
+    MetricsRegistry
+        The registry associated with `name`. A new empty registry is
+        created the first time a name is requested.
+    """
     global metrics_registry
 
     if name not in metrics_registry:
@@ -81,6 +124,21 @@ def get_metrics_registry(name: str) -> MetricsRegistry:
 
 
 def metrics_index_columns(index_columns: Optional[list[str]]):
+    """Decorator that attaches extra index column names to a metrics calculator.
+
+    The annotated column names are later used by :func:`gather_metrics` to promote
+    those columns from the records DataFrame into multi-level index levels.
+
+    Parameters
+    ----------
+    index_columns: list[str] or None
+        Names of the columns to promote to index levels.
+
+    Returns
+    -------
+    Callable
+        The same function with an ``index_columns`` attribute attached.
+    """
     def decorator(func):
         func.index_columns = index_columns
         return func
@@ -116,6 +174,27 @@ def calculate_temporal_metrics(graph: SpatioTemporalGraph) -> list[MetricRecord]
 
 
 def _process_parallel(subject, dataset, calculator):
+    """Worker function for parallel metric computation.
+
+    Fetches the graph for ``subject`` from ``dataset`` and applies
+    ``calculator`` to it. Intended to be called inside a
+    :class:`~concurrent.futures.ProcessPoolExecutor`.
+
+    Parameters
+    ----------
+    subject: tuple[str, ...]
+        Identifier tuple for the subject whose graph to process.
+    dataset: GraphsDataset
+        The dataset providing graph access via :meth:`~GraphsDataset.get_graph`.
+    calculator: MetricsCalculator
+        A callable that takes a :class:`~graph.SpatioTemporalGraph` and
+        returns a list of metric records.
+
+    Returns
+    -------
+    tuple
+        A ``(subject, records)`` pair.
+    """
     return subject, calculator(dataset.get_graph(subject))
 
 
@@ -225,21 +304,53 @@ def reorg_rate(graph: SpatioTemporalGraph) -> float:
 
 
 class __EventException(Exception):
+    """Base exception for inter-event computation errors."""
+
     def __init__(self, message: str):
         super().__init__(message)
 
 
 class __NoEventException(__EventException):
+    """Raised when no temporal events (non-EQ transitions) are found in the graph."""
+
     def __init__(self):
         super().__init__("No event detected!")
 
 
 class __NotEnoughEventException(__EventException):
+    """Raised when fewer than three distinct event times are available for inter-event analysis."""
+
     def __init__(self):
         super().__init__("Not enough event!")
 
 
 def __interevent(graph: SpatioTemporalGraph) -> tuple[np.ndarray, np.ndarray]:
+    """Compute inter-event time intervals and their weights for a temporal graph.
+
+    An *event* is any temporal transition that is not :attr:`RC5.EQ`. The
+    intervals are the consecutive differences between distinct event times, and
+    the weights are the number of non-EQ transitions occurring at the later time
+    of each interval.
+
+    Parameters
+    ----------
+    graph: SpatioTemporalGraph
+        A temporal spatio-temporal graph (only temporal edges are considered).
+
+    Returns
+    -------
+    intervals: numpy.ndarray
+        Differences between consecutive distinct event times.
+    weights: numpy.ndarray
+        Counts of non-EQ transitions at each later event time.
+
+    Raises
+    ------
+    __NoEventException
+        If no non-EQ transitions are found.
+    __NotEnoughEventException
+        If fewer than three distinct event times are found.
+    """
     non_eq_edges = [(n1, n2) for n1, n2, d in graph.edges(data=True)
                     if d['transition'] != RC5.EQ]
     event_times = [graph.nodes[n]['t'] for n, _ in non_eq_edges]

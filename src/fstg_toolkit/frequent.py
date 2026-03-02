@@ -42,7 +42,21 @@ logger = logging.getLogger()
 
 
 class SPMinerService:
+    """Service wrapper for the SPMiner frequent subgraph pattern miner.
+
+    Manages the Docker image lifecycle (build/load on demand) and provides a
+    simple interface to run the miner on a directory of input graphs and collect
+    the results.
+    """
+
     def __init__(self):
+        """Initialise the service by connecting to Docker.
+
+        Raises
+        ------
+        RuntimeError
+            If Docker is not available on the host system.
+        """
         try:
             self.__docker_helper = DockerHelper()
         except DockerNotAvailableException as e:
@@ -52,6 +66,11 @@ class SPMinerService:
         self.__progress_reg = re.compile(r'^\[(?P<completed>\d+)/(?P<total>\d+)]')
 
     def prepare(self):
+        """Build or load the SPMiner Docker image if it is not already loaded.
+
+        The image is built from the ``spminer/`` submodule located next to this
+        package. Subsequent calls are no-ops if the image is already loaded.
+        """
         if self.__docker_image is None:
             # TODO use an external config file?
             tag = 'spminer:latest'
@@ -59,6 +78,23 @@ class SPMinerService:
             self.__docker_image = self.__docker_helper.load_local_image(tag, build_path)
 
     def run(self, input_dir: Path, output_dir: Path):
+        """Run the SPMiner container on a directory of graph files.
+
+        Mounts ``input_dir`` as read-only and ``output_dir`` as read-write
+        inside the container. Progress updates are yielded as they arrive.
+
+        Parameters
+        ----------
+        input_dir: Path
+            Directory containing the input graph files.
+        output_dir: Path
+            Directory where the miner will write its output.
+
+        Yields
+        ------
+        tuple[int, int]
+            ``(completed, total)`` progress tuples parsed from container stdout.
+        """
         self.prepare()  # makes sure docker image is set
 
         output = self.__docker_image.run(
