@@ -151,6 +151,7 @@ class DockerImage:
             for chunk in container.logs(stream=True, stderr=stderr, stdout=stdout, follow=True):
                 yield chunk.decode()
             container.remove()
+            # TODO throw an exception if the docker image returned with non-zero code
         except docker.errors.ContainerError as e:
             raise DockerImageException("Container exited with non-zero code.") from e
         except docker.errors.ImageNotFound as e:
@@ -220,6 +221,7 @@ def setup_logging(level: Optional[str], verbose: bool):
         The logging verbosity. If true, the logs will appear in the console as well.
     """
     if level is None:
+        logger.setLevel(logging.NOTSET)
         return  # no logging in that case
 
     config_path = files(__package__).joinpath('logging.yml')

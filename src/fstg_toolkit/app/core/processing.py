@@ -32,6 +32,7 @@
 # knowledge of the CeCILL-B license and that you accept its terms.
 
 import logging
+import re
 import shutil
 import subprocess
 import uuid
@@ -48,6 +49,8 @@ from .datafilesdb import get_data_file_db
 from .utils import SQLiteConnected
 
 logger = logging.getLogger()
+
+_ansi_escape = re.compile(r'\x1b\[[0-9;]*[mGKFH]')
 
 
 T = TypeVar('T')
@@ -222,13 +225,40 @@ class SubmittedDataset:
             matrices_files=[Path(s) for s in record['matrices_paths'].split(';')])
 
 
+def _run_cli_logged(arguments: list[str]) -> None:
+    """Run a CLI command and relay its output to the current logger."""
+    root_level = logger.getEffectiveLevel()
+    if root_level != logging.NOTSET:
+        level_name = logging.getLevelName(root_level).lower()
+        if level_name not in ('debug', 'info', 'error'):
+            level_name = 'debug'
+        arguments = ['--log-level', level_name, '--verbose'] + arguments
+
+    command = ['python', '-m', 'fstg_toolkit'] + arguments
+    proc = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True
+    )
+
+    for line in proc.stdout:
+        line = line.rstrip('\n')
+        if line:
+            logger.debug(_ansi_escape.sub('', line))
+
+    proc.wait()
+    if proc.returncode != 0:
+        raise subprocess.CalledProcessError(proc.returncode, arguments)
+
+
 def _process_dataset(job_id: str, dataset: SubmittedDataset) -> Optional[str]:
     try:
         logger.debug(f"Processing dataset '{dataset.name}' (job {job_id}).")
         output_path = config.data_path / f'{job_id}.zip'
 
         # compute the model from all sequences of matrices
-        command = ['python', '-m', 'fstg_toolkit', 'graph', 'build',
+        command = ['graph', 'build',
                    '--max-cpus', str(config.max_processing_cpus),
                    '-o', str(output_path)]
 
@@ -237,21 +267,21 @@ def _process_dataset(job_id: str, dataset: SubmittedDataset) -> Optional[str]:
 
         command += [str(dataset.areas_file),
                     *[str(file) for file in dataset.matrices_files]]
-        subprocess.run(command, check=True, capture_output=True)
+        _run_cli_logged(command)
         logger.debug(f"Graph built for '{dataset.name}'.")
 
         # compute the metrics
         if dataset.compute_metrics:
-            command = ['python', '-m', 'fstg_toolkit', 'graph', 'metrics',
+            command = ['graph', 'metrics',
                        '--max-cpus', str(config.max_processing_cpus),
                        str(output_path)]
-            subprocess.run(command, check=True, capture_output=True)
+            _run_cli_logged(command)
             logger.debug(f"Metrics computed for '{dataset.name}'.")
 
         # compute frequent patterns
         if dataset.compute_frequent:
-            command = ['python', '-m', 'fstg_toolkit', 'graph', 'frequent', str(output_path)]
-            subprocess.run(command, check=True, capture_output=True)
+            command = ['graph', 'frequent', str(output_path)]
+            _run_cli_logged(command)
             logger.debug(f"Frequent patterns computed for '{dataset.name}'.")
 
         # register output to get a token
