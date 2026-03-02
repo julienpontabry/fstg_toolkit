@@ -33,6 +33,7 @@
 
 """Defines helpers to create spatio-temporal graphs."""
 
+import logging
 from typing import Iterable
 
 import networkx as nx
@@ -40,6 +41,8 @@ import numpy as np
 import pandas as pd
 
 from .graph import RC5, SpatioTemporalGraph
+
+logger = logging.getLogger()
 
 
 def graph_from_corr_matrix(matrix: np.array, areas_desc: pd.DataFrame, corr_thr: float = 0.4,
@@ -344,6 +347,7 @@ def spatio_temporal_graph_from_networks_graphs(networks_graphs: tuple[nx.Graph, 
                      (4, 3, {'t': 1, 'type': 'spatial', 'correlation': 0.41})])
     """
     nb_networks_graphs = len(networks_graphs)
+    logger.debug(f"Building STG from {nb_networks_graphs} time point(s).")
     st_graph = nx.DiGraph(min_time=0, max_time=nb_networks_graphs-1)
     __add_networks_graph(st_graph, networks_graphs[0], 0)
     prev_node = 0

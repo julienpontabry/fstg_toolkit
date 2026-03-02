@@ -31,6 +31,7 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
+import logging
 import traceback as tb
 from pathlib import Path
 
@@ -45,6 +46,9 @@ from flask import send_from_directory, abort
 from .core.config import config
 from .core.datafilesdb import get_data_file_db
 
+logger = logging.getLogger()
+
+
 # use orsjon to make JSON 5-10x faster
 pio.json.config.default_engine = 'orjson'
 
@@ -54,10 +58,10 @@ def callback_error(err):
     set_props('message-toast', {
         'is_open': True, 'header': "Error", 'icon': "danger", 'duration': None,
         'children': str(err)})
-    print(err)
+    logger.error(str(err))
 
     if err_tb := getattr(err, '__traceback__', None):
-        tb.print_tb(err_tb)
+        logger.debug(''.join(tb.format_tb(err_tb)))
 
 
 # app's definition

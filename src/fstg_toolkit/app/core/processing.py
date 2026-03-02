@@ -31,6 +31,7 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
+import logging
 import shutil
 import subprocess
 import uuid
@@ -45,6 +46,9 @@ from typing import TypeVar, Callable, Optional, Dict, Any
 from .config import config
 from .datafilesdb import get_data_file_db
 from .utils import SQLiteConnected
+
+logger = logging.getLogger()
+
 
 T = TypeVar('T')
 
@@ -220,6 +224,7 @@ class SubmittedDataset:
 
 def _process_dataset(job_id: str, dataset: SubmittedDataset) -> Optional[str]:
     try:
+        logger.debug(f"Processing dataset '{dataset.name}' (job {job_id}).")
         output_path = config.data_path / f'{job_id}.zip'
 
         # compute the model from all sequences of matrices
@@ -233,6 +238,7 @@ def _process_dataset(job_id: str, dataset: SubmittedDataset) -> Optional[str]:
         command += [str(dataset.areas_file),
                     *[str(file) for file in dataset.matrices_files]]
         subprocess.run(command, check=True, capture_output=True)
+        logger.debug(f"Graph built for '{dataset.name}'.")
 
         # compute the metrics
         if dataset.compute_metrics:
@@ -240,14 +246,18 @@ def _process_dataset(job_id: str, dataset: SubmittedDataset) -> Optional[str]:
                        '--max-cpus', str(config.max_processing_cpus),
                        str(output_path)]
             subprocess.run(command, check=True, capture_output=True)
+            logger.debug(f"Metrics computed for '{dataset.name}'.")
 
         # compute frequent patterns
         if dataset.compute_frequent:
             command = ['python', '-m', 'fstg_toolkit', 'graph', 'frequent', str(output_path)]
             subprocess.run(command, check=True, capture_output=True)
+            logger.debug(f"Frequent patterns computed for '{dataset.name}'.")
 
         # register output to get a token
-        return get_data_file_db().add(output_path)
+        token = get_data_file_db().add(output_path)
+        logger.debug(f"Dataset '{dataset.name}' registered (job {job_id}).")
+        return token
     finally:
         # TODO we could use async functions for IO (at least files) to improve performances
         # clean input files

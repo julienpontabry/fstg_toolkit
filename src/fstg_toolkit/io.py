@@ -33,6 +33,7 @@
 
 """Defines helpers for inputs/outputs."""
 import json
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional, Callable, List, Tuple, Dict, LiteralString, IO, Any
@@ -43,6 +44,8 @@ import numpy as np
 import pandas as pd
 
 from .graph import RC5, SpatioTemporalGraph
+
+logger = logging.getLogger()
 
 
 class _SpatioTemporalGraphEncoder(json.JSONEncoder):
@@ -134,6 +137,7 @@ def load_spatio_temporal_graph(filepath: Path | str) -> SpatioTemporalGraph:
     RuntimeError
         If no graph is found in the zip file.
     """
+    logger.debug(f"Loading STG from '{filepath}'.")
     loader = DataLoader(filepath)
     filenames = loader.lazy_load_graphs()
 
@@ -182,6 +186,7 @@ def save_spatio_temporal_graph(graph: SpatioTemporalGraph, filepath: Path | str)
     >>> graph_struct = SpatioTemporalGraph(G, areas_desc)
     >>> save_spatio_temporal_graph(graph_struct, graph_path)
     """
+    logger.debug(f"Saving STG to '{filepath}'.")
     saver = DataSaver()
     saver.add(graph.areas)
     saver.add({'graph.json': graph})
@@ -326,6 +331,7 @@ class DataLoader:
                         graph = nx.json_graph.node_link_graph(graph_dict, edges='edges')
                         graphs[name.split('.json')[0]] = SpatioTemporalGraph(graph, areas)
 
+        logger.debug(f"Loaded {len(graphs)} graph(s) from '{self.filepath}'.")
         return graphs
 
     def load_matrices(self) -> MatricesDict:
@@ -544,6 +550,7 @@ class DataSaver:
         """
         # TODO optimize saving to archive using in-worker serialization for
         #      speed + threaded queue for memory saving
+        logger.debug(f"Saving dataset to '{filepath}'.")
         with ZipFile(str(filepath), 'w') as zfp:
             for element in self.elements:
                 if isinstance(element, pd.DataFrame):

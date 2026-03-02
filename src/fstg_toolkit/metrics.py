@@ -31,6 +31,7 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
+import logging
 import multiprocessing
 from concurrent.futures import as_completed
 from concurrent.futures.process import ProcessPoolExecutor
@@ -43,6 +44,9 @@ import pandas as pd
 
 from .app.core.io import GraphsDataset
 from .graph import SpatioTemporalGraph, RC5
+
+logger = logging.getLogger()
+
 
 type MetricType = float | list[float] | dict[str, int]
 type MetricFunction = Callable[[SpatioTemporalGraph], MetricType]
@@ -124,6 +128,7 @@ def gather_metrics(dataset: GraphsDataset, selection: Sequence[tuple[str, ...]],
 
     futures = []
     num_workers = min(len(selection), max_cpus)
+    logger.debug(f"Computing metrics for {len(selection)} subject(s) using {num_workers} worker(s).")
 
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
         for subject in selection:
@@ -132,6 +137,7 @@ def gather_metrics(dataset: GraphsDataset, selection: Sequence[tuple[str, ...]],
 
         for future in as_completed(futures):
             subject, records = future.result()
+            logger.debug(f"Computed metrics for subject {subject}.")
             all_records += records
 
             if not isinstance(subject, tuple):
