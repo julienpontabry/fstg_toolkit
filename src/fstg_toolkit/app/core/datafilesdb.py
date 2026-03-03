@@ -31,13 +31,17 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
-from typing import Optional, Generator, Type
-from pathlib import Path
-from abc import ABC, abstractmethod
-
 import secrets
+from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Optional, Generator, Type
 
 from .utils import SQLiteConnected
+
+
+class AbstractClassNotMeantToBeUsedDirectly(NotImplementedError):
+    def __init__(self):
+        super().__init__("Abstract class not meant to be used directly")
 
 
 class DataFilesDB(ABC):
@@ -68,7 +72,7 @@ class DataFilesDB(ABC):
 
     @abstractmethod
     def _add_data_file_to_db(self, token: str, file_path: Path) -> None:
-        raise NotImplementedError("Abstract class not meant to be used directly")
+        raise AbstractClassNotMeantToBeUsedDirectly()
 
     def __generate_token(self) -> str:
         return self.__generate_token_impl()
@@ -104,7 +108,7 @@ class DataFilesDB(ABC):
         pathlib.Path or None
             The path to the data file if found, otherwise None.
         """
-        raise NotImplementedError("Abstract class not meant to be used directly")
+        raise AbstractClassNotMeantToBeUsedDirectly()
 
     @abstractmethod
     def list(self) -> Generator[tuple[str, Path], None, None]:
@@ -115,14 +119,14 @@ class DataFilesDB(ABC):
         Generator of tuple[str, pathlib.Path]
             A generator yielding tuples of tokens and their associated file paths.
         """
-        raise NotImplementedError("Abstract class not meant to be used directly")
+        raise AbstractClassNotMeantToBeUsedDirectly()
 
     def __iter__(self):
         return iter(self.list())
 
     @abstractmethod
     def __len__(self) -> int:
-        raise NotImplementedError("Abstract class not meant to be used directly")
+        raise AbstractClassNotMeantToBeUsedDirectly()
 
     def __str__(self) -> str:
         return f"token_nb_bytes={self.__token_nb_bytes}"

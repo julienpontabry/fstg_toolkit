@@ -76,7 +76,6 @@ def generate_temporal_graph_props(graph: SpatioTemporalGraph, regions: list[str]
 
         all_coord.update(coord)
 
-
     # define edges' properties
     edges_x = []
     edges_y = []
@@ -94,9 +93,9 @@ def generate_temporal_graph_props(graph: SpatioTemporalGraph, regions: list[str]
         if x not in spat_conn:
             spat_conn[x] = {}
         # NOTE use double key x/y and list to get it JSON serializable
-        candidates = filter(lambda sn: graph.adj[n][sn]['type'] == 'spatial', graph.adj[n])
+        candidates = filter(lambda sn, n=n: graph.adj[n][sn]['type'] == 'spatial', graph.adj[n])
         candidates = filter(lambda sn: sn in all_coord, candidates)
-        con_coord = map(lambda sn: [all_coord[sn][1], graph[n][sn]['correlation']], candidates)
+        con_coord = [[all_coord[sn][1], graph[n][sn]['correlation']] for sn in candidates]
         spat_conn[x][y] = list(zip(*con_coord))  # prepare two elements for y coordinates and edge correlation/weight
 
     return {
@@ -120,15 +119,15 @@ def build_subject_figure(props: dict[str, Any], areas: pd.Series) -> go.Figure:
         x=props['nodes_x'], y=props['nodes_y'],
         mode='markers',
         hoverinfo='text',
-        hovertext=["<br>".join(map(lambda i: areas.loc[i], s))
+        hovertext=["<br>".join([areas.loc[i] for i in s])
                    for s in props['nodes_areas']],
-        marker=dict(size=6*np.power(props['nodes_sizes'], 5),
-                    color=props['nodes_color'],
-                    cmin=-1, cmid=0, cmax=1, line_width=0,
-                    colorscale='RdBu_r', showscale=True,
-                    colorbar=dict(
-                        title=dict(text="Internal strength", side='right')
-                    ))
+        marker={'size': 6*np.power(props['nodes_sizes'], 5),
+                'color': props['nodes_color'],
+                'cmin': -1, 'cmid': 0, 'cmax': 1, 'line_width': 0,
+                'colorscale': 'RdBu_r', 'showscale': True,
+                'colorbar': {
+                    'title': {'text': "Internal strength", 'side': 'right'}
+                }}
     )
 
     edges_traces = []
@@ -137,7 +136,7 @@ def build_subject_figure(props: dict[str, Any], areas: pd.Series) -> go.Figure:
             x=x, y=y,
             mode='lines',
             hoverinfo='skip',
-            line=dict(width=0.5, color=c)
+            line={'width': 0.5, 'color': c}
         )
         edges_traces.append(edges_trace)
 
@@ -158,14 +157,14 @@ def build_subject_figure(props: dict[str, Any], areas: pd.Series) -> go.Figure:
         layout=go.Layout(
             plot_bgcolor='white',
             height=21*(props['height']+2)+126,
-            margin=dict(t=40),
+            margin={'t': 40},
             showlegend=False,
             hovermode='closest',
-            hoverlabel=dict(bgcolor='white'),
-            xaxis=dict(showgrid=False, zeroline=False, title="Time"),
-            yaxis=dict(showgrid=False, zeroline=False, showticklabels=True,
-                       tickvals=centered_ticks, ticktext=multi_lines_regions,
-                       range=[-1.5, props['height']+1.5]),
+            hoverlabel={'bgcolor': 'white'},
+            xaxis={'showgrid': False, 'zeroline': False, 'title': "Time"},
+            yaxis={'showgrid': False, 'zeroline': False, 'showticklabels': True,
+                   'tickvals': centered_ticks, 'ticktext': multi_lines_regions,
+                   'range': [-1.5, props['height']+1.5]},
             shapes=shapes
         )
     )
@@ -183,9 +182,9 @@ def generate_spatial_graph_props(graph: SpatioTemporalGraph, areas_desc: pd.Data
     nodes_areas = [[d['areas']
                     for _, d in graph.sub(region=region).nodes.items()]
                    for region in regions.index]
-    nodes_areas_count = map(lambda l: [len(s) for s in l], nodes_areas)
-    nodes_proportions = map(lambda l: [c/sum(l) for c in l], nodes_areas_count)
-    nodes_areas_labels = map(lambda l: [[areas_desc["Name_Area"].loc[n] for n in s] for s in l], nodes_areas)
+    nodes_areas_count = ([len(s) for s in l] for l in nodes_areas)
+    nodes_proportions = [[c/sum(l) for c in l] for l in nodes_areas_count]
+    nodes_areas_labels = [[[areas_desc["Name_Area"].loc[n] for n in s] for s in l] for l in nodes_areas]
 
     # build mapping from node ID to (region_idx, node_idx_within_region) for ribbons
     node_to_arc_idx = {}
@@ -210,8 +209,8 @@ def generate_spatial_graph_props(graph: SpatioTemporalGraph, areas_desc: pd.Data
     return {
         'region_labels': regions.index.to_list(),
         'region_proportion': region_proportions.tolist(),
-        'nodes_labels': list(nodes_areas_labels),
-        'nodes_proportions': list(nodes_proportions),
+        'nodes_labels': nodes_areas_labels,
+        'nodes_proportions': nodes_proportions,
         'ribbons': ribbon_specs
     }
 
@@ -224,12 +223,13 @@ def __corr_to_rgba(correlation: float) -> str:
 
 
 def __create_path_props(path: str, line_color: str, fill_color: str) -> dict[str, Any]:
-    return dict(
-        line=dict(color=line_color, width=0.45),
-        path=path,
-        type='path',
-        fillcolor=fill_color,
-        layer='below')
+    return {
+        'line': {'color': line_color, 'width': 0.45},
+        'path': path,
+        'type': 'path',
+        'fillcolor': fill_color,
+        'layer': 'below'
+    }
 
 
 def __create_arc_elements(arc: Arc, thickness: float, radius: float, label: str, fill_color: str, line_color: str = 'gray') -> tuple[go.Scatter, dict[str, Any]]:
@@ -240,7 +240,7 @@ def __create_arc_elements(arc: Arc, thickness: float, radius: float, label: str,
     arc_line = go.Scatter(x=arc_shape.exterior_edge.real,
                           y=arc_shape.exterior_edge.imag,
                           mode='lines',
-                          line=dict(color=fill_color, shape='spline', width=0.25),
+                          line={'color': fill_color, 'shape': 'spline', 'width': 0.25},
                           text=label,
                           hoverinfo='text')
 
@@ -300,7 +300,7 @@ def __create_ribbon_elements(nodes_arcs: list[list[Arc]], radius: float, ribbons
                 x=list(xs), y=list(ys),
                 fill='toself',
                 fillcolor=__corr_to_rgba(spec['correlation']),
-                line=dict(color='rgba(0,0,0,0)', width=0),
+                line={'color': 'rgba(0,0,0,0)', 'width': 0},
                 mode='lines',
                 hoverinfo='text',
                 text=f"Correlation: {spec['correlation']:.2f}",
@@ -342,7 +342,7 @@ def build_spatial_figure(props: dict[str, Any], gap_size: float = 0.005,
             shapes.append(node_arc_path)
 
     # build the figure object
-    axis = dict(showline=False, zeroline=False, showgrid=False, showticklabels=False, title="")
+    axis = {'showline': False, 'zeroline': False, 'showgrid': False, 'showticklabels': False, 'title': ""}
 
     return go.Figure(
         data=[*ribbon_traces, *arcs_lines],
@@ -353,6 +353,6 @@ def build_spatial_figure(props: dict[str, Any], gap_size: float = 0.005,
             showlegend=False,
             width=fig_size,
             height=fig_size,
-            margin=dict(t=25, b=25, l=25, r=25),
+            margin={'t': 25, 'b': 25, 'l': 25, 'r': 25},
             hovermode='closest',
             shapes=shapes))
