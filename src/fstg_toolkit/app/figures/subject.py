@@ -264,7 +264,19 @@ def __create_ribbon_elements(nodes_arcs: list[list[Arc]], radius: float, ribbons
         arc = nodes_arcs[ri][ni]
         total_w = sum(w for _, w in rib_list)
         current = arc.begin
-        for idx, w in sorted(rib_list):
+
+        current_midpoint = (arc.begin + arc.end) / 2
+
+        def __other_end_angle(item: tuple[int, float],
+                              nk: tuple[Any] = node_key,
+                              orig_mid_point: float = current_midpoint) -> float:
+            sp = ribbons[item[0]]
+            other = sp['target'] if tuple(sp['source']) == nk else sp['source']
+            other_arc = nodes_arcs[other[0]][other[1]]
+            other_midpoint = (other_arc.begin + other_arc.end) / 2
+            return (other_midpoint - orig_mid_point) % (2 * np.pi)
+
+        for idx, w in sorted(rib_list, key=__other_end_angle, reverse=True):
             sub_end = current + (w / total_w) * arc.angle
             side = 'src' if tuple(ribbons[idx]['source']) == node_key else 'tgt'
             ribbon_sub_arcs.setdefault(idx, {})[side] = (current, sub_end)
