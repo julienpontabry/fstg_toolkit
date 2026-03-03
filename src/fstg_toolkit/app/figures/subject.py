@@ -31,17 +31,19 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
+from collections import defaultdict
 from typing import Any
 
 import numpy as np
 import pandas as pd
+from matplotlib import cm as _mpl_cm
 from plotly import graph_objects as go
 
+from ..core.color import HueInterpolator
+from ..core.geometry import Arc, ArcShape, Line, LineShape, Ribbon, RibbonShape
 from ... import SpatioTemporalGraph
 from ...graph import RC5
 from ...visualization import __CoordinatesGenerator, _trans_color
-from ..core.color import HueInterpolator
-from ..core.geometry import Arc, ArcShape, Line, LineShape
 
 
 def generate_temporal_graph_props(graph: SpatioTemporalGraph, regions: list[str]) -> dict[str, Any]:
@@ -185,14 +187,40 @@ def generate_spatial_graph_props(graph: SpatioTemporalGraph, areas_desc: pd.Data
     nodes_proportions = map(lambda l: [c/sum(l) for c in l], nodes_areas_count)
     nodes_areas_labels = map(lambda l: [[areas_desc["Name_Area"].loc[n] for n in s] for s in l], nodes_areas)
 
-    # TODO create ribbons properties for spatial edges
+    # build mapping from node ID to (region_idx, node_idx_within_region) for ribbons
+    node_to_arc_idx = {}
+    for region_idx, region_name in enumerate(regions.index):
+        for node_idx, (node_id, _) in enumerate(graph.sub(region=region_name).nodes.items()):
+            node_to_arc_idx[node_id] = (region_idx, node_idx)
+
+    # create ribbon specifications from spatial edges (one per undirected pair)
+    seen_pairs: set[tuple[int, int]] = set()
+    ribbon_specs = []
+    for n, m, d in graph.edges(data=True):
+        if d['type'] == 'spatial' and n in node_to_arc_idx and m in node_to_arc_idx:
+            pair = (min(n, m), max(n, m))
+            if pair not in seen_pairs:
+                seen_pairs.add(pair)
+                ribbon_specs.append({
+                    'source': list(node_to_arc_idx[n]),
+                    'target': list(node_to_arc_idx[m]),
+                    'correlation': d['correlation']
+                })
 
     return {
         'region_labels': regions.index.to_list(),
         'region_proportion': region_proportions.tolist(),
         'nodes_labels': list(nodes_areas_labels),
-        'nodes_proportions': list(nodes_proportions)
+        'nodes_proportions': list(nodes_proportions),
+        'ribbons': ribbon_specs
     }
+
+
+def __corr_to_rgba(correlation: float) -> str:
+    cmap = _mpl_cm.get_cmap('RdBu_r')
+    r, g, b, _ = cmap((correlation + 1) / 2)
+    alpha = abs(correlation) * 0.5 + 0.1
+    return f'rgba({int(r*255)}, {int(g*255)}, {int(b*255)}, {alpha:.3f})'
 
 
 def __create_path_props(path: str, line_color: str, fill_color: str) -> dict[str, Any]:
@@ -223,12 +251,62 @@ def __create_arc_elements(arc: Arc, thickness: float, radius: float, label: str,
     return arc_line, path_props
 
 
+def __create_ribbon_elements(nodes_arcs: list[list[Arc]], radius: float, ribbons, thickness: float) -> list[Any]:
+    node_ribbon_list: dict[tuple, list] = defaultdict(list)  # (ri, ni) -> [(ribbon_idx, weight)]
+    for idx, spec in enumerate(ribbons):
+        w = max(abs(spec['correlation']), 0.01)
+        node_ribbon_list[tuple(spec['source'])].append((idx, w))
+        node_ribbon_list[tuple(spec['target'])].append((idx, w))
+
+    ribbon_sub_arcs: dict[int, dict[str, tuple[float, float]]] = {}
+    for node_key, rib_list in node_ribbon_list.items():
+        ri, ni = node_key
+        arc = nodes_arcs[ri][ni]
+        total_w = sum(w for _, w in rib_list)
+        current = arc.begin
+        for idx, w in sorted(rib_list):
+            sub_end = current + (w / total_w) * arc.angle
+            side = 'src' if tuple(ribbons[idx]['source']) == node_key else 'tgt'
+            ribbon_sub_arcs.setdefault(idx, {})[side] = (current, sub_end)
+            current = sub_end
+
+    # create ribbon traces from spatial edges (rendered below arcs)
+    ribbon_traces = []
+    for idx, spec in enumerate(ribbons):
+        angles = ribbon_sub_arcs.get(idx, {})
+        src_arc = nodes_arcs[spec['source'][0]][spec['source'][1]]
+        tgt_arc = nodes_arcs[spec['target'][0]][spec['target'][1]]
+        src_b, src_e = angles.get('src', (src_arc.begin, src_arc.end))
+        tgt_b, tgt_e = angles.get('tgt', (tgt_arc.begin, tgt_arc.end))
+        ribbon_shape = RibbonShape(Ribbon(src_b, tgt_b),
+                                   Ribbon(src_e, tgt_e),
+                                   radius=radius - thickness, strength=0.3)
+        path = ribbon_shape.to_path()
+        if path.points:
+            xs, ys = zip(*path.points)
+            ribbon_traces.append(go.Scatter(
+                x=list(xs), y=list(ys),
+                fill='toself',
+                fillcolor=__corr_to_rgba(spec['correlation']),
+                line=dict(color='rgba(0,0,0,0)', width=0),
+                mode='lines',
+                hoverinfo='text',
+                text=f"Correlation: {spec['correlation']:.2f}",
+                showlegend=False
+            ))
+    return ribbon_traces
+
+
 def build_spatial_figure(props: dict[str, Any], gap_size: float = 0.005,
                          fig_size: int = 500, thickness: float = 0.1, radius: float = 1.0) -> go.Figure:
     # create region arcs
     region_arcs = Arc.from_proportions(props['region_proportion'], gap_size)
     nodes_arcs = [Arc.from_proportions(region_props, begin=arc.begin, length=arc.angle)
                   for arc, region_props in zip(region_arcs, props['nodes_proportions'])]
+
+    # compute proportional sub-arc allocations for each ribbon endpoint
+    ribbons = props.get('ribbons', [])
+    ribbon_traces = __create_ribbon_elements(nodes_arcs, radius, ribbons, thickness)
 
     # create the displayed elements for arcs
     colors = HueInterpolator().sample(len(region_arcs))
@@ -255,7 +333,7 @@ def build_spatial_figure(props: dict[str, Any], gap_size: float = 0.005,
     axis = dict(showline=False, zeroline=False, showgrid=False, showticklabels=False, title="")
 
     return go.Figure(
-        data=arcs_lines,
+        data=[*ribbon_traces, *arcs_lines],
         layout=go.Layout(
             plot_bgcolor='white',
             xaxis=dict(axis),

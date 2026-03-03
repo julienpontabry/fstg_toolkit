@@ -386,14 +386,14 @@ class ArcShape(Shape):
 
 @dataclass(frozen=True)
 class RibbonShape(Shape):
-    """A shape formed by two parallel ribbon curves (not yet implemented).
+    """A filled ribbon bounded by two Bézier curves and two arc caps.
 
     Parameters
     ----------
     left_ribbon: Ribbon
-        The left boundary ribbon.
+        The left boundary ribbon (connects ``arc_source.begin`` to ``arc_target.begin``).
     right_ribbon: Ribbon
-        The right boundary ribbon.
+        The right boundary ribbon (connects ``arc_source.end`` to ``arc_target.end``).
     radius: float
         Circle radius for the ribbon endpoints.
     strength: float
@@ -405,11 +405,24 @@ class RibbonShape(Shape):
     radius: float
     strength: float
 
-    # TODO the ribbon should have two edges
-
     def to_path(self) -> Path:
-        """Convert to a :class:`Path` (not yet implemented)."""
-        pass
+        """Convert to a closed :class:`Path` by joining both ribbon curves and arc caps.
+
+        The path traces: left ribbon (Bezier) → arc cap at target end →
+        right ribbon reversed (Bezier) → arc cap at source end (reversed).
+        """
+        left_samples = self.left_ribbon.sample(self.radius, strength=self.strength)
+        right_samples = self.right_ribbon.sample(self.radius, strength=self.strength)
+
+        cap_end = Arc(self.left_ribbon.end, self.right_ribbon.end).sample(self.radius)
+        cap_begin = Arc(self.left_ribbon.begin, self.right_ribbon.begin).sample(self.radius)
+
+        x = (left_samples[0].tolist() + cap_end.real.tolist()
+             + right_samples[0].tolist()[::-1] + cap_begin.real.tolist()[::-1])
+        y = (left_samples[1].tolist() + cap_end.imag.tolist()
+             + right_samples[1].tolist()[::-1] + cap_begin.imag.tolist()[::-1])
+
+        return Path.from_components(x, y)
 
 
 @dataclass(frozen=True)
