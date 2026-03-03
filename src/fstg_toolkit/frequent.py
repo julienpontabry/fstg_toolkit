@@ -36,7 +36,7 @@ import re
 from pathlib import Path
 from typing import Optional
 
-from .utils import DockerHelper, DockerNotAvailableException, DockerImage
+from ._docker_utils import DockerHelper, DockerNotAvailableException, DockerImage
 
 logger = logging.getLogger()
 
