@@ -290,8 +290,8 @@ def __create_ribbon_elements(nodes_arcs: list[list[Arc]], radius: float, ribbons
         tgt_arc = nodes_arcs[spec['target'][0]][spec['target'][1]]
         src_b, src_e = angles.get('src', (src_arc.begin, src_arc.end))
         tgt_b, tgt_e = angles.get('tgt', (tgt_arc.begin, tgt_arc.end))
-        ribbon_shape = RibbonShape(Ribbon(src_b, tgt_b),
-                                   Ribbon(src_e, tgt_e),
+        ribbon_shape = RibbonShape(Ribbon(src_b, tgt_e),
+                                   Ribbon(src_e, tgt_b),
                                    radius=radius - thickness, strength=0.3)
         path = ribbon_shape.to_path()
         if path.points:
