@@ -44,3 +44,13 @@ except ImportError:
 from importlib.metadata import version
 
 __version__ = version(__package__)
+
+__all__ = [
+    'spatio_temporal_graph_from_corr_matrices',
+    'SpatioTemporalGraph',
+    'load_spatio_temporal_graph',
+    'save_spatio_temporal_graph',
+    'CorrelationMatrixSequenceSimulator',
+    'generate_pattern',
+    'SpatioTemporalGraphSimulator'
+]
