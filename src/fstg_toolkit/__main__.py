@@ -53,8 +53,9 @@ from screeninfo import get_monitors
 
 try:
     from matplotlib import pyplot as plt
+    from .visualization import spatial_plot, temporal_plot, multipartite_plot, DynamicPlot
 except ImportError:
-    plt = None
+    plt = spatial_plot = temporal_plot = multipartite_plot = DynamicPlot = None
     __help_epilog.append(f"⚠️  Install '{__package__}[plot]' to unlock the plotting commands.")
 
 from fstg_toolkit import generate_pattern, SpatioTemporalGraphSimulator, CorrelationMatrixSequenceSimulator
@@ -66,16 +67,14 @@ from .metrics import calculate_spatial_metrics, calculate_temporal_metrics, gath
 from .utils import setup_logging
 
 try:
-    from .visualization import spatial_plot, temporal_plot, multipartite_plot, DynamicPlot
-except ImportError:
-    spatial_plot = temporal_plot = multipartite_plot = DynamicPlot = None
-
-try:
+    import dash  # use to check dash is installed
     from .app.core.config import config as app_config
     from .app.core.datafilesdb import get_data_file_db, MemoryDataFilesDB, SQLiteDataFilesDB
 except ImportError as e:
     app_config = get_data_file_db = MemoryDataFilesDB = SQLiteDataFilesDB = None
     __help_epilog.append(f"⚠️  Install '{__package__}[dashboard]' to unlock the dashboard commands.")
+finally:
+    dash = None  # not needed after the check
 
 try:
     from .frequent import SPMinerService
