@@ -94,6 +94,11 @@ def graph_from_corr_matrix(matrix: np.array, areas_desc: pd.DataFrame, corr_thr:
     >>> G.edges(data=True)
     EdgeDataView([(1, 3, {'correlation': -0.41853318}), (2, 3, {'correlation': 0.75087697})])
     """
+    if len(matrix) != len(areas_desc):
+        raise ValueError(
+            f"Matrix size ({len(matrix)}) does not match number of areas ({len(areas_desc)})"
+        )
+
     corr_trans = abs if abs_thr else lambda x: x
     graph = nx.Graph()
 

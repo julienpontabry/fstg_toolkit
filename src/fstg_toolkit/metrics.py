@@ -33,6 +33,7 @@
 
 import logging
 import multiprocessing
+import warnings
 from concurrent.futures import as_completed
 from concurrent.futures.process import ProcessPoolExecutor
 from dataclasses import dataclass, field
@@ -155,7 +156,10 @@ def calculate_spatial_metrics(graph: SpatioTemporalGraph) -> list[MetricRecord]:
         record: dict[str, MetricType] = {'Time': t}
 
         for name, func in registry:
-            record[name] = func(g)
+            with warnings.catch_warnings(record=True) as warns:
+                record[name] = func(g)
+                if warns:
+                    logger.debug(f"Got warning(s) when calculating metric \"{name}\": {', '.join([str(w.message) for w in warns])}")
 
         records.append(record)
 
@@ -168,12 +172,15 @@ def calculate_temporal_metrics(graph: SpatioTemporalGraph) -> list[MetricRecord]
     g = graph.sub_temporal()
 
     for name, func in registry:
-        record[name] = func(g)
+        with warnings.catch_warnings(record=True) as warns:
+            record[name] = func(g)
+            if warns:
+                logger.debug(f"Got warning(s) when calculating metric \"{name}\": {', '.join([str(w.message) for w in warns])}")
 
     return [record]
 
 
-def _process_parallel(subject, dataset, calculator):
+def _process_parallel(subject: tuple[str, ...], dataset: GraphsDataset, calculator: MetricsCalculator):
     """Worker function for parallel metric computation.
 
     Fetches the graph for ``subject`` from ``dataset`` and applies
@@ -233,7 +240,7 @@ def gather_metrics(dataset: GraphsDataset, selection: Sequence[tuple[str, ...]],
         df.set_index(calculator.index_columns, append=True, inplace=True)
 
     multi_cols = [tuple(c.split('.')) if '.' in c else (c,) for c in df.columns]
-    if max([len(e) for e in multi_cols]) > 1:
+    if multi_cols and max(len(e) for e in multi_cols) > 1:
         df.columns = pd.MultiIndex.from_tuples(multi_cols)
         df.rename(columns={np.nan: ''}, inplace=True)
 
@@ -250,7 +257,7 @@ def metric(registry_name: str, name: str):
 
 @metric('local', "Average degree")
 def average_degree(graph: SpatioTemporalGraph) -> float:
-    return np.mean(nx.degree_histogram(graph))
+    return float(np.mean(nx.degree_histogram(graph)))
 
 
 @metric('local', "Assortativity")
@@ -298,8 +305,14 @@ def transitions_distribution(graph: SpatioTemporalGraph) -> dict[str, int]:
 @metric('global', "Reorganisation rate")
 def reorg_rate(graph: SpatioTemporalGraph) -> float:
     # TODO add reorganisation rate per region
-    nb_temp_edges = len([_ for _, _, d in graph.edges(data=True)])
-    nb_temp_noeq_edges = len([_ for _, _, d in graph.edges(data=True) if d['transition'] != RC5.EQ])
+    nb_temp_edges = 0
+    nb_temp_noeq_edges = 0
+    for _, _, d in graph.edges(data=True):
+        nb_temp_edges += 1
+        if d['transition'] != RC5.EQ:
+            nb_temp_noeq_edges += 1
+    if nb_temp_edges == 0:
+        return 0.0
     return nb_temp_noeq_edges / nb_temp_edges
 
 
@@ -375,6 +388,8 @@ def burstiness(graph: SpatioTemporalGraph) -> float:
         intervals, weights = __interevent(graph)
         mean = float(np.average(intervals, weights=weights))
         std = float(np.sqrt(np.average((intervals-mean)**2, weights=weights)))
+        if np.isclose((std + mean), 0.0):
+            return 0.0
         return (std - mean) / (std + mean)
     except __NoEventException:
         return -1

@@ -126,7 +126,7 @@ class _CorrelationMatrixNetworksEdgesFiller:
 
         return list(trial_graph.edges)
 
-    def __mean_corr_sampler(self, size: int, mean: float) -> list[float]:
+    def __mean_corr_sampler(self, size: int, mean: float, max_attempts: int = 1_000) -> list[float]:
         """Sample ``size`` correlation values whose empirical mean equals ``mean``.
 
         Values are sampled uniformly within a symmetric interval around ``mean``
@@ -139,13 +139,15 @@ class _CorrelationMatrixNetworksEdgesFiller:
             Number of correlation values to sample.
         mean: float
             Target mean correlation value.
+        max_attempts: int
+            The maximal number of attempts to sample. Default is 1000
 
         Returns
         -------
         list[float]
             A list of ``size`` correlation values with the exact requested mean.
         """
-        def __sample(low: float, high: float) -> np.array:
+        def __sample(low: float, high: float) -> np.ndarray:
             values = self.rng.uniform(low=low, high=high, size=size)
             return values + mean - values.mean()
 
@@ -153,12 +155,18 @@ class _CorrelationMatrixNetworksEdgesFiller:
         a, b = mean - rad, mean + rad
 
         samples = __sample(a, b)
+        attempts = 0
         while any(samples < a) or any(samples > b):
             samples = __sample(a, b)
+            attempts += 1
+            if attempts >= max_attempts:
+                raise RuntimeError(
+                    f"Could not sample values in [{a}, {b}] with mean={mean} after {max_attempts} attempts"
+                )
 
         return samples.tolist()
 
-    def fill(self, spatial_graph: nx.DiGraph, matrix: np.array) -> None:
+    def fill(self, spatial_graph: nx.DiGraph, matrix: np.ndarray) -> None:
         """Fill intra-network correlations for all networks in the spatial graph.
 
         Parameters

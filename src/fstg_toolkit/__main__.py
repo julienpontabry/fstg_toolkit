@@ -148,7 +148,7 @@ def __read_load_np(path: Path) -> List[Tuple[str, np.ndarray]]:
     List[Tuple[str, np.ndarray]]
         List of tuples (matrix, name) extracted from the file.
     """
-    red = np.load(path)
+    red = np.load(path, allow_pickle=False)
 
     if isinstance(red, np.lib.npyio.NpzFile):
         return [(name, matrices) for name, matrices in red.items()]

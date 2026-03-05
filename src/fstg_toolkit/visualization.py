@@ -32,9 +32,9 @@
 # knowledge of the CeCILL-B license and that you accept its terms.
 
 """Plotting the spatio-temporal graphs."""
-from cmath import isclose
 from dataclasses import dataclass
 from functools import cache
+from math import isclose
 from typing import Callable, Any
 
 import networkx as nx

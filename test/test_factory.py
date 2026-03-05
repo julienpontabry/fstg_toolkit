@@ -73,7 +73,7 @@ class GraphFromCorrMatrixTestCase(unittest.TestCase):
     def test_empty_matrix(self):
         """Test with empty correlation matrix."""
         empty_matrix = np.array([])
-        result = graph_from_corr_matrix(empty_matrix, self.areas)
+        result = graph_from_corr_matrix(empty_matrix, self.areas.iloc[:0])
         self.assertEqual(len(result.nodes), 0)
         self.assertEqual(len(result.edges), 0)
     
@@ -94,12 +94,12 @@ class GraphFromCorrMatrixTestCase(unittest.TestCase):
         ])
         
         # should include 0.4, 0.5 and 0.39
-        result = graph_from_corr_matrix(matrix, self.areas, corr_thr=0.3, abs_thr=True)
+        result = graph_from_corr_matrix(matrix, self.areas.iloc[:3], corr_thr=0.3, abs_thr=True)
         self.assertEqual(list(result.nodes), [1, 2, 3])
         self.assertEqual(list(result.edges), [(1, 2), (1, 3), (2, 3)])
-        
+
         # should include 0.4 and 0.5, exclude 0.39
-        result = graph_from_corr_matrix(matrix, self.areas, corr_thr=0.4, abs_thr=False)
+        result = graph_from_corr_matrix(matrix, self.areas.iloc[:3], corr_thr=0.4, abs_thr=False)
         self.assertEqual(list(result.nodes), [1, 2, 3])
         self.assertEqual(list(result.edges), [(1, 2), (2, 3)])
     
@@ -112,12 +112,12 @@ class GraphFromCorrMatrixTestCase(unittest.TestCase):
         ])
         
         # With abs_thr=True, should include all (|corr| > 0.4)
-        result = graph_from_corr_matrix(matrix, self.areas, corr_thr=0.4, abs_thr=True)
+        result = graph_from_corr_matrix(matrix, self.areas.iloc[:3], corr_thr=0.4, abs_thr=True)
         self.assertEqual(list(result.nodes), [1, 2, 3])
         self.assertEqual(list(result.edges), [(1, 2), (1, 3), (2, 3)])
-        
+
         # With abs_thr=False, should only include positive correlations > 0.4
-        result = graph_from_corr_matrix(matrix, self.areas, corr_thr=0.4, abs_thr=False)
+        result = graph_from_corr_matrix(matrix, self.areas.iloc[:3], corr_thr=0.4, abs_thr=False)
         self.assertEqual(list(result.nodes), [1, 2, 3])
         self.assertEqual(list(result.edges), [(1, 3)])
     
@@ -147,8 +147,8 @@ class GraphFromCorrMatrixTestCase(unittest.TestCase):
             [-0.6, 0.3, 1.0]
         ])
         
-        result = graph_from_corr_matrix(matrix, self.areas, corr_thr=0.4)
-        
+        result = graph_from_corr_matrix(matrix, self.areas.iloc[:3], corr_thr=0.4)
+
         # Check edge correlations
         edge12 = result.edges[(1, 2)]
         edge13 = result.edges[(1, 3)]

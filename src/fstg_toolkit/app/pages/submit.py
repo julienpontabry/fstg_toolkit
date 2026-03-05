@@ -38,6 +38,7 @@ import dash_bootstrap_components as dbc
 import dash_uploader as du
 from dash import html, dcc, callback, Input, Output, State, set_props, callback_context, ALL
 
+from fstg_toolkit.app.core.config import config
 from fstg_toolkit.app.core.processing import SubmittedDataset, InvalidSubmittedDataset, get_dataset_processing_manager
 from fstg_toolkit.app.views.common import get_navbar
 
@@ -64,7 +65,7 @@ options_input = html.Div([
     ], className='mb-3')
 
 
-def areas_upload():
+def __areas_upload():
     return html.Div([
             dbc.Label("Areas description file (CSV)"),
             du.Upload(id='upload-areas-file', text="Drag and drop or click to select a file to upload.",
@@ -74,7 +75,7 @@ def areas_upload():
         ], className='mb-3')
 
 
-def matrices_upload():
+def __matrices_upload():
     return html.Div([
         dbc.Label("Matrices files (NPZ/NPY)"),
         du.Upload(id='upload-matrices-files', text="Drag and drop or click to select files to upload.",
@@ -103,7 +104,7 @@ def layout():
                 html.Li("one or more numpy pickle files (NPZ or NPY) containing the timeseries of correlation matrices.")
             ]),
             html.Hr(),
-            dbc.Form([name_input, options_input, areas_upload(), matrices_upload(), form_buttons]),
+            dbc.Form([name_input, options_input, __areas_upload(), __matrices_upload(), form_buttons]),
             dbc.Alert(id='dataset-form-alert', children="", dismissable=True, fade=True, is_open=False),
 
             # storage to keep track of uploaded files
@@ -123,6 +124,14 @@ def __make_file_list(files: list[str], prefix: str) -> html.Ul:
     ])
 
 
+def __safe_unlink(filepath: str) -> None:
+    """Delete a file only if it lies inside the configured upload directory."""
+    path = Path(filepath).resolve()
+    if not path.is_relative_to(config.upload_path.resolve()):
+        raise ValueError(f"Refusing to delete file outside upload directory: {filepath}")
+    path.unlink(missing_ok=True)
+
+
 @callback(
     Output('upload-areas-file-output', 'children'),
     Output('store-uploaded-areas-file', 'data'),
@@ -139,7 +148,7 @@ def update_uploaded_areas_file(last_uploaded_file, n_clicks, uploaded_file):
             return "", dash.no_update
 
         if uploaded_file is not None:   # remove previous file from disk
-            Path(uploaded_file).unlink()
+            __safe_unlink(uploaded_file)
 
         return __make_file_list([last_uploaded_file], 'areas'), last_uploaded_file
     else:
@@ -147,7 +156,7 @@ def update_uploaded_areas_file(last_uploaded_file, n_clicks, uploaded_file):
             return dash.no_update, dash.no_update
         else:
             # clear the only file and clear the display
-            Path(uploaded_file).unlink()
+            __safe_unlink(uploaded_file)
             return "", None
 
 
@@ -180,7 +189,7 @@ def update_uploaded_matrices_files(last_uploaded_files, n_clicks, uploaded_files
         else:
             # clear the requested file and update the display
             to_del = ctx.triggered_id['index']
-            Path(to_del).unlink()
+            __safe_unlink(to_del)
             all_uploaded_files = [f for f in uploaded_files if f != to_del]
             return __make_file_list(all_uploaded_files, 'matrices'), all_uploaded_files
 
@@ -195,13 +204,13 @@ def update_uploaded_matrices_files(last_uploaded_files, n_clicks, uploaded_files
 )
 def reset_dataset_form(_, areas_uploaded_file, matrices_uploaded_files):
     if areas_uploaded_file is not None:
-        Path(areas_uploaded_file).unlink()
+        __safe_unlink(areas_uploaded_file)
         set_props('store-last-uploaded-areas-file', {'data': None})
         set_props('store-uploaded-areas-file', {'data': None})
 
     if matrices_uploaded_files is not None and len(matrices_uploaded_files) > 0:
         for f in matrices_uploaded_files:
-            Path(f).unlink()
+            __safe_unlink(f)
         set_props('store-last-uploaded-matrices-files', {'data': None})
         set_props('store-uploaded-matrices-files', {'data': None})
 

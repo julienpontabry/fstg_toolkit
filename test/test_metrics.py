@@ -421,9 +421,9 @@ class EdgeCaseMetricsTestCase(unittest.TestCase):
         with self.assertRaises(ZeroDivisionError):
             calculate_spatial_metrics(st_empty)
         
-        # Temporal metrics should handle empty graph
-        with self.assertRaises(ZeroDivisionError):
-            calculate_temporal_metrics(st_empty)
+        # Temporal metrics should handle empty graph without raising
+        result = calculate_temporal_metrics(st_empty)
+        self.assertIsNotNone(result)
     
     def test_disconnected_graph(self):
         """Test metrics on disconnected graph."""

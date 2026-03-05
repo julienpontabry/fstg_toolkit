@@ -455,7 +455,11 @@ class DataLoader:
             or None if the file does not exist in the archive.
         """
         with self.__within_archive as zfp:
-            with zfp.open(filename, 'r') as fp:
+            try:
+                fp_ctx = zfp.open(filename, 'r')
+            except KeyError:
+                raise FileNotFoundError(f"Graph file '{filename}' not found in archive '{self.filepath}'")
+            with fp_ctx as fp:
                 graph_dict = json.load(fp, object_hook=_spatio_temporal_object_hook)
                 graph = nx.json_graph.node_link_graph(graph_dict, edges='edges')
                 return SpatioTemporalGraph(graph, areas)
