@@ -752,7 +752,9 @@ def show(graphs_data: Path, debug: bool, port: int, no_browser: bool):
 @click.option('-d', '--db-path', type=click.Path(dir_okay=False, path_type=Path),
               default=Path.cwd() / 'data_files.db', show_default="a 'data_files.db' file in the current directory",
               help="Path to the database file to use for storing data files information.")
-def serve(data_path: Path, upload_path: Path, debug: bool, port: int, db_path: Path):
+@click.option('-t', '--token-size', type=click.IntRange(0, min_open=True), default=3, show_default=True,
+              help="Size of the tokens used to identify the datasets. Use a larger size to accept more simultaneous datasets.")
+def serve(data_path: Path, upload_path: Path, debug: bool, port: int, db_path: Path, token_size: int):
     """Serve a dashboard for visualizing spatio-temporal graphs from a data directory."""
 
     # set up the configuration
@@ -761,7 +763,7 @@ def serve(data_path: Path, upload_path: Path, debug: bool, port: int, db_path: P
     app_config.db_path = db_path
 
     # set up the data file database
-    get_data_file_db(requested_type=SQLiteDataFilesDB, db_path=db_path, debug=debug)
+    get_data_file_db(requested_type=SQLiteDataFilesDB, db_path=db_path, debug=debug, token_nb_bytes=token_size)
 
     # set up and run the dash app
     from .app.fstg_view import app  # import it now so it has been configured correctly
