@@ -59,10 +59,13 @@ layout = [
     ),
     dbc.Modal([
         dbc.ModalHeader(dbc.ModalTitle("Spatial view", id='modal-sp-title')),
-        dbc.ModalBody(dcc.Graph(figure={}, id='sp-graph',
-                                config=dict(**plotly_config,
-                                            modeBarButtonsToRemove=['zoom', 'pan', 'zoomIn', 'zoomOut',
-                                                                    'autoScale', 'resetScale']))),
+        dbc.ModalBody(html.Div(dcc.Graph(figure={}, id='sp-graph',
+                                         config=dict(**plotly_config,
+                                                     modeBarButtonsToRemove=['zoom', 'pan', 'zoomIn', 'zoomOut',
+                                                                             'autoScale', 'resetScale']),
+                                         style={'width': '100%', 'height': '100%'}),
+                               style={'width': 'min(70vw, 70vh)', 'aspectRatio': '1 / 1', 'margin': '0 auto'}
+            )),
     ], id='modal-sp-graph', size='xl', centered=True, is_open=False),
 
     dcc.Store(id='store-spatial-connections', storage_type='memory'),

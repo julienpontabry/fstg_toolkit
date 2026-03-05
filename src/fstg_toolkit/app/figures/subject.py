@@ -310,7 +310,7 @@ def __create_ribbon_elements(nodes_arcs: list[list[Arc]], radius: float, ribbons
 
 
 def build_spatial_figure(props: dict[str, Any], gap_size: float = 0.005,
-                         fig_size: int = 500, thickness: float = 0.1, radius: float = 1.0) -> go.Figure:
+                         thickness: float = 0.1, radius: float = 1.0) -> go.Figure:
     # create region arcs
     region_arcs = Arc.from_proportions(props['region_proportion'], gap_size)
     nodes_arcs = [Arc.from_proportions(region_props, begin=arc.begin, length=arc.angle)
@@ -348,11 +348,10 @@ def build_spatial_figure(props: dict[str, Any], gap_size: float = 0.005,
         data=[*ribbon_traces, *arcs_lines],
         layout=go.Layout(
             plot_bgcolor='white',
-            xaxis=dict(axis),
+            autosize=True,
+            xaxis=dict(axis, scaleanchor='y', scaleratio=1),
             yaxis=dict(axis),
             showlegend=False,
-            width=fig_size,
-            height=fig_size,
             margin={'t': 25, 'b': 25, 'l': 25, 'r': 25},
             hovermode='closest',
             shapes=shapes))
