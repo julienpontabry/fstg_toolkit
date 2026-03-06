@@ -46,7 +46,6 @@ from fstg_toolkit import (
     load_spatio_temporal_graph, save_spatio_temporal_graph
 )
 from fstg_toolkit.graph import SpatioTemporalGraph
-from fstg_toolkit.io import load_metrics
 from fstg_toolkit.metrics import calculate_spatial_metrics, calculate_temporal_metrics
 
 
@@ -164,31 +163,31 @@ class FullPipelineIntegrationTestCase(unittest.TestCase):
     
     def test_metrics_save_load_roundtrip(self):
         """Test metrics save/load round trip."""
+        from fstg_toolkit.io import DataSaver, DataLoader
+
         # Create ST graph and calculate metrics
         st_graph = spatio_temporal_graph_from_corr_matrices(
             self.matrices, self.areas, corr_thr=0.4
         )
-        
+
         spatial_metrics = pd.DataFrame(calculate_spatial_metrics(st_graph))
         spatial_metrics.set_index(pd.Index(['subject']*len(spatial_metrics), name='id'), inplace=True)
         temporal_metrics = pd.DataFrame(calculate_temporal_metrics(st_graph))
         temporal_metrics.set_index(pd.Index(['subject']*len(temporal_metrics), name='id'), inplace=True)
-        
+
         # Save metrics
-        spatial_path = Path(self.temp_dir) / 'spatial_metrics.csv'
-        temporal_path = Path(self.temp_dir) / 'temporal_metrics.csv'
-        
-        from fstg_toolkit.io import save_metrics
-        save_metrics(spatial_path, spatial_metrics)
-        save_metrics(temporal_path, temporal_metrics)
-        
+        save_path = Path(self.temp_dir) / 'metrics.zip'
+        saver = DataSaver()
+        saver.add_metrics({'spatial': spatial_metrics, 'temporal': temporal_metrics})
+        saver.save(save_path)
+
         # Load metrics back
-        loaded_spatial = load_metrics(spatial_path)
-        loaded_temporal = load_metrics(temporal_path)
-        
+        loader = DataLoader(save_path)
+        loaded = loader.load_metrics()
+
         # Verify data is preserved
-        pd.testing.assert_frame_equal(loaded_spatial, spatial_metrics)
-        pd.testing.assert_frame_equal(loaded_temporal, temporal_metrics)
+        pd.testing.assert_frame_equal(loaded['spatial'], spatial_metrics)
+        pd.testing.assert_frame_equal(loaded['temporal'], temporal_metrics)
 
 
 class SimulationToAnalysisIntegrationTestCase(unittest.TestCase):

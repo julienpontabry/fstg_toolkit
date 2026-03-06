@@ -41,7 +41,7 @@ import pandas as pd
 
 from fstg_toolkit.graph import SpatioTemporalGraph, RC5
 from fstg_toolkit.io import DataLoader, DataSaver, load_spatio_temporal_graph, \
-    save_spatio_temporal_graph, load_metrics, save_metrics
+    save_spatio_temporal_graph, _SpatioTemporalGraphEncoder
 
 
 class DataLoaderTestCase(unittest.TestCase):
@@ -90,14 +90,10 @@ class DataLoaderTestCase(unittest.TestCase):
             
             # Save graph
             import json
-            from fstg_toolkit.io import _SpatioTemporalGraphEncoder
             graph_dict = nx.json_graph.node_link_data(self.graph, edges='edges')
             graph_json = json.dumps(graph_dict, cls=_SpatioTemporalGraphEncoder)
             zf.writestr('test_graph.json', graph_json)
 
-            # Save frequent patterns style (use same graph; not important for those tests)
-            zf.writestr('test_graph/motifs_enriched_t.json', graph_json)
-            
             # Save matrix
             with zf.open('test_matrix.npy', 'w') as f:
                 np.save(f, self.matrix)
@@ -144,14 +140,6 @@ class DataLoaderTestCase(unittest.TestCase):
         self.assertEqual(len(filenames), 1)
         self.assertEqual(filenames[0], 'test_graph.json')
 
-    def test_lazy_load_frequent_patterns(self):
-        """Test lazy loading of frequent patterns."""
-        loader = DataLoader(self.zip_path)
-        filenames = loader.lazy_load_frequent_patterns()
-
-        self.assertEqual(len(filenames), 1)
-        self.assertEqual(filenames[0], 'test_graph/motifs_enriched_t.json')
-    
     def test_lazy_load_matrices(self):
         """Test lazy loading of matrix filenames."""
         loader = DataLoader(self.zip_path)
@@ -180,17 +168,21 @@ class DataLoaderTestCase(unittest.TestCase):
     def test_load_all(self):
         """Test loading all data."""
         loader = DataLoader(self.zip_path)
-        areas, graphs, matrices = loader.load()
-        
+        areas = loader.load_areas()
+        graphs = loader.load_graphs(areas)
+        matrices = loader.load_matrices()
+
         self.assertIsNotNone(areas)
         self.assertEqual(len(graphs), 1)
         self.assertEqual(len(matrices), 1)
-    
+
     def test_lazy_load(self):
         """Test lazy loading."""
         loader = DataLoader(self.zip_path)
-        areas, graph_files, matrix_files = loader.lazy_load()
-        
+        areas = loader.load_areas()
+        graph_files = loader.lazy_load_graphs()
+        matrix_files = loader.lazy_load_matrices()
+
         self.assertIsNotNone(areas)
         self.assertEqual(len(graph_files), 1)
         self.assertEqual(len(matrix_files), 1)
@@ -212,9 +204,8 @@ class DataLoaderTestCase(unittest.TestCase):
             zf.writestr('test.json', '{}')
         
         loader = DataLoader(no_areas_path)
-
-        with self.assertRaisesRegex(KeyError, "There is no item named 'areas.csv' in the archive"):
-            loader.load_areas()
+        areas = loader.load_areas()
+        self.assertIsNone(areas)
 
 
 class DataSaverTestCase(unittest.TestCase):
@@ -255,9 +246,9 @@ class DataSaverTestCase(unittest.TestCase):
         
         # Create saver and add data
         saver = DataSaver()
-        saver.add(self.areas)
-        saver.add({'test_graph': self.st_graph})
-        saver.add({'test_matrix': self.matrix})
+        saver.add_areas(self.areas)
+        saver.add_graphs({'test_graph': self.st_graph})
+        saver.add_matrices({'test_matrix': self.matrix})
         
         # Save data
         saver.save(save_path)
@@ -297,9 +288,9 @@ class DataSaverTestCase(unittest.TestCase):
         }
         
         saver = DataSaver()
-        saver.add(self.areas)
-        saver.add(graphs)
-        saver.add(matrices)
+        saver.add_areas(self.areas)
+        saver.add_graphs(graphs)
+        saver.add_matrices(matrices)
         
         saver.save(save_path)
         
@@ -315,20 +306,13 @@ class DataSaverTestCase(unittest.TestCase):
         self.assertEqual(len(loaded_graphs), 2)
         self.assertEqual(len(loaded_matrices), 2)
     
-    def test_clear_and_add(self):
-        """Test clear and add functionality."""
-        save_path = Path(self.temp_dir) / 'clear_test.zip'
-        
+    def test_add_and_save(self):
+        """Test add and save functionality."""
+        save_path = Path(self.temp_dir) / 'add_test.zip'
+
         saver = DataSaver()
-        saver.add(self.areas)
-        self.assertEqual(len(saver.elements), 1)
-        
-        saver.clear()
-        self.assertEqual(len(saver.elements), 0)
-        
-        saver.add({'test': self.st_graph})
-        self.assertEqual(len(saver.elements), 1)
-        
+        saver.add_areas(self.areas)
+        saver.add_graphs({'test': self.st_graph})
         saver.save(save_path)
         self.assertTrue(save_path.exists())
 
@@ -431,18 +415,18 @@ class LoadSaveSpatioTemporalGraphTestCase(unittest.TestCase):
 
 
 class MetricsIOTestCase(unittest.TestCase):
-    """Test metrics save/load functionality."""
-    
+    """Test metrics save/load functionality via DataSaver/DataLoader."""
+
     def setUp(self):
         """Set up test data."""
         self.temp_dir = tempfile.mkdtemp()
-        
+
         # Create test metrics DataFrame
         self.simple_metrics = pd.DataFrame({
             'metric1': [0.1, 0.2, 0.3],
             'metric2': [0.4, 0.5, 0.6]
         }, index=pd.Index(['subject1', 'subject2', 'subject3'], name='id'))
-        
+
         # Create multi-index metrics
         self.multi_index_metrics = pd.DataFrame(
             np.random.rand(4, 3),
@@ -453,42 +437,42 @@ class MetricsIOTestCase(unittest.TestCase):
                 ('metric1', 'value'), ('metric1', 'pvalue'), ('metric2', 'value')
             ])
         )
-    
+
     def tearDown(self):
         """Clean up temporary files."""
         import shutil
         shutil.rmtree(self.temp_dir)
-    
+
     def test_simple_metrics_roundtrip(self):
         """Test save/load roundtrip with simple metrics."""
-        save_path = Path(self.temp_dir) / 'simple_metrics.csv'
-        
-        # Save metrics
-        save_metrics(save_path, self.simple_metrics)
-        
-        # Load metrics back
-        loaded_metrics = load_metrics(save_path)
-        
-        # Verify
-        pd.testing.assert_frame_equal(loaded_metrics, self.simple_metrics)
-    
+        save_path = Path(self.temp_dir) / 'metrics.zip'
+
+        saver = DataSaver()
+        saver.add_metrics({'simple': self.simple_metrics})
+        saver.save(save_path)
+
+        loader = DataLoader(save_path)
+        loaded = loader.load_metrics()
+
+        self.assertIn('simple', loaded)
+        pd.testing.assert_frame_equal(loaded['simple'], self.simple_metrics)
+
     def test_multi_index_metrics_roundtrip(self):
         """Test save/load roundtrip with multi-index metrics."""
-        save_path = Path(self.temp_dir) / 'multi_metrics.csv'
-        
-        # Save metrics
-        save_metrics(save_path, self.multi_index_metrics)
-        
-        # Load metrics back
-        loaded_metrics = load_metrics(save_path)
-        
-        # Verify structure
-        self.assertIsInstance(loaded_metrics.index, pd.MultiIndex)
-        self.assertIsInstance(loaded_metrics.columns, pd.MultiIndex)
-        
-        # Verify values
-        pd.testing.assert_frame_equal(loaded_metrics, self.multi_index_metrics)
-    
+        save_path = Path(self.temp_dir) / 'metrics_multi.zip'
+
+        saver = DataSaver()
+        saver.add_metrics({'multi': self.multi_index_metrics})
+        saver.save(save_path)
+
+        loader = DataLoader(save_path)
+        loaded = loader.load_metrics()
+
+        self.assertIn('multi', loaded)
+        self.assertIsInstance(loaded['multi'].index, pd.MultiIndex)
+        self.assertIsInstance(loaded['multi'].columns, pd.MultiIndex)
+        pd.testing.assert_frame_equal(loaded['multi'], self.multi_index_metrics)
+
     def test_mixed_index_metrics(self):
         """Test metrics with only column multi-index."""
         mixed_metrics = pd.DataFrame(
@@ -498,19 +482,22 @@ class MetricsIOTestCase(unittest.TestCase):
                 ('metric1', 'value'), ('metric2', 'value')
             ])
         )
-        
-        save_path = Path(self.temp_dir) / 'mixed_metrics.csv'
-        
-        # Save and load
-        save_metrics(save_path, mixed_metrics)
-        loaded_metrics = load_metrics(save_path)
-        
-        # Verify
-        pd.testing.assert_frame_equal(loaded_metrics, mixed_metrics)
-    
+
+        save_path = Path(self.temp_dir) / 'metrics_mixed.zip'
+
+        saver = DataSaver()
+        saver.add_metrics({'mixed': mixed_metrics})
+        saver.save(save_path)
+
+        loader = DataLoader(save_path)
+        loaded = loader.load_metrics()
+
+        self.assertIn('mixed', loaded)
+        pd.testing.assert_frame_equal(loaded['mixed'], mixed_metrics)
+
     def test_nonexistent_metrics_file(self):
-        """Test loading from nonexistent file."""
-        nonexistent_path = Path(self.temp_dir) / 'nonexistent.csv'
-        
+        """Test loading from nonexistent zip archive."""
+        nonexistent_path = Path(self.temp_dir) / 'nonexistent.zip'
+
         with self.assertRaises(FileNotFoundError):
-            load_metrics(nonexistent_path)
+            DataLoader(nonexistent_path)
