@@ -61,7 +61,7 @@ except ImportError:
 from fstg_toolkit import generate_pattern, SpatioTemporalGraphSimulator, CorrelationMatrixSequenceSimulator
 from .factory import spatio_temporal_graph_from_corr_matrices
 from .graph import SpatioTemporalGraph
-from .io import save_spatio_temporal_graph, DataSaver, DataLoader, save_metrics
+from .io import DataSaver, DataLoader, save_spatio_temporal_graph
 from .app.core.io import GraphsDataset
 from .metrics import calculate_spatial_metrics, calculate_temporal_metrics, gather_metrics
 from .utils import setup_logging
@@ -255,12 +255,12 @@ def build(areas_description_path: Path, correlation_matrices_path: Tuple[Path], 
     matrices = {name: matrix for name, matrix in matrices.items() if name in selected}
 
     if not no_raw:
-        saver.add(matrices)
+        saver.add_matrices(matrices)
 
     # read input areas description
     try:
         areas = pd.read_csv(areas_description_path, index_col='Id_Area')
-        saver.add(areas)
+        saver.add_areas(areas)
     except Exception as ex:
         error_console.print(f"Error while reading areas description: {ex}")
         error_console.print_exception()
@@ -289,7 +289,7 @@ def build(areas_description_path: Path, correlation_matrices_path: Tuple[Path], 
                     graphs[name] = graph
                 bar.update(task, advance=1, description=name)
 
-    saver.add(graphs)
+    saver.add_graphs(graphs)
 
     # save the graphs into a single zip file
     try:
@@ -327,28 +327,19 @@ def metrics(dataset_path: Path, max_cpus: int):
         temporal_df = gather_metrics(dataset, dataset.subjects.index, calculate_temporal_metrics,
                                      callback=lambda _: bar.update(task, advance=1), max_cpus=max_cpus)
 
-    # TODO modify the data saver to accepts those files
     # save the metrics into the dataset
-    with zipfile.ZipFile(dataset_path, 'a') as zfp:
-        try:
-            # TODO handle already present files
-            with console.status("Saving local metrics..."):
-                with zfp.open('metrics_local.csv', 'w') as fp:
-                    save_metrics(fp, spatial_df)
-            console.print(f"Local metrics saved in '{dataset_path}'.")
-        except OSError as ex:
-            error_console.print(f"Error while saving local metrics to {dataset_path}: {ex}")
-            error_console.print_exception()
-
-        try:
-            # TODO handle already present files
-            with console.status("Saving global metrics..."):
-                with zfp.open('metrics_global.csv', 'w') as fp:
-                    save_metrics(fp, temporal_df)
-            console.print(f"Global metrics saved in '{dataset_path}'.")
-        except OSError as ex:
-            error_console.print(f"Error while saving global metrics to {dataset_path}: {ex}")
-            error_console.print_exception()
+    try:
+        with console.status("Saving metrics..."):
+            saver = DataSaver()
+            saver.add_metrics({
+                'local': spatial_df,
+                'global': temporal_df,
+            })
+            saver.save(dataset_path)
+        console.print(f"Metrics saved to '{dataset_path}'.")
+    except OSError as ex:
+        error_console.print(f"Error while saving to {dataset_path}: {ex}")
+        error_console.print_exception()
 
 
 @click.command()
@@ -380,7 +371,7 @@ def frequent(dataset_path: Path):
             task = bar.add_task("",  total=None)
 
             # TODO parallelize the graph extraction
-            # FIXME better handle IO for datasets
+            # TODO use the data loader
             with zipfile.ZipFile(dataset_path, 'r') as zfp:
                 files = [file for file in zfp.namelist() if Path(file).suffix == '.json' and Path(file).stem != 'motifs_enriched_t']
                 for file in files:
@@ -398,7 +389,7 @@ def frequent(dataset_path: Path):
 
             # save found frequent patterns into the dataset
             # TODO parallelize the patterns inclusion
-            # FIXME better handle IO for datasets
+            # TODO use the data saver
             with _progress_factory("Saving frequent patterns...", f"Frequent patterns saved to dataset '{dataset_path}'.",
                                    steps=True, transient=True) as bar:
                 task = bar.add_task("", total=None)

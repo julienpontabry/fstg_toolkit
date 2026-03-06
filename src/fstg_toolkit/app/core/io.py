@@ -162,6 +162,7 @@ class GraphsDataset:
         return self.loader.load_matrix(filename)
 
     def get_available_metrics(self) -> list[str]:
+        # TODO the logic of filenames should be in I/O module
         return [filename.removeprefix('metrics_').split('.csv')[0] for filename in self.loader.lazy_load_metrics()]
 
     def has_metrics(self, name: Optional[str] = None) -> bool:
@@ -169,7 +170,8 @@ class GraphsDataset:
         return name and name in available_metrics or len(available_metrics) > 0
 
     def get_metrics(self, name: str) -> Optional[pd.DataFrame]:
-        return self.loader.load_metrics(name)
+        # TODO the logic of filenames should be in I/O module
+        return self.loader.load_metric(f'metrics_{name}.csv')
 
     @staticmethod
     def deserialize(data: Dict[str, Any]) -> 'GraphsDataset':
@@ -213,12 +215,12 @@ class GraphsDataset:
         """
         # load the dataset lazily
         loader = DataLoader(filepath)
-        result = loader.lazy_load()
+        areas_desc = loader.load_areas()
+        graphs_filenames = loader.lazy_load_graphs()
+        matrices_filenames = loader.lazy_load_matrices()
 
-        if result is None:
+        if areas_desc is None or graphs_filenames is None or matrices_filenames is None:
             raise IOError("No dataset red.")
-        areas_desc: pd.DataFrame
-        areas_desc, graphs_filenames, matrices_filenames = result
 
         # extract factors from filename (without extension
         filenames_without_ext = [name.split('.json')[0] for name in graphs_filenames]
