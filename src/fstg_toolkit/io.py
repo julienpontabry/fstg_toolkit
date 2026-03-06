@@ -814,6 +814,8 @@ class DataSaver:
     are preserved.
     """
 
+    # TODO think about zip compression to gain space (is it fast enough?)
+
     _inventory: dict[str, list[tuple[str, Any]]] = field(default_factory=lambda: {})
 
     def __str__(self) -> str:
