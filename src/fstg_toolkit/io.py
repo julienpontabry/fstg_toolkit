@@ -48,8 +48,8 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-from .app.core.utils import split_factors_from_name
 from .graph import SpatioTemporalGraph, RC5
+from .utils import split_factors_from_name
 
 logger = logging.getLogger()
 
