@@ -31,18 +31,18 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
-import pandas as pd
-from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
+import pandas as pd
 from dash import Input, Output, State, callback, dcc
+from dash.exceptions import PreventUpdate
 
 from .common import (
     plotly_config,
     build_factors_options,
     create_factors_options_controls,
 )
-from ..core.io import GraphsDataset
 from ..figures.metrics import build_metrics_plot
+from ...io import GraphsDataset
 
 layout = [
     dbc.Row(dcc.Dropdown([], value='', clearable=False, id='metrics-type')),

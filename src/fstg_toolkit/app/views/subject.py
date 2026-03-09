@@ -37,9 +37,9 @@ from dash.dependencies import ALL
 from dash.exceptions import PreventUpdate
 
 from .common import update_factor_controls, plotly_config
-from ..core.io import GraphsDataset
 from ..figures.subject import build_subject_figure, generate_temporal_graph_props, build_spatial_figure, \
     generate_spatial_graph_props
+from ...io import GraphsDataset
 
 layout = [
     html.Div([], id='subject-factors-block'),

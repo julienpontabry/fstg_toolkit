@@ -32,16 +32,16 @@
 # knowledge of the CeCILL-B license and that you accept its terms.
 
 import dash_bootstrap_components as dbc
-from dash.exceptions import PreventUpdate
 from dash import Input, Output, State, callback, dash_table, dcc, html
+from dash.exceptions import PreventUpdate
 
 from .common import (
     plotly_config,
     create_factors_options_controls,
     build_factors_options,
 )
-from ..core.io import GraphsDataset
 from ..figures.data import areas_per_region_figure, subjects_per_factors_figure
+from ...io import GraphsDataset
 
 desc_columns = [{'name': "Area id", 'id': 'Id_Area'},
                 {'name': "Area name", 'id': 'Name_Area'},

@@ -61,8 +61,7 @@ except ImportError:
 from fstg_toolkit import generate_pattern, SpatioTemporalGraphSimulator, CorrelationMatrixSequenceSimulator
 from .factory import spatio_temporal_graph_from_corr_matrices
 from .graph import SpatioTemporalGraph
-from .io import DataSaver, DataLoader, save_spatio_temporal_graph
-from .app.core.io import GraphsDataset
+from .io import DataSaver, DataLoader, save_spatio_temporal_graph, GraphsDataset
 from .metrics import calculate_spatial_metrics, calculate_temporal_metrics, gather_metrics
 from .utils import setup_logging
 

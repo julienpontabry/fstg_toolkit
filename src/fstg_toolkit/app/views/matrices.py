@@ -31,15 +31,14 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
-from dash.exceptions import PreventUpdate
-from dash.dependencies import ALL
-from dash import Input, Output, State, callback, dcc, html
 import dash_bootstrap_components as dbc
+from dash import Input, Output, State, callback, dcc, html
+from dash.dependencies import ALL
+from dash.exceptions import PreventUpdate
 
-from ..figures.matrices import build_matrices_figure, break_width_to_cols
 from .common import update_factor_controls, plotly_config
-from ..core.io import GraphsDataset
-
+from ..figures.matrices import build_matrices_figure, break_width_to_cols
+from ...io import GraphsDataset
 
 layout = [
     html.Div([], id='mtx-factors-block'),

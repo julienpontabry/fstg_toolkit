@@ -35,7 +35,7 @@ import dash_bootstrap_components as dbc
 from dash import dcc
 from dash.exceptions import PreventUpdate
 
-from fstg_toolkit.app.core.io import GraphsDataset
+from ...io import GraphsDataset
 
 plotly_config = {
     'displayModeBar': 'hover',

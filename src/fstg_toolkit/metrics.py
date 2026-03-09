@@ -43,8 +43,8 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-from .app.core.io import GraphsDataset
 from .graph import SpatioTemporalGraph, RC5
+from .io import GraphsDataset
 
 logger = logging.getLogger()
 

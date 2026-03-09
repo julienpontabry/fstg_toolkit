@@ -35,10 +35,9 @@ import dash
 import dash_bootstrap_components as dbc
 from dash import dcc, html
 
-from fstg_toolkit.app.views import metrics, data, subject, matrices
 from fstg_toolkit.app.core.datafilesdb import get_data_file_db
-from fstg_toolkit.app.core.io import GraphsDataset
-
+from fstg_toolkit.app.views import metrics, data, subject, matrices
+from fstg_toolkit.io import GraphsDataset
 
 dash.register_page(__name__, path_template='/dashboard/<token>')
 
