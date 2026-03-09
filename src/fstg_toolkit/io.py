@@ -41,7 +41,7 @@ import tempfile
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, IO, Protocol, Optional, Generator, List, Set, Dict, Tuple
+from typing import Any, IO, Protocol, Optional, Generator
 from zipfile import ZipFile, ZipInfo
 
 import networkx as nx
@@ -1161,10 +1161,10 @@ class GraphsDataset:
 
     loader: DataLoader
     areas_desc: pd.DataFrame
-    factors: List[Set[str]]
+    factors: list[set[str]]
     subjects: pd.DataFrame
 
-    def serialize(self) -> Dict[str, Any]:
+    def serialize(self) -> dict[str, Any]:
         """Serializes the dataset into a dictionary format for storage or transmission.
 
         Returns
@@ -1182,10 +1182,10 @@ class GraphsDataset:
             'subjects': self.subjects.reset_index().to_dict('records')
         }
 
-    def __contains__(self, ids: Tuple[str, ...]) -> bool:
+    def __contains__(self, ids: tuple[str, ...]) -> bool:
         return ids in self.subjects.index
 
-    def get_graph(self, ids: Tuple[str, ...]) -> SpatioTemporalGraph:
+    def get_graph(self, ids: tuple[str, ...]) -> SpatioTemporalGraph:
         """Retrieves the graph associated with the given subject IDs.
 
         Parameters
@@ -1217,7 +1217,7 @@ class GraphsDataset:
         """
         return 'Matrix' in self.subjects.columns
 
-    def get_matrix(self, ids: Tuple[str, ...]) -> np.ndarray:
+    def get_matrix(self, ids: tuple[str, ...]) -> np.ndarray:
         """Retrieves the matrix associated with the given subject IDs.
 
         Parameters
@@ -1250,7 +1250,7 @@ class GraphsDataset:
         return self.loader.load_metrics()[name]
 
     @staticmethod
-    def deserialize(data: Dict[str, Any]) -> 'GraphsDataset':
+    def deserialize(data: dict[str, Any]) -> 'GraphsDataset':
         """Deserializes a dataset from a dictionary format.
 
         Parameters
@@ -1300,7 +1300,7 @@ class GraphsDataset:
 
         # extract factors from filename (without extension
         filenames_without_ext = [name.split('.json')[0] for name in graphs_filenames]
-        factors: List[Set[str]]
+        factors: list[set[str]]
         factors, ids = split_factors_from_name(filenames_without_ext)
 
         # create a subject's table with factors as index and filenames as data
