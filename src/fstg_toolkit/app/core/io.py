@@ -162,16 +162,14 @@ class GraphsDataset:
         return self.loader.load_matrix(filename)
 
     def get_available_metrics(self) -> list[str]:
-        # TODO the logic of filenames should be in I/O module
-        return [filename.removeprefix('metrics_').split('.csv')[0] for filename in self.loader.lazy_load_metrics()]
+        return list(self.loader.load_metrics().keys())
 
     def has_metrics(self, name: Optional[str] = None) -> bool:
         available_metrics = self.get_available_metrics()
         return name and name in available_metrics or len(available_metrics) > 0
 
     def get_metrics(self, name: str) -> Optional[pd.DataFrame]:
-        # TODO the logic of filenames should be in I/O module
-        return self.loader.load_metric(f'metrics_{name}.csv')
+        return self.loader.load_metrics()[name]
 
     @staticmethod
     def deserialize(data: Dict[str, Any]) -> 'GraphsDataset':
