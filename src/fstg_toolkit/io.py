@@ -685,9 +685,10 @@ class DataLoader:
             The kinds of files to extract.
 
         Returns
-        -------
-        Generator[str, None, None]
-            The name of the file that has been extracted.
+        ------
+        tuple[int, Generator[str, None, None]]
+            The total number of files and a generator to the extraction that yields
+            the name of the file that has been extracted.
 
         Raises
         ------
@@ -1037,11 +1038,14 @@ class DataSaver:
             logger.debug(f"Found {len(common)} overlapping filename(s) in existing archive: {common}.")
         return common
 
-    def __transfer_save(self, filepath: Path, data: dict[str, Any], common_filenames: set[str]) -> None:
+    def __transfer_save(self, filepath: Path, data: dict[str, Any], common_filenames: set[str]) -> Generator[str, None, None]:
         """Replace overlapping entries in an existing archive, preserving others.
 
         The strategy is to write all unchanged entries to a temporary file,
         append the new data, then atomically replace the original archive.
+
+        This method returns a generator yield, so it is required to iterate on so
+        the saving to dataset can happen.
 
         Parameters
         ----------
@@ -1052,10 +1056,14 @@ class DataSaver:
         common_filenames : set[str]
             Subset of filenames in *data* that already exist in the archive
             and must be replaced.
+
+        Yields
+        ------
+        str
+            The name of the item being saved
         """
         logger.info(f"Updating archive '{filepath}': replacing {len(common_filenames)} existing "
                     f"file(s) and adding new ones.")
-        # TODO parallelize the save?
         with tempfile.NamedTemporaryFile(suffix='.zip', delete_on_close=False) as tmp:
             # copy unchanged files
             with ZipFile(str(filepath), 'r') as zfp_in, \
@@ -1065,18 +1073,23 @@ class DataSaver:
                         logger.debug(f"Preserving unchanged entry '{fileinfo.filename}'.")
                         with zfp_in.open(fileinfo, 'r') as src, zfp_out.open(fileinfo, 'w') as dst:
                             dst.write(src.read())
+                            yield fileinfo.filename
 
             # add new files
             with ZipFile(tmp, 'a') as zfp:
                 for filename, item in data.items():
                     self.__save(zfp, filename, item)
+                    yield filename
 
             # replace old zip with new one
             logger.debug(f"Replacing '{filepath}' with updated archive.")
             Path(tmp.name).replace(filepath)
 
-    def __simple_save(self, filepath: Path, data: dict[str, Any]) -> None:
+    def __simple_save(self, filepath: Path, data: dict[str, Any]) -> Generator[str, None, None]:
         """Append all items in *data* to a ZIP archive (creating it if necessary).
+
+        This method returns a generator yield, so it is required to iterate on so
+        the saving to dataset can happen.
 
         Parameters
         ----------
@@ -1084,14 +1097,24 @@ class DataSaver:
             Path to the destination ZIP archive.
         data : dict[str, Any]
             Mapping from filename to data object.
+
+        Yields
+        ------
+        str
+            The name of the item being saved
         """
         logger.info(f"Appending {len(data)} item(s) to archive '{filepath}'.")
-        # TODO parallelize the save?
         with ZipFile(str(filepath), 'a') as zfp:
             for filename, item in data.items():
                 self.__save(zfp, filename, item)
+                yield filename
 
-    def save(self, filepath: Path) -> None:
+    @staticmethod
+    def __nb_files(filepath: Path) -> int:
+        with ZipFile(str(filepath), 'r') as zfp:
+            return len(zfp.namelist())
+
+    def save(self, filepath: Path) -> tuple[int, Generator[str, None, None]]:
         """Flush all staged items to a ZIP archive at *filepath*.
 
         If the archive already exists and some staged filenames collide with
@@ -1099,17 +1122,28 @@ class DataSaver:
         entries while preserving the rest.  Otherwise, new entries are simply
         appended.
 
+        This method returns a generator yield, so it is required to iterate on so
+        the saving to dataset can happen.
+
         Parameters
         ----------
         filepath : Path
             Destination ZIP archive path.
+
+        Returns
+        ------
+        tuple[int, Generator[str, None, None]]
+            The total number of items to save and a generator to the saving of
+            items that yield the name of the item being saved.
         """
         logger.info(f"Saving data to {filepath}.")
         data = self.__gather_data()
         if common_filenames := self.__find_common_filenames(filepath, data):
-            self.__transfer_save(filepath, data, common_filenames)
+            nb_files_in_dataset = self.__nb_files(filepath)
+            total_nb_files = nb_files_in_dataset - len(common_filenames) + len(data)
+            return total_nb_files, self.__transfer_save(filepath, data, common_filenames)
         else:
-            self.__simple_save(filepath, data)
+            return len(data), self.__simple_save(filepath, data)
 
 
 def load_spatio_temporal_graph(filepath: Path | str) -> SpatioTemporalGraph:

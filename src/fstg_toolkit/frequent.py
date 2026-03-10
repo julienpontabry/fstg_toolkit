@@ -36,7 +36,7 @@ import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Any, Iterator
+from typing import Optional, Any, Iterator, Iterable
 
 import networkx as nx
 
@@ -144,6 +144,14 @@ class FrequentPatterns:
             json_data = json.load(fp)
             patterns = {name: FrequentPattern.from_dict(pattern) for name, pattern in json_data.items()}
             return FrequentPatterns(patterns)
+
+    @staticmethod
+    def from_spminer_files(output_dir: Path, files: Iterable[Path]) -> dict[str, 'FrequentPatterns']:
+        all_patterns = {}
+        for file in files:
+            name = str(file.relative_to(output_dir).with_suffix(''))
+            all_patterns[name] = FrequentPatterns.from_spminer_file(file)
+        return all_patterns
 
     def __len__(self) -> int:
         return len(self.patterns)

@@ -291,9 +291,13 @@ def build(areas_description_path: Path, correlation_matrices_path: Tuple[Path], 
 
     # save the graphs into a single zip file
     try:
-        with console.status("Saving dataset..."):
-            saver.save(output)
-        console.print(f"Dataset saved to '{output}'.")
+        with _progress_factory("Saving dataset...", f"Dataset saved to '{output}'.",
+                               steps=True, transient=True) as bar:
+            total, descriptions = saver.save(output)
+            task = bar.add_task("", total=total)
+
+            for desc in descriptions:
+                bar.update(task, advance=1, description=desc)
     except OSError as ex:
         error_console.print(f"Error while saving to {output}: {ex}")
         error_console.print_exception()
@@ -310,6 +314,7 @@ def metrics(dataset_path: Path, max_cpus: int):
     DATASET_PATH is the path to spatio-temporal graphs built with the command 'build'.
     """
     dataset = GraphsDataset.from_filepath(dataset_path)
+    metrics_dict = {}
 
     with _progress_factory("Calculating local metrics...",
                            lambda: f"Local metrics calculated on {len(spatial_df)} spatial graphs.",
@@ -317,6 +322,7 @@ def metrics(dataset_path: Path, max_cpus: int):
         task = bar.add_task("", total=len(dataset.subjects))
         spatial_df = gather_metrics(dataset, dataset.subjects.index, calculate_spatial_metrics,
                                     callback=lambda _: bar.update(task, advance=1), max_cpus=max_cpus)
+        metrics_dict['local'] = spatial_df
 
     with _progress_factory("Calculating global metrics...",
                            lambda: f"Global metrics calculated on {len(temporal_df)} ST graphs.",
@@ -324,17 +330,20 @@ def metrics(dataset_path: Path, max_cpus: int):
         task = bar.add_task("", total=len(dataset.subjects))
         temporal_df = gather_metrics(dataset, dataset.subjects.index, calculate_temporal_metrics,
                                      callback=lambda _: bar.update(task, advance=1), max_cpus=max_cpus)
+        metrics_dict['global'] = temporal_df
 
     # save the metrics into the dataset
     try:
-        with console.status("Saving metrics..."):
-            saver = DataSaver()
-            saver.add_metrics({
-                'local': spatial_df,
-                'global': temporal_df,
-            })
-            saver.save(dataset_path)
-        console.print(f"Metrics saved to '{dataset_path}'.")
+        saver = DataSaver()
+        saver.add_metrics(metrics_dict)
+
+        with _progress_factory("Saving metrics...", f"Metrics saved to '{dataset_path}'.",
+                               steps=True, transient=True) as bar:
+            total, descriptions = saver.save(dataset_path)
+            task = bar.add_task("", total=total)
+
+            for desc in descriptions:
+                bar.update(task, advance=1, description=desc)
     except OSError as ex:
         error_console.print(f"Error while saving to {dataset_path}: {ex}")
         error_console.print_exception()
@@ -382,18 +391,21 @@ def frequent(dataset_path: Path):
                     bar.update(task, completed=completed, total=total)
 
             # save found frequent patterns into the dataset
-            patterns: dict[str, FrequentPatterns] = {}
-            for file in output_dir.rglob('*.json'):
-                name = str(file.relative_to(output_dir).with_suffix(''))
-                patterns[name] = FrequentPatterns.from_spminer_file(file)
+            try:
+                saver = DataSaver()
+                patterns = FrequentPatterns.from_spminer_files(output_dir, output_dir.rglob('*.json'))
+                saver.add_frequent_patterns(patterns)
 
-            saver = DataSaver()
-            saver.add_frequent_patterns(patterns)
-
-            with _progress_factory("Saving frequent patterns...", f"Frequent patterns saved to dataset '{dataset_path}'.",
-                                   steps=True, transient=True) as bar:
-                task = bar.add_task("", total=None)
-                saver.save(dataset_path)  # TODO use the generator style for the progress bar
+                with _progress_factory("Saving frequent patterns...",
+                                       f"Frequent patterns saved to dataset '{dataset_path}'.",
+                                       steps=True, transient=True) as bar:
+                    total, descriptions = saver.save(dataset_path)
+                    task = bar.add_task("", total=total)
+                    for desc in descriptions:
+                        bar.update(task, advance=1, description=desc)
+            except OSError as ex:
+                error_console.print(f"Error while saving to {dataset_path}: {ex}")
+                error_console.print_exception()
 
 
 ## plotting ###################################################################
