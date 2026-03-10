@@ -48,6 +48,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
+from .frequent import FrequentPatterns
 from .graph import SpatioTemporalGraph, RC5
 from .utils import split_factors_from_name
 
@@ -550,6 +551,44 @@ class MetricsHandler:
         return f'metrics_{name}.csv'
 
 
+@DataRegistry.register('frequent_patterns')
+class FrequentPatternsHandler:
+    """Handler for frequent pattern from SPMiner
+
+    The filenames are ``<subject>/motifs_enriched_<mode>.json``, where
+    mode is ``s``, ``t`` or ``st``.
+    """
+
+    pattern: re.Pattern = re.compile(r'^(?P<subject>.+)/motifs_enriched_(?P<mode>s|t|st)\.json$')
+
+    @staticmethod
+    def matches(filename: str) -> bool:
+        return FrequentPatternsHandler.pattern.match(filename) is not None
+
+    @staticmethod
+    def serialize(item: FrequentPatterns, fp: IO) -> None:
+        patterns_dict = {name: nx.json_graph.node_link_data(pattern, edges='edges') for name, pattern in item}
+        patterns_json = json.dumps(patterns_dict, cls=_SpatioTemporalGraphEncoder)
+        fp.write(patterns_json.encode('utf-8'))
+
+    @staticmethod
+    def deserialize(fp: IO) -> FrequentPatterns:
+        patterns_dict = json.load(fp, object_hook=_spatio_temporal_object_hook)
+        patterns = {name: nx.json_graph.node_link_graph(pattern_dict, edges='edges')
+                    for name, pattern_dict in patterns_dict.items()}
+        return FrequentPatterns(patterns)
+
+    @staticmethod
+    def filename2name(filename: str) -> str:
+        if FrequentPatternsHandler.pattern.match(filename):
+            return Path(filename).stem
+        return filename
+
+    @staticmethod
+    def name2filename(name: str) -> str:
+        return f'{name}.json'
+
+
 @dataclass(frozen=True)
 class DataLoader:
     """Read-only accessor for a ZIP archive produced by :class:`DataSaver`.
@@ -925,6 +964,17 @@ class DataSaver:
         for name, metric in metrics.items():
             self.__add('metrics', (name, metric))
 
+    def add_frequent_patterns(self, patterns: dict[str, FrequentPatterns]) -> None:
+        """Stage frequent pattern dicts for saving.
+
+        Parameters
+        ----------
+        patterns : dict mapping ``name`` to patterns dict.
+        """
+        logger.debug(f"Staging {len(patterns)} frequent patterns: {list(patterns.keys())}.")
+        for name, pattern in patterns.items():
+            self.__add('frequent_patterns', (name, pattern))
+
     @staticmethod
     def __save(zfp: ZipFile, filename: str, item: Any) -> None:
         """Serialize and write a single item to an open ZIP archive.
@@ -1005,6 +1055,7 @@ class DataSaver:
         """
         logger.info(f"Updating archive '{filepath}': replacing {len(common_filenames)} existing "
                     f"file(s) and adding new ones.")
+        # TODO parallelize the save?
         with tempfile.NamedTemporaryFile(suffix='.zip', delete_on_close=False) as tmp:
             # copy unchanged files
             with ZipFile(str(filepath), 'r') as zfp_in, \
@@ -1035,6 +1086,7 @@ class DataSaver:
             Mapping from filename to data object.
         """
         logger.info(f"Appending {len(data)} item(s) to archive '{filepath}'.")
+        # TODO parallelize the save?
         with ZipFile(str(filepath), 'a') as zfp:
             for filename, item in data.items():
                 self.__save(zfp, filename, item)

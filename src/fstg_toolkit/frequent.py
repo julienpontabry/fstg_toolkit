@@ -31,10 +31,14 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
+import json
 import logging
 import re
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any, Iterator
+
+import networkx as nx
 
 from ._docker_utils import DockerHelper, DockerNotAvailableException, DockerImage
 
@@ -110,4 +114,39 @@ class SPMinerService:
                     yield int(match.group('completed'))-1, int(match.group('total'))
             logger.debug(line[:-1] if line[-1] == '\n' else line)
 
-# TODO add frequent patterns classes
+
+class FrequentPattern(nx.DiGraph):
+    def __init__(self, graph: nx.DiGraph):
+        """Initialize the FrequentPattern."""
+        super().__init__(graph)
+
+    @staticmethod
+    def from_dict(graph_dict: dict[str, Any]) -> 'FrequentPattern':
+        graph = nx.DiGraph()
+
+        for node in graph_dict['nodes']:
+            graph.add_node(node['id'], **{k: v for k, v in node.items() if k != 'id'})
+
+        for edge in graph_dict['edges']:
+            graph.add_edge(edge['source'], edge['target'],
+                           **{k: v for k, v in edge.items() if k not in ('source', 'target')})
+
+        return FrequentPattern(graph)
+
+
+@dataclass(frozen=True)
+class FrequentPatterns:
+    patterns: dict[str, FrequentPattern]
+
+    @staticmethod
+    def from_spminer_file(file: Path) -> 'FrequentPatterns':
+        with open(file, 'r') as fp:
+            json_data = json.load(fp)
+            patterns = {name: FrequentPattern.from_dict(pattern) for name, pattern in json_data.items()}
+            return FrequentPatterns(patterns)
+
+    def __len__(self) -> int:
+        return len(self.patterns)
+
+    def __iter__(self) -> Iterator[tuple[str, FrequentPattern]]:
+        return iter(self.patterns.items())

@@ -36,7 +36,6 @@ __help_epilog = []
 import multiprocessing
 import re
 import tempfile
-import zipfile
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import Optional, Tuple, Any, List, Generator, Callable
@@ -76,9 +75,9 @@ finally:
     dash = None  # not needed after the check
 
 try:
-    from .frequent import SPMinerService
+    from .frequent import SPMinerService, FrequentPatterns
 except ImportError as e:
-    SPMinerService = None
+    SPMinerService = FrequentPatterns = None
     __help_epilog.append(f"⚠️  Install '{__package__}[frequent]' to unlock the frequent patterns analysis command.")
 
 
@@ -383,17 +382,19 @@ def frequent(dataset_path: Path):
                     bar.update(task, completed=completed, total=total)
 
             # save found frequent patterns into the dataset
-            # TODO parallelize the patterns inclusion
-            # TODO use the data saver
+            patterns: dict[str, FrequentPatterns] = {}
+            for file in output_dir.rglob('*.json'):
+                name = str(file.relative_to(output_dir).with_suffix(''))
+                patterns[name] = FrequentPatterns.from_spminer_file(file)
+
+            saver = DataSaver()
+            saver.add_frequent_patterns(patterns)
+
             with _progress_factory("Saving frequent patterns...", f"Frequent patterns saved to dataset '{dataset_path}'.",
                                    steps=True, transient=True) as bar:
                 task = bar.add_task("", total=None)
+                saver.save(dataset_path)  # TODO use the generator style for the progress bar
 
-                with zipfile.ZipFile(dataset_path, 'a') as zfp:
-                    files = list(output_dir.rglob('*.json'))
-                    for file in files:
-                        zfp.write(str(file), str(file.relative_to(output_dir)))
-                        bar.update(task, advance=1, total=len(files))
 
 ## plotting ###################################################################
 
