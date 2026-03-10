@@ -581,7 +581,7 @@ class FrequentPatternsHandler:
     @staticmethod
     def filename2name(filename: str) -> str:
         if FrequentPatternsHandler.pattern.match(filename):
-            return Path(filename).stem
+            return str(Path(filename).with_suffix(''))
         return filename
 
     @staticmethod
@@ -885,6 +885,54 @@ class DataLoader:
         with self.__open() as zfp:
             _, metrics = self.__load(zfp, filename)
             return metrics
+
+    def lazy_load_frequent_patterns(self) -> list[str]:
+        """Return the list of frequent pattern filenames present in the archive.
+
+        Returns
+        -------
+        list[str]
+            Filenames that can be passed to :meth:`load_frequent_pattern`.
+        """
+        return self._inventory.get('frequent_patterns', [])
+
+    def load_frequent_patterns(self) -> dict[str, dict[str, Any]]:
+        """Load all frequent pattern dicts from the archive.
+
+        Returns
+        -------
+        dict[str, dict[str, Any]]
+            Mapping from ``"<subject>/<mode>"`` to the pattern dict.
+        """
+        filenames = self.lazy_load_frequent_patterns()
+        logger.info(f"Loading {len(filenames)} frequent pattern file(s) from '{self.filepath}'.")
+        patterns = {}
+        with self.__open() as zfp:
+            for filename in filenames:
+                name, pattern = self.__load(zfp, filename)
+                patterns[name] = pattern
+        return patterns
+
+    def load_frequent_pattern(self, filename: str) -> Optional[dict[str, Any]]:
+        """Load a single frequent pattern dict by its filename from the archive.
+
+        Parameters
+        ----------
+        filename : str
+            Filename of the pattern entry inside the ZIP archive.
+
+        Returns
+        -------
+        dict[str, Any] or None
+            The pattern dict, or ``None`` if *filename* is not in the archive.
+        """
+        if filename not in self.lazy_load_frequent_patterns():
+            logger.debug(f"Frequent pattern file '{filename}' not found in archive.")
+            return None
+        logger.info(f"Loading frequent pattern '{filename}' from '{self.filepath}'.")
+        with self.__open() as zfp:
+            _, pattern = self.__load(zfp, filename)
+            return pattern
 
 
 @dataclass(frozen=True)
