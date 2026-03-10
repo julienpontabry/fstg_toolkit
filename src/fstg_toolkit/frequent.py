@@ -31,12 +31,11 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
-import json
 import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Any, Iterator, Iterable
+from typing import Optional, Any, Iterator
 
 import networkx as nx
 
@@ -137,21 +136,6 @@ class FrequentPattern(nx.DiGraph):
 @dataclass(frozen=True)
 class FrequentPatterns:
     patterns: dict[str, FrequentPattern]
-
-    @staticmethod
-    def from_spminer_file(file: Path) -> 'FrequentPatterns':
-        with open(file, 'r') as fp:
-            json_data = json.load(fp)
-            patterns = {name: FrequentPattern.from_dict(pattern) for name, pattern in json_data.items()}
-            return FrequentPatterns(patterns)
-
-    @staticmethod
-    def from_spminer_files(output_dir: Path, files: Iterable[Path]) -> dict[str, 'FrequentPatterns']:
-        all_patterns = {}
-        for file in files:
-            name = str(file.relative_to(output_dir).with_suffix(''))
-            all_patterns[name] = FrequentPatterns.from_spminer_file(file)
-        return all_patterns
 
     def __len__(self) -> int:
         return len(self.patterns)

@@ -60,7 +60,7 @@ except ImportError:
 from fstg_toolkit import generate_pattern, SpatioTemporalGraphSimulator, CorrelationMatrixSequenceSimulator
 from .factory import spatio_temporal_graph_from_corr_matrices
 from .graph import SpatioTemporalGraph
-from .io import DataSaver, DataLoader, save_spatio_temporal_graph, GraphsDataset
+from .io import DataSaver, DataLoader, save_spatio_temporal_graph, GraphsDataset, FrequentPatternsIO
 from .metrics import calculate_spatial_metrics, calculate_temporal_metrics, gather_metrics
 from .utils import setup_logging
 
@@ -75,9 +75,9 @@ finally:
     dash = None  # not needed after the check
 
 try:
-    from .frequent import SPMinerService, FrequentPatterns
+    from .frequent import SPMinerService
 except ImportError as e:
-    SPMinerService = FrequentPatterns = None
+    SPMinerService = None
     __help_epilog.append(f"⚠️  Install '{__package__}[frequent]' to unlock the frequent patterns analysis command.")
 
 
@@ -393,7 +393,7 @@ def frequent(dataset_path: Path):
             # save found frequent patterns into the dataset
             try:
                 saver = DataSaver()
-                patterns = FrequentPatterns.from_spminer_files(output_dir, output_dir.rglob('*.json'))
+                patterns = FrequentPatternsIO.from_spminer_files(output_dir, output_dir.rglob('*.json'))
                 saver.add_frequent_patterns(patterns)
 
                 with _progress_factory("Saving frequent patterns...",
