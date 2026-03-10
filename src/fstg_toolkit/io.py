@@ -913,7 +913,7 @@ class DataLoader:
                 patterns[name] = pattern
         return patterns
 
-    def load_frequent_pattern(self, filename: str) -> Optional[dict[str, Any]]:
+    def load_frequent_pattern(self, filename: str) -> Optional[FrequentPatterns]:
         """Load a single frequent pattern dict by its filename from the archive.
 
         Parameters
@@ -923,7 +923,7 @@ class DataLoader:
 
         Returns
         -------
-        dict[str, Any] or None
+        FrequentPatterns or None
             The pattern dict, or ``None`` if *filename* is not in the archive.
         """
         if filename not in self.lazy_load_frequent_patterns():
@@ -1501,6 +1501,39 @@ class GraphsDataset:
 
     def get_metrics(self, name: str) -> Optional[pd.DataFrame]:
         return self.loader.load_metrics()[name]
+
+    def has_frequent_patterns(self) -> bool:
+        """Check if the dataset contains frequent pattern files.
+
+        Returns
+        -------
+        bool
+            ``True`` if at least one frequent pattern file is present.
+        """
+        return len(self.loader.lazy_load_frequent_patterns()) > 0
+
+    def get_frequent_patterns(self, ids: tuple[str, ...]) -> Optional[FrequentPatterns]:
+        """Get frequent patterns for a subject.
+
+        Parameters
+        ----------
+        ids : tuple[str, ...]
+            Subject index values (same as used by :meth:`get_graph`).
+
+        Returns
+        -------
+        FrequentPatterns or None
+            The objects to manipulate frequent patterns.
+        """
+        graph_filename = self.subjects.loc[ids]['Graph']
+        subject_dir = str(Path(graph_filename).with_suffix(''))
+
+        # TODO handle the patterns mode (spatial, temporal or both); currently take first one
+        if filenames := [filename for filename in self.loader.lazy_load_frequent_patterns()
+                         if filename.startswith(subject_dir)]:
+            return self.loader.load_frequent_pattern(filenames[0])
+        else:
+            return None
 
     @staticmethod
     def deserialize(data: dict[str, Any]) -> 'GraphsDataset':
