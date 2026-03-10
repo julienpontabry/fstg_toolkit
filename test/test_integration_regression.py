@@ -179,7 +179,8 @@ class FullPipelineIntegrationTestCase(unittest.TestCase):
         save_path = Path(self.temp_dir) / 'metrics.zip'
         saver = DataSaver()
         saver.add_metrics({'spatial': spatial_metrics, 'temporal': temporal_metrics})
-        saver.save(save_path)
+        _, gen = saver.save(save_path)
+        list(gen)
 
         # Load metrics back
         loader = DataLoader(save_path)

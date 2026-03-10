@@ -39,9 +39,10 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
+from fstg_toolkit.frequent import FrequentPattern, FrequentPatterns
 from fstg_toolkit.graph import SpatioTemporalGraph, RC5
-from fstg_toolkit.io import DataLoader, DataSaver, load_spatio_temporal_graph, \
-    save_spatio_temporal_graph, _SpatioTemporalGraphEncoder
+from fstg_toolkit.io import DataLoader, DataSaver, FrequentPatternsIO, \
+    load_spatio_temporal_graph, save_spatio_temporal_graph, _SpatioTemporalGraphEncoder
 
 
 class DataLoaderTestCase(unittest.TestCase):
@@ -81,15 +82,15 @@ class DataLoaderTestCase(unittest.TestCase):
     
     def _create_test_zip_file(self):
         """Create a test zip file with sample data."""
+        import json
         import zipfile
-        
+
         with zipfile.ZipFile(self.zip_path, 'w') as zf:
             # Save areas
             with zf.open('areas.csv', 'w') as f:
                 self.areas.to_csv(f)
-            
+
             # Save graph
-            import json
             graph_dict = nx.json_graph.node_link_data(self.graph, edges='edges')
             graph_json = json.dumps(graph_dict, cls=_SpatioTemporalGraphEncoder)
             zf.writestr('test_graph.json', graph_json)
@@ -97,6 +98,15 @@ class DataLoaderTestCase(unittest.TestCase):
             # Save matrix
             with zf.open('test_matrix.npy', 'w') as f:
                 np.save(f, self.matrix)
+
+            # Save a frequent patterns file
+            pattern_g = nx.DiGraph()
+            pattern_g.add_node(0, areas=[1, 2])
+            pattern_g.add_node(1, areas=[3, 4])
+            pattern_g.add_edge(0, 1, type='spatial')
+            pattern_dict = {'pattern_0': nx.json_graph.node_link_data(pattern_g, edges='edges')}
+            zf.writestr('test_subject/motifs_enriched_s.json',
+                        json.dumps(pattern_dict, cls=_SpatioTemporalGraphEncoder))
     
     def test_load_areas(self):
         """Test loading areas DataFrame."""
@@ -186,7 +196,40 @@ class DataLoaderTestCase(unittest.TestCase):
         self.assertIsNotNone(areas)
         self.assertEqual(len(graph_files), 1)
         self.assertEqual(len(matrix_files), 1)
-    
+
+    def test_lazy_load_frequent_patterns(self):
+        """Test lazy loading of frequent pattern filenames."""
+        loader = DataLoader(self.zip_path)
+        filenames = loader.lazy_load_frequent_patterns()
+
+        self.assertEqual(len(filenames), 1)
+        self.assertEqual(filenames[0], 'test_subject/motifs_enriched_s.json')
+
+    def test_load_frequent_patterns(self):
+        """Test loading all frequent patterns from the archive."""
+        loader = DataLoader(self.zip_path)
+        patterns = loader.load_frequent_patterns()
+
+        self.assertEqual(len(patterns), 1)
+        self.assertIn('test_subject/motifs_enriched_s', patterns)
+        fp = patterns['test_subject/motifs_enriched_s']
+        self.assertIsInstance(fp, FrequentPatterns)
+        self.assertEqual(len(fp), 1)
+
+    def test_load_frequent_pattern(self):
+        """Test loading a single frequent pattern file."""
+        loader = DataLoader(self.zip_path)
+        fp = loader.load_frequent_pattern('test_subject/motifs_enriched_s.json')
+
+        self.assertIsNotNone(fp)
+        self.assertIsInstance(fp, FrequentPatterns)
+
+    def test_load_frequent_pattern_missing(self):
+        """Test that loading a nonexistent frequent pattern file returns None."""
+        loader = DataLoader(self.zip_path)
+        result = loader.load_frequent_pattern('nonexistent/motifs_enriched_t.json')
+        self.assertIsNone(result)
+
     def test_nonexistent_file(self):
         """Test with nonexistent file."""
         nonexistent_path = Path(self.temp_dir) / 'nonexistent.zip'
@@ -249,9 +292,10 @@ class DataSaverTestCase(unittest.TestCase):
         saver.add_areas(self.areas)
         saver.add_graphs({'test_graph': self.st_graph})
         saver.add_matrices({'test_matrix': self.matrix})
-        
+
         # Save data
-        saver.save(save_path)
+        _, gen = saver.save(save_path)
+        list(gen)
         
         # Load data back
         loader = DataLoader(save_path)
@@ -291,8 +335,9 @@ class DataSaverTestCase(unittest.TestCase):
         saver.add_areas(self.areas)
         saver.add_graphs(graphs)
         saver.add_matrices(matrices)
-        
-        saver.save(save_path)
+
+        _, gen = saver.save(save_path)
+        list(gen)
         
         # Verify file was created
         self.assertTrue(save_path.exists())
@@ -313,8 +358,33 @@ class DataSaverTestCase(unittest.TestCase):
         saver = DataSaver()
         saver.add_areas(self.areas)
         saver.add_graphs({'test': self.st_graph})
-        saver.save(save_path)
+        _, gen = saver.save(save_path)
+        list(gen)
         self.assertTrue(save_path.exists())
+
+    def test_add_frequent_patterns_roundtrip(self):
+        """Test save and load roundtrip for frequent patterns."""
+        save_path = Path(self.temp_dir) / 'frequent_patterns.zip'
+
+        pattern_g = nx.DiGraph()
+        pattern_g.add_node(0, areas=[1, 2])
+        pattern_g.add_node(1, areas=[3, 4])
+        pattern_g.add_edge(0, 1, type='spatial')
+        fp = FrequentPatterns({'pattern_0': FrequentPattern(pattern_g)})
+
+        saver = DataSaver()
+        saver.add_frequent_patterns({'test_subject/motifs_enriched_s': fp})
+        _, gen = saver.save(save_path)
+        list(gen)
+
+        loader = DataLoader(save_path)
+        loaded = loader.load_frequent_patterns()
+
+        self.assertIn('test_subject/motifs_enriched_s', loaded)
+        loaded_fp = loaded['test_subject/motifs_enriched_s']
+        self.assertIsInstance(loaded_fp, FrequentPatterns)
+        self.assertEqual(len(loaded_fp), 1)
+        self.assertIn('pattern_0', loaded_fp.patterns)
 
 
 class LoadSaveSpatioTemporalGraphTestCase(unittest.TestCase):
@@ -449,7 +519,8 @@ class MetricsIOTestCase(unittest.TestCase):
 
         saver = DataSaver()
         saver.add_metrics({'simple': self.simple_metrics})
-        saver.save(save_path)
+        _, gen = saver.save(save_path)
+        list(gen)
 
         loader = DataLoader(save_path)
         loaded = loader.load_metrics()
@@ -463,7 +534,8 @@ class MetricsIOTestCase(unittest.TestCase):
 
         saver = DataSaver()
         saver.add_metrics({'multi': self.multi_index_metrics})
-        saver.save(save_path)
+        _, gen = saver.save(save_path)
+        list(gen)
 
         loader = DataLoader(save_path)
         loaded = loader.load_metrics()
@@ -487,7 +559,8 @@ class MetricsIOTestCase(unittest.TestCase):
 
         saver = DataSaver()
         saver.add_metrics({'mixed': mixed_metrics})
-        saver.save(save_path)
+        _, gen = saver.save(save_path)
+        list(gen)
 
         loader = DataLoader(save_path)
         loaded = loader.load_metrics()
@@ -501,3 +574,378 @@ class MetricsIOTestCase(unittest.TestCase):
 
         with self.assertRaises(FileNotFoundError):
             DataLoader(nonexistent_path)
+
+
+class FrequentPatternsIOTestCase(unittest.TestCase):
+    """Test FrequentPatternsIO class functionality."""
+
+    def setUp(self):
+        """Set up test data."""
+        self.temp_dir = Path(tempfile.mkdtemp())
+
+        # Build a minimal SPMiner-format JSON file
+        self.spminer_data = {
+            'pattern_0': {
+                'nodes': [{'id': 0, 'areas': [1, 2]}, {'id': 1, 'areas': [3, 4]}],
+                'edges': [{'source': 0, 'target': 1, 'type': 'spatial'}]
+            },
+            'pattern_1': {
+                'nodes': [{'id': 0, 'areas': [1]}],
+                'edges': []
+            }
+        }
+
+        import json
+        self.subject_dir = self.temp_dir / 'subject_A'
+        self.subject_dir.mkdir()
+        self.json_file = self.subject_dir / 'motifs_enriched_s.json'
+        self.json_file.write_text(json.dumps(self.spminer_data))
+
+    def tearDown(self):
+        """Clean up temporary files."""
+        import shutil
+        shutil.rmtree(self.temp_dir)
+
+    def test_from_spminer_file(self):
+        """Test loading patterns from a single SPMiner JSON file."""
+        patterns = FrequentPatternsIO.from_spminer_file(self.json_file)
+
+        self.assertIsInstance(patterns, FrequentPatterns)
+        self.assertEqual(len(patterns), 2)
+        self.assertIn('pattern_0', patterns.patterns)
+        self.assertIn('pattern_1', patterns.patterns)
+
+        p0 = patterns.patterns['pattern_0']
+        self.assertIsInstance(p0, FrequentPattern)
+        self.assertEqual(len(p0.nodes), 2)
+        self.assertEqual(len(p0.edges), 1)
+
+    def test_from_spminer_files(self):
+        """Test loading patterns from multiple SPMiner JSON files."""
+        import json
+        subject_b = self.temp_dir / 'subject_B'
+        subject_b.mkdir()
+        json_b = subject_b / 'motifs_enriched_t.json'
+        json_b.write_text(json.dumps({'pattern_0': self.spminer_data['pattern_0']}))
+
+        patterns_dict = FrequentPatternsIO.from_spminer_files(
+            self.temp_dir, [self.json_file, json_b]
+        )
+
+        self.assertEqual(len(patterns_dict), 2)
+        self.assertIn('subject_A/motifs_enriched_s', patterns_dict)
+        self.assertIn('subject_B/motifs_enriched_t', patterns_dict)
+        self.assertIsInstance(patterns_dict['subject_A/motifs_enriched_s'], FrequentPatterns)
+        self.assertEqual(len(patterns_dict['subject_A/motifs_enriched_s']), 2)
+        self.assertEqual(len(patterns_dict['subject_B/motifs_enriched_t']), 1)
+
+
+class DataLoaderExtractFilesTestCase(unittest.TestCase):
+    """Test DataLoader.extract_files functionality."""
+
+    def setUp(self):
+        """Set up a ZIP archive with mixed content."""
+        self.temp_dir = tempfile.mkdtemp()
+        self.zip_path = Path(self.temp_dir) / 'test_data.zip'
+        self.output_dir = Path(self.temp_dir) / 'output'
+        self.output_dir.mkdir()
+
+        areas = pd.DataFrame({
+            'Id_Area': [1, 2],
+            'Name_Area': ['A1', 'A2'],
+            'Name_Region': ['R1', 'R1']
+        }).set_index('Id_Area')
+
+        graph = nx.DiGraph()
+        graph.add_nodes_from([
+            (1, dict(t=0, areas={1, 2}, region='R1', internal_strength=0.8)),
+        ])
+        graph.graph['min_time'] = 0
+        graph.graph['max_time'] = 0
+
+        matrix = np.eye(2)
+
+        import json
+        import zipfile
+        with zipfile.ZipFile(self.zip_path, 'w') as zf:
+            with zf.open('areas.csv', 'w') as f:
+                areas.to_csv(f)
+
+            graph_dict = nx.json_graph.node_link_data(graph, edges='edges')
+            zf.writestr('subject1.json', json.dumps(graph_dict, cls=_SpatioTemporalGraphEncoder))
+
+            with zf.open('corr.npy', 'w') as f:
+                np.save(f, matrix)
+
+            pattern_g = nx.DiGraph()
+            pattern_g.add_node(0, areas=[1, 2])
+            pattern_dict = {'pattern_0': nx.json_graph.node_link_data(pattern_g, edges='edges')}
+            zf.writestr('subject1/motifs_enriched_s.json',
+                        json.dumps(pattern_dict, cls=_SpatioTemporalGraphEncoder))
+
+    def tearDown(self):
+        """Clean up temporary files."""
+        import shutil
+        shutil.rmtree(self.temp_dir)
+
+    def test_extract_graphs(self):
+        """Test extracting graph files to a directory."""
+        loader = DataLoader(self.zip_path)
+        total, gen = loader.extract_files(self.output_dir, 'graphs')
+
+        self.assertEqual(total, 1)
+        extracted = list(gen)
+        self.assertEqual(len(extracted), 1)
+        self.assertEqual(extracted[0], 'subject1.json')
+        self.assertTrue((self.output_dir / 'subject1.json').exists())
+
+    def test_extract_matrices(self):
+        """Test extracting matrix files to a directory."""
+        loader = DataLoader(self.zip_path)
+        total, gen = loader.extract_files(self.output_dir, 'matrices')
+
+        self.assertEqual(total, 1)
+        extracted = list(gen)
+        self.assertEqual(len(extracted), 1)
+        self.assertEqual(extracted[0], 'corr.npy')
+        self.assertTrue((self.output_dir / 'corr.npy').exists())
+
+    def test_extract_multiple_kinds(self):
+        """Test extracting multiple kinds at once."""
+        loader = DataLoader(self.zip_path)
+        total, gen = loader.extract_files(self.output_dir, ['graphs', 'matrices'])
+
+        self.assertEqual(total, 2)
+        extracted = list(gen)
+        self.assertEqual(len(extracted), 2)
+        self.assertIn('subject1.json', extracted)
+        self.assertIn('corr.npy', extracted)
+
+    def test_extract_frequent_patterns(self):
+        """Test extracting frequent pattern files preserves the subdirectory structure."""
+        loader = DataLoader(self.zip_path)
+        total, gen = loader.extract_files(self.output_dir, 'frequent_patterns')
+
+        self.assertEqual(total, 1)
+        extracted = list(gen)
+        self.assertEqual(len(extracted), 1)
+        self.assertTrue((self.output_dir / 'subject1' / 'motifs_enriched_s.json').exists())
+
+    def test_extract_missing_kind_returns_zero(self):
+        """Test extracting a kind absent from the archive yields nothing."""
+        loader = DataLoader(self.zip_path)
+        total, gen = loader.extract_files(self.output_dir, 'metrics')
+
+        self.assertEqual(total, 0)
+        self.assertEqual(list(gen), [])
+
+    def test_extract_to_nonexistent_dir_raises(self):
+        """Test that extracting to a non-existent directory raises ValueError."""
+        loader = DataLoader(self.zip_path)
+        nonexistent = Path(self.temp_dir) / 'does_not_exist'
+
+        with self.assertRaises(ValueError):
+            total, gen = loader.extract_files(nonexistent, 'graphs')
+            list(gen)
+
+    def test_extract_kind_as_list(self):
+        """Test passing kind as a list with a single element."""
+        loader = DataLoader(self.zip_path)
+        total, gen = loader.extract_files(self.output_dir, ['graphs'])
+
+        self.assertEqual(total, 1)
+        self.assertEqual(len(list(gen)), 1)
+
+
+class DataSaverSaveGeneratorTestCase(unittest.TestCase):
+    """Test DataSaver.save generator behavior and update (overwrite) path."""
+
+    def setUp(self):
+        """Set up test data."""
+        self.temp_dir = tempfile.mkdtemp()
+
+        areas = pd.DataFrame({
+            'Id_Area': [1, 2],
+            'Name_Area': ['A1', 'A2'],
+            'Name_Region': ['R1', 'R1']
+        }).set_index('Id_Area')
+
+        graph = nx.DiGraph()
+        graph.add_nodes_from([
+            (1, dict(t=0, areas={1, 2}, region='R1', internal_strength=0.8)),
+        ])
+        graph.graph['min_time'] = 0
+        graph.graph['max_time'] = 0
+
+        self.areas = areas
+        self.st_graph = SpatioTemporalGraph(graph, areas)
+        self.matrix = np.eye(2)
+
+    def tearDown(self):
+        """Clean up temporary files."""
+        import shutil
+        shutil.rmtree(self.temp_dir)
+
+    def test_save_yields_correct_filenames(self):
+        """Test that the save generator yields a filename for each saved item."""
+        save_path = Path(self.temp_dir) / 'test.zip'
+
+        saver = DataSaver()
+        saver.add_areas(self.areas)
+        saver.add_graphs({'g1': self.st_graph})
+        saver.add_matrices({'m1': self.matrix})
+
+        total, gen = saver.save(save_path)
+        yielded = list(gen)
+
+        self.assertEqual(total, 3)
+        self.assertEqual(len(yielded), 3)
+        self.assertIn('areas.csv', yielded)
+        self.assertIn('g1.json', yielded)
+        self.assertIn('m1.npy', yielded)
+
+    def test_save_total_matches_items(self):
+        """Test that the total returned by save equals the number of staged items."""
+        save_path = Path(self.temp_dir) / 'total.zip'
+
+        saver = DataSaver()
+        saver.add_graphs({'a': self.st_graph, 'b': self.st_graph})
+        saver.add_matrices({'x': self.matrix})
+
+        total, gen = saver.save(save_path)
+        list(gen)
+
+        self.assertEqual(total, 3)
+
+    def test_update_existing_archive_replaces_overlapping_entries(self):
+        """Test that saving to an existing archive updates overlapping entries."""
+        save_path = Path(self.temp_dir) / 'update.zip'
+
+        # First save: matrix with value 1
+        first_matrix = np.ones((2, 2))
+        saver1 = DataSaver()
+        saver1.add_matrices({'m1': first_matrix})
+        _, gen1 = saver1.save(save_path)
+        list(gen1)
+
+        # Second save: same name, different value
+        second_matrix = np.zeros((2, 2))
+        saver2 = DataSaver()
+        saver2.add_matrices({'m1': second_matrix})
+        total, gen2 = saver2.save(save_path)
+        list(gen2)
+
+        # Load back and verify the updated value is present
+        loader = DataLoader(save_path)
+        loaded_matrices = loader.load_matrices()
+
+        self.assertIn('m1', loaded_matrices)
+        np.testing.assert_array_equal(loaded_matrices['m1'], second_matrix)
+
+    def test_update_existing_archive_preserves_non_overlapping_entries(self):
+        """Test that saving to an existing archive keeps entries not being overwritten."""
+        save_path = Path(self.temp_dir) / 'preserve.zip'
+
+        # First save: areas + graph
+        saver1 = DataSaver()
+        saver1.add_areas(self.areas)
+        saver1.add_graphs({'g1': self.st_graph})
+        _, gen1 = saver1.save(save_path)
+        list(gen1)
+
+        # Second save: new matrix — should not remove areas or graph
+        saver2 = DataSaver()
+        saver2.add_matrices({'m1': self.matrix})
+        total, gen2 = saver2.save(save_path)
+        list(gen2)
+
+        loader = DataLoader(save_path)
+        loaded_areas = loader.load_areas()
+        loaded_graphs = loader.load_graphs(loaded_areas)
+        loaded_matrices = loader.load_matrices()
+
+        self.assertIsNotNone(loaded_areas)
+        self.assertEqual(len(loaded_graphs), 1)
+        self.assertIn('m1', loaded_matrices)
+
+    def test_update_total_accounts_for_all_files_when_overlapping(self):
+        """Test that the total from save when updating overlapping entries covers all files."""
+        save_path = Path(self.temp_dir) / 'total_update.zip'
+
+        # First save: areas + matrix
+        saver1 = DataSaver()
+        saver1.add_areas(self.areas)
+        saver1.add_matrices({'m1': self.matrix})
+        _, gen1 = saver1.save(save_path)
+        list(gen1)
+
+        # Second save: replace m1 (overlap) and add m2 (new)
+        second_matrix = np.zeros((2, 2))
+        saver2 = DataSaver()
+        saver2.add_matrices({'m1': second_matrix, 'm2': self.matrix})
+        total, gen2 = saver2.save(save_path)
+        list(gen2)
+
+        # Transfer-save path: total = existing (2) - overlap (1) + new data (2) = 3
+        self.assertEqual(total, 3)
+
+
+class DataLoaderLoadFrequentPatternsMultipleSubjectsTestCase(unittest.TestCase):
+    """Test DataLoader loading frequent patterns from multiple subjects."""
+
+    def setUp(self):
+        """Set up a ZIP archive with frequent patterns for multiple subjects."""
+        self.temp_dir = tempfile.mkdtemp()
+        self.zip_path = Path(self.temp_dir) / 'multi_subject.zip'
+
+        import json
+        import zipfile
+
+        def _make_pattern_dict(node_count: int) -> dict:
+            g = nx.DiGraph()
+            for i in range(node_count):
+                g.add_node(i, areas=[i + 1])
+            return {'pattern_0': nx.json_graph.node_link_data(g, edges='edges')}
+
+        with zipfile.ZipFile(self.zip_path, 'w') as zf:
+            for subject, mode, n_nodes in [
+                ('subjectA', 's', 2),
+                ('subjectA', 't', 1),
+                ('subjectB', 's', 3),
+            ]:
+                filename = f'{subject}/motifs_enriched_{mode}.json'
+                zf.writestr(filename, json.dumps(_make_pattern_dict(n_nodes),
+                                                  cls=_SpatioTemporalGraphEncoder))
+
+    def tearDown(self):
+        """Clean up temporary files."""
+        import shutil
+        shutil.rmtree(self.temp_dir)
+
+    def test_lazy_load_returns_all_pattern_filenames(self):
+        """Test that lazy_load_frequent_patterns lists all pattern files."""
+        loader = DataLoader(self.zip_path)
+        filenames = loader.lazy_load_frequent_patterns()
+
+        self.assertEqual(len(filenames), 3)
+        self.assertIn('subjectA/motifs_enriched_s.json', filenames)
+        self.assertIn('subjectA/motifs_enriched_t.json', filenames)
+        self.assertIn('subjectB/motifs_enriched_s.json', filenames)
+
+    def test_load_frequent_patterns_returns_all_subjects(self):
+        """Test that load_frequent_patterns returns all subjects and modes."""
+        loader = DataLoader(self.zip_path)
+        patterns = loader.load_frequent_patterns()
+
+        self.assertEqual(len(patterns), 3)
+        self.assertIn('subjectA/motifs_enriched_s', patterns)
+        self.assertIn('subjectA/motifs_enriched_t', patterns)
+        self.assertIn('subjectB/motifs_enriched_s', patterns)
+
+    def test_load_frequent_patterns_correct_types(self):
+        """Test that each loaded value is a FrequentPatterns instance."""
+        loader = DataLoader(self.zip_path)
+        patterns = loader.load_frequent_patterns()
+
+        for fp in patterns.values():
+            self.assertIsInstance(fp, FrequentPatterns)

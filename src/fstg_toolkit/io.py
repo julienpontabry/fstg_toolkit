@@ -1295,7 +1295,8 @@ def save_spatio_temporal_graph(graph: SpatioTemporalGraph, filepath: Path | str)
     saver = DataSaver()
     saver.add_areas(graph.areas)
     saver.add_graphs({'graph.json': graph})
-    saver.save(filepath)
+    _, gen = saver.save(filepath)
+    list(gen)
 
 
 class FrequentPatternsIO:
