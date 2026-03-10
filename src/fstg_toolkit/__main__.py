@@ -369,13 +369,9 @@ def frequent(dataset_path: Path):
         with _progress_factory("Preparing dataset...", "Dataset prepared.", steps=True, transient=True) as bar:
             task = bar.add_task("",  total=None)
 
-            # TODO parallelize the graph extraction
-            # TODO use the data loader
-            with zipfile.ZipFile(dataset_path, 'r') as zfp:
-                files = [file for file in zfp.namelist() if Path(file).suffix == '.json' and Path(file).stem != 'motifs_enriched_t']
-                for file in files:
-                    zfp.extract(file, input_dir)
-                    bar.update(task, advance=1, total=len(files))
+            total_files, files_extraction = DataLoader(dataset_path).extract_files(input_dir, 'graphs')
+            for filename in files_extraction:
+                bar.update(task, advance=1, total=total_files, description=filename)
 
         with tempfile.TemporaryDirectory() as output_dir:
             output_dir = Path(output_dir)

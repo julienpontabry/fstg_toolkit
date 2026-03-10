@@ -632,6 +632,49 @@ class DataLoader:
             except NoDataHandlerFound as e:
                 logger.error(f"Unable to load item \"{filename}\": {e}.")
 
+    def extract_files(self, output: Path, kinds: str|list[str]) -> tuple[int, Generator[str, None, None]]:
+        """Extract the files of the given kinds to the given output directory.
+
+        This method returns a generator yield, so it is required to iterate on so
+        the extract can happen.
+
+        Parameters
+        ----------
+        output : Path
+            The directory to extract files to.
+        kinds: str|list[str]
+            The kinds of files to extract.
+
+        Returns
+        -------
+        Generator[str, None, None]
+            The name of the file that has been extracted.
+
+        Raises
+        ------
+        ValueError: if output path does not exist or is not a directory.
+        """
+        if not output.exists() or not output.is_dir():
+            raise ValueError(f"Output path '{output}' does not exist or is not a directory.")
+
+        if isinstance(kinds, str):
+            kinds = [kinds]
+
+        logger.debug(f"Extracting files of kinds {kinds} to '{output}'.")
+
+        total = sum([len(self._inventory.get(kind, [])) for kind in kinds])
+        logger.debug(f"Total number of files to extract: {total}.")
+
+        def gen():
+            # TODO parallelize the graph extraction?
+            with self.__open() as zfp:
+                for kind in kinds:
+                    for filename in self._inventory.get(kind, []):
+                        zfp.extract(filename, output)
+                        yield filename
+
+        return total, gen()
+
     def load_areas(self) -> Optional[pd.DataFrame]:
         """Load the areas descriptor data frame from the archive.
 
