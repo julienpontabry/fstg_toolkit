@@ -33,11 +33,13 @@
 
 import logging
 import re
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Any, Iterator
+from typing import Optional, Any, Iterator, Type
 
 import networkx as nx
+import pandas as pd
 
 from ._docker_utils import DockerHelper, DockerNotAvailableException, DockerImage
 
@@ -114,6 +116,99 @@ class SPMinerService:
             logger.debug(line[:-1] if line[-1] == '\n' else line)
 
 
+class PatternEquivalenceStrategy(ABC):
+    """Abstract base class for pattern equivalence comparison strategies.
+
+    Defines the interface for determining whether two frequent patterns are
+    equivalent under different criteria (structure only, with transitions, etc.).
+    """
+
+    @classmethod
+    @abstractmethod
+    def name(cls) -> str:
+        """Return the name identifier of this equivalence strategy.
+
+        Returns
+        -------
+        str
+            A descriptive name for the strategy (e.g., "structure", "structure-transitions").
+        """
+
+    @classmethod
+    @abstractmethod
+    def equivalent(cls, p1: 'FrequentPattern', p2: 'FrequentPattern') -> bool:
+        """Determine if two patterns are equivalent under this strategy.
+
+        Parameters
+        ----------
+        p1 : FrequentPattern
+            First pattern to compare.
+        p2 : FrequentPattern
+            Second pattern to compare.
+
+        Returns
+        -------
+        bool
+            True if patterns are equivalent, False otherwise.
+        """
+
+class PatternStructure(PatternEquivalenceStrategy):
+    """Equivalence strategy based on graph structure only.
+
+    Two patterns are equivalent if they are isomorphic as directed graphs,
+    regardless of node or edge attributes.
+    """
+
+    @classmethod
+    def name(cls) -> str:
+        return "structure"
+
+    @classmethod
+    def equivalent(cls, p1: 'FrequentPattern', p2: 'FrequentPattern') -> bool:
+        return nx.isomorphism.is_isomorphic(p1, p2)
+
+
+class PatternStructureTransitions(PatternEquivalenceStrategy):
+    """Equivalence strategy based on structure and edge transitions.
+
+    Two patterns are equivalent if they are isomorphic and all corresponding edges
+    have the same transition attributes.
+    """
+
+    @classmethod
+    def name(cls) -> str:
+        return "structure-transitions"
+
+    @classmethod
+    def equivalent(cls, p1: 'FrequentPattern', p2: 'FrequentPattern') -> bool:
+        if not nx.isomorphism.is_isomorphic(p1, p2):
+            return False
+
+        matcher = nx.isomorphism.DiGraphMatcher(p1, p2)
+        if not matcher.is_isomorphic():
+            return False
+
+        return all(p1[u][v]['transition'] == p2[matcher.mapping[u]][matcher.mapping[v]]['transition']
+                   for u, v in p1.edges())
+
+
+class PatternStructureRegionsTransitions(PatternEquivalenceStrategy):
+    """Equivalence strategy based on exact structure including regions and transitions.
+
+    Two patterns are equivalent only if they have identical nodes and edges with all
+    their attributes (regions and transitions).
+    """
+
+    @classmethod
+    def name(cls) -> str:
+        return "structure-regions-transitions"
+
+    @classmethod
+    def equivalent(cls, p1: 'FrequentPattern', p2: 'FrequentPattern') -> bool:
+        return p1.nodes(data=True) == p2.nodes(data=True) and \
+            p1.edges(data=True) == p2.edges(data=True)
+
+
 class FrequentPattern(nx.DiGraph):
     def __init__(self, graph: nx.DiGraph):
         """Initialize the FrequentPattern."""
@@ -142,3 +237,69 @@ class FrequentPatterns:
 
     def __iter__(self) -> Iterator[tuple[str, FrequentPattern]]:
         return iter(self.patterns.items())
+
+
+class FrequentPatternsPopulationAnalysis:
+    """Analyze frequent patterns across a population using an equivalence strategy.
+
+    Identifies unique patterns in a multi-subject dataset and tracks which
+    subjects/groups contain each unique pattern, using a specified equivalence
+    criterion to group structurally similar patterns.
+    """
+
+    def __init__(self, patterns: dict[tuple[str, ...], FrequentPatterns], ids_names: tuple[str],
+                 equivalence_strategy: Type[PatternEquivalenceStrategy]):
+        """Initialize population analysis.
+
+        Parameters
+        ----------
+        patterns : dict[tuple[str, ...], FrequentPatterns]
+            Dictionary mapping subject/group ID tuples to their frequent patterns.
+        ids_names : tuple[str]
+            Names of the ID dimensions (e.g., ("subject", "session")).
+        equivalence_strategy : Type[PatternEquivalenceStrategy]
+            Strategy class to determine if two patterns are equivalent.
+        """
+        self.unique_patterns, self.track = self.__build_unique_patterns_track(patterns, equivalence_strategy, ids_names)
+
+    @staticmethod
+    def __build_unique_patterns_track(patterns: dict[tuple[str, ...], FrequentPatterns],
+                                      equivalence_strategy: Type[PatternEquivalenceStrategy],
+                                      ids_names: tuple[str]) -> tuple[list[FrequentPattern], pd.DataFrame]:
+        """Build unique patterns list and tracking table.
+
+        Identifies unique patterns across the population, grouping equivalent
+        patterns together and creating a mapping of which subjects contain each.
+
+        Parameters
+        ----------
+        patterns : dict[tuple[str, ...], FrequentPatterns]
+            Dictionary mapping subject/group ID tuples to their frequent patterns.
+        equivalence_strategy : Type[PatternEquivalenceStrategy]
+            Strategy class for determining pattern equivalence.
+        ids_names : tuple[str]
+            Names of the ID dimensions.
+
+        Returns
+        -------
+        tuple[list[FrequentPattern], pd.DataFrame]
+            A tuple containing:
+            - List of unique patterns (each equivalence class represented once)
+            - DataFrame tracking which subjects contain which unique patterns,
+              indexed by ID columns with an 'idx' column for unique pattern index.
+        """
+        unique = []
+        track_records = []
+
+        for ids, patterns in patterns.items():
+            for name, pattern in patterns:
+                idx = next((i for i, p in enumerate(unique)
+                            if equivalence_strategy.equivalent(pattern, p)), None)
+
+                if idx is None:
+                    unique.append(pattern)
+                    idx = len(unique) - 1
+
+                track_records.append(dict(zip(ids_names, ids)) | {'idx': idx})
+
+        return unique, pd.DataFrame.from_records(track_records).set_index(list(ids_names))

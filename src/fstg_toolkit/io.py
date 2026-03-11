@@ -41,14 +41,14 @@ import tempfile
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, IO, Protocol, Optional, Generator, Iterable
+from typing import Any, IO, Protocol, Optional, Generator, Iterable, Type
 from zipfile import ZipFile, ZipInfo
 
 import networkx as nx
 import numpy as np
 import pandas as pd
 
-from .frequent import FrequentPatterns, FrequentPattern
+from .frequent import FrequentPatterns, FrequentPattern, FrequentPatternsPopulationAnalysis, PatternEquivalenceStrategy
 from .graph import SpatioTemporalGraph, RC5
 from .utils import split_factors_from_name
 
@@ -1625,6 +1625,26 @@ class GraphsDataset:
             if patterns := self.get_frequent_patterns(ids, mode):
                 results[ids] = patterns
         return results
+
+    def get_frequent_patterns_analysis(self, mode: str,
+                                       equivalence_strategy: Type[PatternEquivalenceStrategy]) -> FrequentPatternsPopulationAnalysis:
+        """Analyze frequent patterns across all subjects with an equivalence strategy.
+
+        Parameters
+        ----------
+        mode : str
+            The pattern mining mode (e.g., 's', 't' or 'st').
+        equivalence_strategy : Type[PatternEquivalenceStrategy]
+            Strategy class to determine if two patterns are equivalent.
+
+        Returns
+        -------
+        FrequentPatternsPopulationAnalysis
+            Population analysis object with unique patterns and tracking information.
+        """
+        return FrequentPatternsPopulationAnalysis(self.get_all_frequent_patterns(mode),
+                                                  tuple(self.subjects.index.names),
+                                                  equivalence_strategy)
 
     @staticmethod
     def deserialize(data: dict[str, Any]) -> 'GraphsDataset':
