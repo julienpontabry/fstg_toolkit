@@ -211,8 +211,8 @@ class DataLoaderTestCase(unittest.TestCase):
         patterns = loader.load_frequent_patterns()
 
         self.assertEqual(len(patterns), 1)
-        self.assertIn('test_subject/motifs_enriched_s', patterns)
-        fp = patterns['test_subject/motifs_enriched_s']
+        self.assertIn(('test_subject', 's'), patterns)
+        fp = patterns['test_subject', 's']
         self.assertIsInstance(fp, FrequentPatterns)
         self.assertEqual(len(fp), 1)
 
@@ -373,15 +373,15 @@ class DataSaverTestCase(unittest.TestCase):
         fp = FrequentPatterns({'pattern_0': FrequentPattern(pattern_g)})
 
         saver = DataSaver()
-        saver.add_frequent_patterns({'test_subject/motifs_enriched_s': fp})
+        saver.add_frequent_patterns({('test_subject', 's'): fp})
         _, gen = saver.save(save_path)
         list(gen)
 
         loader = DataLoader(save_path)
         loaded = loader.load_frequent_patterns()
 
-        self.assertIn('test_subject/motifs_enriched_s', loaded)
-        loaded_fp = loaded['test_subject/motifs_enriched_s']
+        self.assertIn(('test_subject', 's'), loaded)
+        loaded_fp = loaded['test_subject', 's']
         self.assertIsInstance(loaded_fp, FrequentPatterns)
         self.assertEqual(len(loaded_fp), 1)
         self.assertIn('pattern_0', loaded_fp.patterns)
@@ -633,11 +633,11 @@ class FrequentPatternsIOTestCase(unittest.TestCase):
         )
 
         self.assertEqual(len(patterns_dict), 2)
-        self.assertIn('subject_A/motifs_enriched_s', patterns_dict)
-        self.assertIn('subject_B/motifs_enriched_t', patterns_dict)
-        self.assertIsInstance(patterns_dict['subject_A/motifs_enriched_s'], FrequentPatterns)
-        self.assertEqual(len(patterns_dict['subject_A/motifs_enriched_s']), 2)
-        self.assertEqual(len(patterns_dict['subject_B/motifs_enriched_t']), 1)
+        self.assertIn(('subject_A', 's'), patterns_dict)
+        self.assertIn(('subject_B', 't'), patterns_dict)
+        self.assertIsInstance(patterns_dict['subject_A', 's'], FrequentPatterns)
+        self.assertEqual(len(patterns_dict['subject_A', 's']), 2)
+        self.assertEqual(len(patterns_dict['subject_B', 't']), 1)
 
 
 class DataLoaderExtractFilesTestCase(unittest.TestCase):
@@ -938,9 +938,9 @@ class DataLoaderLoadFrequentPatternsMultipleSubjectsTestCase(unittest.TestCase):
         patterns = loader.load_frequent_patterns()
 
         self.assertEqual(len(patterns), 3)
-        self.assertIn('subjectA/motifs_enriched_s', patterns)
-        self.assertIn('subjectA/motifs_enriched_t', patterns)
-        self.assertIn('subjectB/motifs_enriched_s', patterns)
+        self.assertIn(('subjectA', 's'), patterns)
+        self.assertIn(('subjectA', 't'), patterns)
+        self.assertIn(('subjectB', 's'), patterns)
 
     def test_load_frequent_patterns_correct_types(self):
         """Test that each loaded value is a FrequentPatterns instance."""

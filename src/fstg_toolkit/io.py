@@ -277,6 +277,31 @@ class DataRegistry:
         return results
 
     @classmethod
+    def filename2name(cls, filename: str) -> str:
+        """Convert a filename to its corresponding name.
+
+        Parameters
+        ----------
+        filename : str
+            The on-disk filename of the data item.
+
+        Returns
+        -------
+        str:
+            The corresponding human-readable name of the data item.
+
+        Raises
+        ------
+        NoDataHandlerFound
+            If no handler is registered for ``filename``.
+        """
+        if resolved := cls.resolve(filename):
+            _, handler = resolved
+            return handler.filename2name(filename)
+        else:
+            raise NoDataHandlerFound(filename)
+
+    @classmethod
     def name2filename(cls, name: str, kind: str) -> str:
         """Convert a logical name to its on-disk filename for a given kind.
 
@@ -580,13 +605,14 @@ class FrequentPatternsHandler:
 
     @staticmethod
     def filename2name(filename: str) -> str:
-        if FrequentPatternsHandler.pattern.match(filename):
-            return str(Path(filename).with_suffix(''))
+        if match := FrequentPatternsHandler.pattern.match(filename):
+            return ','.join(match.groups())
         return filename
 
     @staticmethod
     def name2filename(name: str) -> str:
-        return f'{name}.json'
+        subject, mode = name.split(',')
+        return f'{subject}/motifs_enriched_{mode}.json'
 
 
 @dataclass(frozen=True)
@@ -896,13 +922,15 @@ class DataLoader:
         """
         return self._inventory.get('frequent_patterns', [])
 
-    def load_frequent_patterns(self) -> dict[str, dict[str, Any]]:
+
+
+    def load_frequent_patterns(self) -> dict[tuple[str, str], FrequentPatterns]:
         """Load all frequent pattern dicts from the archive.
 
         Returns
         -------
-        dict[str, dict[str, Any]]
-            Mapping from ``"<subject>/<mode>"`` to the pattern dict.
+        dict[tuple[str,str], FrequentPatterns]
+            Mapping from ``(subject, mode)`` to the patterns object.
         """
         filenames = self.lazy_load_frequent_patterns()
         logger.info(f"Loading {len(filenames)} frequent pattern file(s) from '{self.filepath}'.")
@@ -910,7 +938,7 @@ class DataLoader:
         with self.__open() as zfp:
             for filename in filenames:
                 name, pattern = self.__load(zfp, filename)
-                patterns[name] = pattern
+                patterns[tuple(name.split(','))] = pattern
         return patterns
 
     def load_frequent_pattern(self, filename: str) -> Optional[FrequentPatterns]:
@@ -1013,7 +1041,7 @@ class DataSaver:
         for name, metric in metrics.items():
             self.__add('metrics', (name, metric))
 
-    def add_frequent_patterns(self, patterns: dict[str, FrequentPatterns]) -> None:
+    def add_frequent_patterns(self, patterns: dict[tuple[str, str], FrequentPatterns]) -> None:
         """Stage frequent pattern dicts for saving.
 
         Parameters
@@ -1022,7 +1050,7 @@ class DataSaver:
         """
         logger.debug(f"Staging {len(patterns)} frequent patterns: {list(patterns.keys())}.")
         for name, pattern in patterns.items():
-            self.__add('frequent_patterns', (name, pattern))
+            self.__add('frequent_patterns', (','.join(name), pattern))
 
     @staticmethod
     def __save(zfp: ZipFile, filename: str, item: Any) -> None:
@@ -1338,7 +1366,7 @@ class FrequentPatternsIO:
             return FrequentPatterns(patterns)
 
     @classmethod
-    def from_spminer_files(cls, output_dir: Path, files: Iterable[Path]) -> dict[str, 'FrequentPatterns']:
+    def from_spminer_files(cls, output_dir: Path, filenames: Iterable[Path]) -> dict[tuple[str, str], 'FrequentPatterns']:
         """Load frequent patterns from multiple SPMiner JSON output files.
 
         Loads patterns from multiple files and returns a dictionary where keys are derived from
@@ -1349,7 +1377,7 @@ class FrequentPatternsIO:
         ----------
         output_dir : Path
             Base output directory relative to which file paths are computed for the result keys.
-        files : Iterable of Path
+        filenames : Iterable of Path
             Iterable of paths to JSON files containing frequent patterns from SPMiner output.
 
         Returns
@@ -1368,9 +1396,13 @@ class FrequentPatternsIO:
         True
         """
         all_patterns = {}
-        for file in files:
-            name = str(file.relative_to(output_dir).with_suffix(''))
-            all_patterns[name] = cls.from_spminer_file(file)
+        for filename in filenames:
+            try:
+                name = DataRegistry.filename2name(str(filename.relative_to(output_dir)))
+                subject, mode = name.split(',')
+                all_patterns[subject, mode] = cls.from_spminer_file(filename)
+            except Exception as ex:
+                logger.debug(f"Skipping {filename}: {ex}")
         return all_patterns
 
 
@@ -1512,7 +1544,30 @@ class GraphsDataset:
         """
         return len(self.loader.lazy_load_frequent_patterns()) > 0
 
-    def get_frequent_patterns(self, ids: tuple[str, ...]) -> Optional[FrequentPatterns]:
+    def get_available_frequent_pattern_modes(self) -> list[str]:
+        """Return sorted list of available frequent pattern mining modes.
+
+        Parses filenames from :meth:`DataLoader.lazy_load_frequent_patterns`
+        using the :attr:`FrequentPatternsHandler.pattern` regex and collects
+        unique mode groups.
+
+        Returns
+        -------
+        list of str
+            Sorted unique mode identifiers (e.g. ``['s', 'st', 't']``).
+        """
+        modes: set[str] = set()
+        for filename in self.loader.lazy_load_frequent_patterns():
+            try:
+                name = DataRegistry.filename2name(filename)
+                _, mode = name.split(',')
+                modes.add(mode)
+            except Exception as ex:
+                logger.debug(f"Skipping {filename}: {ex}")
+
+        return sorted(modes)
+
+    def get_frequent_patterns(self, ids: tuple[str, ...]) -> list[FrequentPatterns]:
         """Get frequent patterns for a subject.
 
         Parameters
@@ -1522,18 +1577,17 @@ class GraphsDataset:
 
         Returns
         -------
-        FrequentPatterns or None
-            The objects to manipulate frequent patterns.
+        list[FrequentPatterns]
+            The objects to manipulate frequent patterns for each mode or an empty list.
         """
         graph_filename = self.subjects.loc[ids]['Graph']
         subject_dir = str(Path(graph_filename).with_suffix(''))
 
-        # TODO handle the patterns mode (spatial, temporal or both); currently take first one
         if filenames := [filename for filename in self.loader.lazy_load_frequent_patterns()
                          if filename.startswith(subject_dir)]:
-            return self.loader.load_frequent_pattern(filenames[0])
+            return [self.loader.load_frequent_pattern(filename) for filename in filenames]
         else:
-            return None
+            return []
 
     @staticmethod
     def deserialize(data: dict[str, Any]) -> 'GraphsDataset':
