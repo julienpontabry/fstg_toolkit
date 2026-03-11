@@ -36,13 +36,13 @@ import dash_bootstrap_components as dbc
 from dash import dcc, html
 
 from fstg_toolkit.app.core.datafilesdb import get_data_file_db
-from fstg_toolkit.app.views import metrics, data, subject, matrices
+from fstg_toolkit.app.views import metrics, data, subject, matrices, frequent
 from fstg_toolkit.io import GraphsDataset
 
 dash.register_page(__name__, path_template='/dashboard/<token>')
 
 
-def dashboard_layout(serialized_dataset, matrices_disabled, metrics_disabled):
+def dashboard_layout(serialized_dataset, matrices_disabled, metrics_disabled, frequent_disabled):
     return dbc.Container(
         children=[
             # app's layout
@@ -51,6 +51,7 @@ def dashboard_layout(serialized_dataset, matrices_disabled, metrics_disabled):
                     dbc.Tab(label="Raw data", id='tab-matrices', tab_id='tab-matrices', children=matrices.layout, disabled=matrices_disabled),
                     dbc.Tab(label="Subject", id='tab-subject', tab_id='tab-subject', children=subject.layout, disabled=False),
                     dbc.Tab(label="Metrics", id='tab-population', tab_id='tab-population', children=metrics.layout, disabled=metrics_disabled),
+                    dbc.Tab(label="Frequent Patterns", id='tab-frequent', tab_id='tab-frequent', children=frequent.layout, disabled=frequent_disabled),
                 ],
                 id='tabs'),
 
@@ -68,7 +69,8 @@ def layout(token=None):
         return dashboard_layout(
             serialized_dataset=dataset.serialize(),
             matrices_disabled=not dataset.has_matrices(),
-            metrics_disabled=not dataset.has_metrics())
+            metrics_disabled=not dataset.has_metrics(),
+            frequent_disabled=not dataset.has_frequent_patterns())
     else:
         return dbc.Container(
             children=[
