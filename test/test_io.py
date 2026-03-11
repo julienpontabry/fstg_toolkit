@@ -41,7 +41,7 @@ import pandas as pd
 
 from fstg_toolkit.frequent import FrequentPattern, FrequentPatterns
 from fstg_toolkit.graph import SpatioTemporalGraph, RC5
-from fstg_toolkit.io import DataLoader, DataSaver, FrequentPatternsIO, \
+from fstg_toolkit.io import DataLoader, DataSaver, FrequentPatternsIO, GraphsDataset, \
     load_spatio_temporal_graph, save_spatio_temporal_graph, _SpatioTemporalGraphEncoder
 
 
@@ -949,3 +949,103 @@ class DataLoaderLoadFrequentPatternsMultipleSubjectsTestCase(unittest.TestCase):
 
         for fp in patterns.values():
             self.assertIsInstance(fp, FrequentPatterns)
+
+
+class GraphsDatasetFrequentPatternsTestCase(unittest.TestCase):
+    """Test GraphsDataset frequent pattern methods."""
+
+    def setUp(self):
+        """Set up a ZIP archive with graphs and frequent patterns for multiple subjects."""
+        self.temp_dir = tempfile.mkdtemp()
+        self.zip_path = Path(self.temp_dir) / 'dataset.zip'
+
+        import json
+        import zipfile
+
+        def _make_pattern_dict(node_count: int) -> dict:
+            g = nx.DiGraph()
+            for i in range(node_count):
+                g.add_node(i, areas=[i + 1])
+            return {'pattern_0': nx.json_graph.node_link_data(g, edges='edges')}
+
+        # Build a minimal valid dataset ZIP with subjects table, areas, and frequent patterns
+        areas_df = pd.DataFrame({'Id_Area': [1, 2], 'Name': ['A', 'B']})
+        subjects_df = pd.DataFrame({
+            'Group': ['ctrl', 'ctrl', 'exp'],
+            'Subject': ['S1', 'S2', 'S3'],
+            'Graph': ['ctrl_S1.json', 'ctrl_S2.json', 'exp_S3.json'],
+        })
+
+        # Minimal graph data
+        g = SpatioTemporalGraph()
+        g.add_node(0, areas=[1])
+        graph_json = json.dumps(nx.json_graph.node_link_data(g, edges='edges'),
+                                cls=_SpatioTemporalGraphEncoder)
+
+        with zipfile.ZipFile(self.zip_path, 'w') as zf:
+            zf.writestr('areas.csv', areas_df.to_csv(index=False))
+            zf.writestr('subjects.csv', subjects_df.to_csv(index=False))
+            # Write graph files for each subject
+            for graph_file in ['ctrl_S1.json', 'ctrl_S2.json', 'exp_S3.json']:
+                zf.writestr(graph_file, graph_json)
+            # Write frequent patterns
+            for subject, mode, n_nodes in [
+                ('ctrl_S1', 't', 2),
+                ('ctrl_S1', 's', 1),
+                ('ctrl_S2', 't', 3),
+                ('exp_S3', 't', 2),
+            ]:
+                filename = f'{subject}/motifs_enriched_{mode}.json'
+                zf.writestr(filename, json.dumps(_make_pattern_dict(n_nodes),
+                                                  cls=_SpatioTemporalGraphEncoder))
+
+        self.dataset = GraphsDataset.from_filepath(self.zip_path)
+
+    def tearDown(self):
+        """Clean up temporary files."""
+        import shutil
+        shutil.rmtree(self.temp_dir)
+
+    def test_get_available_frequent_pattern_modes(self):
+        """Test that available modes are returned sorted."""
+        modes = self.dataset.get_available_frequent_pattern_modes()
+        self.assertEqual(modes, ['s', 't'])
+
+    def test_get_available_frequent_pattern_modes_empty(self):
+        """Test that empty list is returned when no patterns exist."""
+        import zipfile
+        empty_zip = Path(self.temp_dir) / 'empty.zip'
+        areas_df = pd.DataFrame({'Id_Area': [1], 'Name': ['A']})
+        subjects_df = pd.DataFrame({
+            'Subject': ['S1'],
+            'Graph': ['S1.json'],
+        })
+        g = SpatioTemporalGraph()
+        g.add_node(0, areas=[1])
+        import json
+        graph_json = json.dumps(nx.json_graph.node_link_data(g, edges='edges'),
+                                cls=_SpatioTemporalGraphEncoder)
+        with zipfile.ZipFile(empty_zip, 'w') as zf:
+            zf.writestr('areas.csv', areas_df.to_csv(index=False))
+            zf.writestr('subjects.csv', subjects_df.to_csv(index=False))
+            zf.writestr('S1.json', graph_json)
+        dataset = GraphsDataset.from_filepath(empty_zip)
+        self.assertEqual(dataset.get_available_frequent_pattern_modes(), [])
+
+    def test_get_all_frequent_patterns_temporal(self):
+        """Test getting all temporal patterns returns correct subjects."""
+        patterns = self.dataset.get_all_frequent_patterns('t')
+        self.assertEqual(len(patterns), 3)
+        # All three subjects have temporal patterns
+        for ids in patterns:
+            self.assertIsInstance(patterns[ids], FrequentPatterns)
+
+    def test_get_all_frequent_patterns_spatial(self):
+        """Test getting spatial patterns returns only matching subjects."""
+        patterns = self.dataset.get_all_frequent_patterns('s')
+        self.assertEqual(len(patterns), 1)
+
+    def test_get_all_frequent_patterns_nonexistent_mode(self):
+        """Test that a non-existent mode returns empty dict."""
+        patterns = self.dataset.get_all_frequent_patterns('st')
+        self.assertEqual(len(patterns), 0)

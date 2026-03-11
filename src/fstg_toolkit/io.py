@@ -1567,27 +1567,64 @@ class GraphsDataset:
 
         return sorted(modes)
 
-    def get_frequent_patterns(self, ids: tuple[str, ...]) -> list[FrequentPatterns]:
+    def get_frequent_patterns(self, ids: tuple[str, ...], mode: str) -> Optional[FrequentPatterns]:
         """Get frequent patterns for a subject.
 
         Parameters
         ----------
         ids : tuple[str, ...]
             Subject index values (same as used by :meth:`get_graph`).
+        mode : str
+            The mining mode to filter by (``'s'``, ``'t'``, or ``'st'``).
 
         Returns
         -------
-        list[FrequentPatterns]
-            The objects to manipulate frequent patterns for each mode or an empty list.
+        Optional[FrequentPatterns]
+            The objects to manipulate frequent patterns for the specified subject and mode.
         """
         graph_filename = self.subjects.loc[ids]['Graph']
-        subject_dir = str(Path(graph_filename).with_suffix(''))
+        subject_dir = str(Path(graph_filename).with_suffix('')) + '/'
 
-        if filenames := [filename for filename in self.loader.lazy_load_frequent_patterns()
-                         if filename.startswith(subject_dir)]:
-            return [self.loader.load_frequent_pattern(filename) for filename in filenames]
+        def __check_mode(filename: str) -> bool:
+            try:
+                if name := DataRegistry.filename2name(filename):
+                    _, actual_mode = name.split(',')
+                    return mode == actual_mode
+                else:
+                    return False
+            except Exception as ex:
+                logger.debug(f"Skipping {filename}: {ex}")
+                return False
+
+        filenames = self.loader.lazy_load_frequent_patterns()
+        filenames = filter(lambda f: f.startswith(subject_dir), filenames)
+        filenames = list(filter(__check_mode, filenames))
+
+        if filenames:
+            # return the first found that matches the criterion
+            return self.loader.load_frequent_pattern(filenames[0])
         else:
-            return []
+            return None
+
+    def get_all_frequent_patterns(self, mode: str) -> dict[tuple[str, ...], FrequentPatterns]:
+        """Get frequent patterns for all subjects filtered by mining mode.
+
+        Parameters
+        ----------
+        mode : str
+            The mining mode to filter by (``'s'``, ``'t'``, or ``'st'``).
+
+        Returns
+        -------
+        dict mapping subject index tuple to FrequentPatterns
+            A dictionary keyed by subject index tuples (same as used by
+            :meth:`get_graph`) with the corresponding :class:`FrequentPatterns`.
+        """
+        results = {}
+        for ids in self.subjects.index:
+            if patterns := self.get_frequent_patterns(ids, mode):
+                results[ids] = patterns
+        return results
 
     @staticmethod
     def deserialize(data: dict[str, Any]) -> 'GraphsDataset':
