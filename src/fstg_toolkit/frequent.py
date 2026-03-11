@@ -303,3 +303,13 @@ class FrequentPatternsPopulationAnalysis:
                 track_records.append(dict(zip(ids_names, ids)) | {'idx': idx})
 
         return unique, pd.DataFrame.from_records(track_records).set_index(list(ids_names))
+
+    def get_counts(self, factors: list[str]) -> pd.DataFrame:
+        if factors:
+            result = pd.concat({group: data.reset_index('Subject').groupby('idx').count().rename(columns={'Subject': 'Count'})
+                                for group, data in self.track.groupby(factors)},
+                               axis=0)
+            result.index.names = [*factors, 'idx']
+            return result
+        else:
+            return self.track.reset_index('Subject').groupby('idx').count().rename(columns={'Subject': 'Count'})
