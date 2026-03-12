@@ -210,8 +210,21 @@ class PatternStructureRegionsTransitions(PatternEquivalenceStrategy):
 
 
 class FrequentPattern(nx.DiGraph):
+    """A directed graph representing a frequent subgraph pattern.
+
+    A frequent pattern is a recurring subgraph structure discovered from spatio-temporal
+    graphs. It extends NetworkX's DiGraph to represent the pattern's topology, node
+    attributes (e.g., brain regions), and edge attributes (e.g., temporal transitions).
+    """
+
     def __init__(self, graph: nx.DiGraph):
-        """Initialize the FrequentPattern."""
+        """Initialize the FrequentPattern.
+
+        Parameters
+        ----------
+        graph : nx.DiGraph
+            A directed graph to wrap as a frequent pattern.
+        """
         super().__init__(graph)
 
     @staticmethod
@@ -230,12 +243,38 @@ class FrequentPattern(nx.DiGraph):
 
 @dataclass(frozen=True)
 class FrequentPatterns:
+    """A collection of frequent subgraph patterns for a single subject or group.
+
+    Stores multiple frequent patterns discovered from a spatio-temporal graph dataset,
+    each with a unique identifier. This immutable container allows iteration over the
+    patterns and retrieval of their count.
+
+    Attributes
+    ----------
+    patterns : dict[str, FrequentPattern]
+        A mapping from pattern identifiers to FrequentPattern objects.
+    """
+
     patterns: dict[str, FrequentPattern]
 
     def __len__(self) -> int:
+        """Return the number of patterns in this collection.
+
+        Returns
+        -------
+        int
+            The count of distinct patterns.
+        """
         return len(self.patterns)
 
     def __iter__(self) -> Iterator[tuple[str, FrequentPattern]]:
+        """Iterate over pattern identifiers and objects.
+
+        Yields
+        ------
+        tuple[str, FrequentPattern]
+            Tuples of (pattern_id, pattern) for each pattern in the collection.
+        """
         return iter(self.patterns.items())
 
 
@@ -305,6 +344,25 @@ class FrequentPatternsPopulationAnalysis:
         return unique, pd.DataFrame.from_records(track_records).set_index(list(ids_names))
 
     def get_counts(self, factors: list[str]) -> pd.DataFrame:
+        """Count occurrences of each unique pattern, optionally grouped by factors.
+
+        Aggregates the tracking data to compute how many subjects/groups contain each
+        unique pattern. If factors are specified, counts are computed separately for
+        each combination of factor values.
+
+        Parameters
+        ----------
+        factors : list[str]
+            Column names from the tracking DataFrame to group by (e.g., ['session']).
+            Pass an empty list to get counts across all subjects.
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame with unique pattern indices as rows and 'Count' column containing
+            the number of subjects with each pattern. If factors are provided, the result
+            is multi-indexed by the factor columns and pattern index 'idx'.
+        """
         if factors:
             result = pd.concat({group: data.reset_index('Subject').groupby('idx').count().rename(columns={'Subject': 'Count'})
                                 for group, data in self.track.groupby(factors)},
