@@ -41,18 +41,17 @@ from .common import (
     create_factors_options_controls,
 )
 from ..figures.frequent import build_pattern_frequency_plot
-from ...frequent import PatternStructure, PatternStructureTransitions, PatternStructureRegionsTransitions
+from ...frequent import PatternEquivalenceStrategyRegistry
 from ...io import GraphsDataset
 
-# TODO get the equivalences options automatically (registry?)
-EQUIVALENCE_OPTIONS = [PatternStructure.name(), PatternStructureTransitions.name(), PatternStructureRegionsTransitions.name()]
+EQUIVALENCE_OPTIONS = PatternEquivalenceStrategyRegistry.names()
 ANALYSIS_OPTIONS = ['Pattern distribution', 'Occurrence distribution']
 
 
 layout = [
     dbc.Row([
         dbc.Col(dbc.Label("Equivalence class"), width='auto'),
-        dbc.Col(dcc.Dropdown(EQUIVALENCE_OPTIONS, value=PatternStructureTransitions.name(), clearable=False, id='frequent-equivalence'))
+        dbc.Col(dcc.Dropdown(EQUIVALENCE_OPTIONS, value='structure-transitions', clearable=False, id='frequent-equivalence'))
     ]),
     dbc.Row(dcc.Dropdown([], value='', clearable=False, id='frequent-mode',
                          style={'display': 'none'})),
@@ -116,6 +115,7 @@ def analysis_selection_changed(analysis: str, equivalence_strategy: str, factors
         raise PreventUpdate
 
     dataset = GraphsDataset.deserialize(store_dataset)
-    analysis = dataset.get_frequent_patterns_analysis(mode, PatternStructureTransitions)  # TODO use a map from str to the class
+    equivalence_strategy = PatternEquivalenceStrategyRegistry.get(equivalence_strategy)
+    analysis = dataset.get_frequent_patterns_analysis(mode, equivalence_strategy)
 
     return build_pattern_frequency_plot(analysis, factors_selection)

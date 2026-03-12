@@ -36,7 +36,7 @@ import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Any, Iterator, Type
+from typing import Optional, Any, Callable, Iterator, Type
 
 import networkx as nx
 import pandas as pd
@@ -125,17 +125,6 @@ class PatternEquivalenceStrategy(ABC):
 
     @classmethod
     @abstractmethod
-    def name(cls) -> str:
-        """Return the name identifier of this equivalence strategy.
-
-        Returns
-        -------
-        str
-            A descriptive name for the strategy (e.g., "structure", "structure-transitions").
-        """
-
-    @classmethod
-    @abstractmethod
     def equivalent(cls, p1: 'FrequentPattern', p2: 'FrequentPattern') -> bool:
         """Determine if two patterns are equivalent under this strategy.
 
@@ -152,6 +141,69 @@ class PatternEquivalenceStrategy(ABC):
             True if patterns are equivalent, False otherwise.
         """
 
+
+class PatternEquivalenceStrategyRegistry:
+    """Registry for PatternEquivalenceStrategy implementations.
+
+    Strategies self-register via the @PatternEquivalenceStrategyRegistry.register(name) decorator.
+    Look up by the registered name string.
+    """
+
+    _strategies: dict[str, Type['PatternEquivalenceStrategy']] = {}
+
+    @classmethod
+    def register(cls, name: str) -> Callable[[Type['PatternEquivalenceStrategy']], Type['PatternEquivalenceStrategy']]:
+        """Class decorator factory that registers a strategy under the given name.
+
+        Parameters
+        ----------
+        name : str
+            The name key to register the strategy under.
+
+        Returns
+        -------
+        Callable
+            Decorator that stores the class and returns it unchanged.
+        """
+        def decorator(strategy_cls: Type['PatternEquivalenceStrategy']) -> Type['PatternEquivalenceStrategy']:
+            cls._strategies[name] = strategy_cls
+            return strategy_cls
+        return decorator
+
+    @classmethod
+    def get(cls, name: str) -> Type['PatternEquivalenceStrategy']:
+        """Look up a strategy class by its registered name.
+
+        Parameters
+        ----------
+        name : str
+            The registered name key.
+
+        Returns
+        -------
+        type[PatternEquivalenceStrategy]
+            The registered strategy class.
+
+        Raises
+        ------
+        KeyError
+            If no strategy is registered under this name.
+        """
+        return cls._strategies[name]
+
+    @classmethod
+    def names(cls) -> list[str]:
+        """Return the names of all registered strategies.
+
+        Returns
+        -------
+        list[str]
+            Sorted list of registered strategy name keys.
+        """
+        return sorted(cls._strategies.keys())
+
+
+@PatternEquivalenceStrategyRegistry.register('structure')
 class PatternStructure(PatternEquivalenceStrategy):
     """Equivalence strategy based on graph structure only.
 
@@ -160,24 +212,17 @@ class PatternStructure(PatternEquivalenceStrategy):
     """
 
     @classmethod
-    def name(cls) -> str:
-        return "structure"
-
-    @classmethod
     def equivalent(cls, p1: 'FrequentPattern', p2: 'FrequentPattern') -> bool:
         return nx.isomorphism.is_isomorphic(p1, p2)
 
 
+@PatternEquivalenceStrategyRegistry.register('structure-transitions')
 class PatternStructureTransitions(PatternEquivalenceStrategy):
     """Equivalence strategy based on structure and edge transitions.
 
     Two patterns are equivalent if they are isomorphic and all corresponding edges
     have the same transition attributes.
     """
-
-    @classmethod
-    def name(cls) -> str:
-        return "structure-transitions"
 
     @classmethod
     def equivalent(cls, p1: 'FrequentPattern', p2: 'FrequentPattern') -> bool:
@@ -192,16 +237,13 @@ class PatternStructureTransitions(PatternEquivalenceStrategy):
                    for u, v in p1.edges())
 
 
+@PatternEquivalenceStrategyRegistry.register('structure-regions-transitions')
 class PatternStructureRegionsTransitions(PatternEquivalenceStrategy):
     """Equivalence strategy based on exact structure including regions and transitions.
 
     Two patterns are equivalent only if they have identical nodes and edges with all
     their attributes (regions and transitions).
     """
-
-    @classmethod
-    def name(cls) -> str:
-        return "structure-regions-transitions"
 
     @classmethod
     def equivalent(cls, p1: 'FrequentPattern', p2: 'FrequentPattern') -> bool:
