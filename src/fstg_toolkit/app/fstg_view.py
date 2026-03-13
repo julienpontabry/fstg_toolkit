@@ -128,12 +128,23 @@ if config.is_configured('upload_path'):
 
 # NOTE the following are additional routes
 
+# FIXME the download system relies on two independent SQLite tables (`files` and `jobs`) staying
+# in sync: `_process_dataset` writes the token→path mapping to `files`, while `on_job_completed`
+# writes the same token to `jobs.result`. If the server is restarted with a different `db_path`,
+# or if the `DataFilesDB` singleton was already initialised before `serve` sets its `db_path`
+# (causing the new path to be silently dropped), the `files` table will be empty while the `jobs`
+# table still shows COMPLETED entries — making all download links return 404. A robust fix would
+# be to re-populate the `files` table on startup by scanning `config.data_path` for existing ZIPs.
 @app.server.route('/download/<token>')
 def download_dataset(token):
-    if token is None:
+    file_path = get_data_file_db().get(token)
+
+    if file_path is None:
+        logger.warning(f"Download requested for unknown token '{token}'.")
         abort(404)
 
-    if file_path := get_data_file_db().get(token):
-        return send_from_directory(config.data_path, file_path.relative_to(config.data_path))
-    else:
+    if not file_path.exists():
+        logger.warning(f"Download requested for token '{token}' but file '{file_path}' does not exist.")
         abort(404)
+
+    return send_from_directory(config.data_path, file_path.relative_to(config.data_path))
