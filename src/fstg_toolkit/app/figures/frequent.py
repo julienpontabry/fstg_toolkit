@@ -129,7 +129,7 @@ def build_pattern_figure(pattern: FrequentPattern) -> go.Figure:
     ))
 
     fig.update_layout(
-        width=300, height=300,
+        width=200, height=200,
         xaxis={'visible': False}, yaxis={'visible': False},
         margin={'l': 10, 'r': 10, 't': 10, 'b': 10},
         plot_bgcolor='white',

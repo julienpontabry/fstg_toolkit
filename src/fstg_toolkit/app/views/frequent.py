@@ -152,4 +152,4 @@ def show_pattern_tooltip(hover_data: dict, patterns_json: list) -> tuple:
     bbox = point['bbox']
 
     return True, bbox, dcc.Graph(figure=fig, config={'displayModeBar': False},
-                                 style={'width': '300px', 'height': '300px'})
+                                 style={'width': '200px', 'height': '200px'})
