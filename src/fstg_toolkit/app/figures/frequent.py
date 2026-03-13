@@ -31,10 +31,111 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
+import math
+
+import networkx as nx
 import plotly.express as px
 from plotly import graph_objects as go
 
-from fstg_toolkit.frequent import FrequentPatternsPopulationAnalysis
+from fstg_toolkit.frequent import FrequentPattern, FrequentPatternsPopulationAnalysis
+
+
+def build_pattern_figure(pattern: FrequentPattern) -> go.Figure:
+    """Build a small Plotly figure visualizing a single frequent pattern graph.
+
+    Parameters
+    ----------
+    pattern : FrequentPattern
+        The frequent pattern to visualize.
+
+    Returns
+    -------
+    go.Figure
+        A Plotly figure showing the pattern as a directed graph.
+    """
+    if len(pattern) > 2:
+        initial_pos = nx.spectral_layout(pattern)
+        pos = nx.spring_layout(pattern, pos=initial_pos, seed=42)
+    else:
+        pos = nx.spring_layout(pattern, seed=42)
+
+    fig = go.Figure()
+
+    # Draw edges as lines
+    for u, v, data in pattern.edges(data=True):
+        x0, y0 = pos[u]
+        x1, y1 = pos[v]
+        fig.add_trace(go.Scatter(
+            x=[x0, x1, None], y=[y0, y1, None],
+            mode='lines',
+            line={'color': 'gray', 'width': 2},
+            hoverinfo='skip',
+            showlegend=False,
+        ))
+
+    # Draw edge labels at midpoints
+    for u, v, data in pattern.edges(data=True):
+        x0, y0 = pos[u]
+        x1, y1 = pos[v]
+        label = data.get('transition', '')
+        fig.add_trace(go.Scatter(
+            x=[(x0 + x1) / 2], y=[(y0 + y1) / 2],
+            mode='text',
+            text=[str(label)],
+            textfont={'size': 10, 'color': 'darkred'},
+            hoverinfo='skip',
+            showlegend=False,
+        ))
+
+    # Draw arrowheads via annotations
+    for u, v in pattern.edges():
+        x0, y0 = pos[u]
+        x1, y1 = pos[v]
+        # Shorten arrow slightly so head doesn't overlap node marker
+        dx, dy = x1 - x0, y1 - y0
+        length = math.sqrt(dx * dx + dy * dy)
+        if length > 0:
+            shrink = min(0.15, length * 0.3)
+            x1_s = x1 - (dx / length) * shrink
+            y1_s = y1 - (dy / length) * shrink
+        else:
+            x1_s, y1_s = x1, y1
+        fig.add_annotation(
+            x=x1_s, y=y1_s, ax=x0, ay=y0,
+            xref='x', yref='y', axref='x', ayref='y',
+            showarrow=True,
+            arrowhead=3, arrowsize=1.5, arrowwidth=2,
+            arrowcolor='gray',
+            standoff=8,
+        )
+
+    # Draw nodes
+    node_x = [pos[n][0] for n in pattern.nodes()]
+    node_y = [pos[n][1] for n in pattern.nodes()]
+
+    regions = [pattern.nodes[n].get('region', '') for n in pattern.nodes()]
+    all_same = len(set(regions)) <= 1
+    node_labels = ['' if all_same else r for r in regions]
+
+    fig.add_trace(go.Scatter(
+        x=node_x, y=node_y,
+        mode='markers+text',
+        marker={'size': 30, 'color': 'lightblue', 'line': {'width': 2, 'color': 'steelblue'}},
+        text=node_labels,
+        textposition='middle center',
+        textfont={'size': 9},
+        hoverinfo='skip',
+        showlegend=False,
+    ))
+
+    fig.update_layout(
+        width=300, height=300,
+        xaxis={'visible': False}, yaxis={'visible': False},
+        margin={'l': 10, 'r': 10, 't': 10, 'b': 10},
+        plot_bgcolor='white',
+    )
+
+    return fig
 
 
 def build_pattern_frequency_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:

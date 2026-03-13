@@ -31,16 +31,20 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
+import json
+
 import dash_bootstrap_components as dbc
-from dash import Input, Output, State, callback, dcc
+from dash import Input, Output, State, callback, dcc, no_update
 from dash.exceptions import PreventUpdate
+from plotly import graph_objects as go
+from plotly.io import to_json
 
 from .common import (
     plotly_config,
     build_factors_options,
     create_factors_options_controls,
 )
-from ..figures.frequent import build_pattern_frequency_plot
+from ..figures.frequent import build_pattern_figure, build_pattern_frequency_plot
 from ...frequent import PatternEquivalenceStrategyRegistry
 from ...io import GraphsDataset
 
@@ -59,10 +63,12 @@ layout = [
     dbc.Row(dbc.Col(create_factors_options_controls('frequent'))),
     dbc.Row(
         dcc.Loading(
-            children=[dcc.Graph(figure={}, id='frequent-graph', config=plotly_config)],
+            children=[dcc.Graph(figure={}, id='frequent-graph', config=plotly_config, clear_on_unhover=True)],
             type='circle', overlay_style={'visibility': 'visible', 'filter': 'blur(2px)'}
         )
-    )
+    ),
+    dcc.Store(id='frequent-patterns-store'),
+    dcc.Tooltip(id='frequent-pattern-tooltip', style={'max-width': '320px', 'padding': '0'}),
 ]
 
 
@@ -102,6 +108,7 @@ def mode_changed(mode: str) -> tuple:
 
 @callback(
     Output('frequent-graph', 'figure'),
+    Output('frequent-patterns-store', 'data'),
     Input('frequent-analysis', 'value'),
     Input('frequent-equivalence', 'value'),
     Input('frequent-factors', 'value'),
@@ -110,7 +117,7 @@ def mode_changed(mode: str) -> tuple:
     prevent_initial_call=True,
 )
 def analysis_selection_changed(analysis: str, equivalence_strategy: str, factors_selection: list[str],
-                               store_dataset: dict, mode: str):
+                               store_dataset: dict, mode: str) -> tuple:
     if store_dataset is None or not mode or not analysis:
         raise PreventUpdate
 
@@ -118,4 +125,31 @@ def analysis_selection_changed(analysis: str, equivalence_strategy: str, factors
     equivalence_strategy = PatternEquivalenceStrategyRegistry.get(equivalence_strategy)
     analysis = dataset.get_frequent_patterns_analysis(mode, equivalence_strategy)
 
-    return build_pattern_frequency_plot(analysis, factors_selection)
+    pattern_figures = [to_json(build_pattern_figure(p)) for p in analysis.unique_patterns]
+
+    return build_pattern_frequency_plot(analysis, factors_selection), pattern_figures
+
+
+@callback(
+    Output('frequent-pattern-tooltip', 'show'),
+    Output('frequent-pattern-tooltip', 'bbox'),
+    Output('frequent-pattern-tooltip', 'children'),
+    Input('frequent-graph', 'hoverData'),
+    State('frequent-patterns-store', 'data'),
+    prevent_initial_call=True,
+)
+def show_pattern_tooltip(hover_data: dict, patterns_json: list) -> tuple:
+    if hover_data is None or patterns_json is None:
+        return False, no_update, no_update
+
+    point = hover_data['points'][0]
+    pattern_index = int(point['x']) - 1  # histogram x is 1-based
+
+    if pattern_index < 0 or pattern_index >= len(patterns_json):
+        return False, no_update, no_update
+
+    fig = go.Figure(json.loads(patterns_json[pattern_index]))
+    bbox = point['bbox']
+
+    return True, bbox, dcc.Graph(figure=fig, config={'displayModeBar': False},
+                                 style={'width': '300px', 'height': '300px'})
