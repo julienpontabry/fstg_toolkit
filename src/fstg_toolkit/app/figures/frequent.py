@@ -40,10 +40,20 @@ from fstg_toolkit.frequent import FrequentPatternsPopulationAnalysis
 def build_pattern_frequency_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
     counts = analysis.get_counts(factors)
 
+    # add 1 to pattern indices to start from 1
+    # (and last is the total number of patterns)
+    counts = counts.reset_index()
+    counts['idx'] += 1
+
     params = dict(zip(('facet_row', 'facet_col'), factors))
-    return px.bar(
-        counts.reset_index(), x='idx', y='Count', **params,
+    fig = px.bar(
+        counts, x='idx', y='Count', **params,
         barmode='group',
         labels={'idx': 'Pattern'},
         height=800,
     )
+
+    # force integer scale on y-axis
+    fig.update_yaxes(dtick=1)
+
+    return fig
