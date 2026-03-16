@@ -1356,7 +1356,7 @@ class FrequentPatternsIO:
 
         Examples
         --------
-        >>> patterns = FrequentPatternsIO.from_spminer_file(Path('motifs_enriched_s.json'))
+        >>> patterns = FrequentPatternsIO.from_spminer_file(Path('motifs_enriched_s.json'))  # doctest: +SKIP
         >>> len(patterns)  # doctest: +SKIP
         5
         """
