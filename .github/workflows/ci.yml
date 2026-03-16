@@ -5,38 +5,31 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+    types: [ opened, synchronize ]
 
 jobs:
-  docstring-tests:
+  tests:
     runs-on: ubuntu-latest
+
     container:
       image: mambaorg/micromamba:bookworm-slim
       options: --user=root
+
     steps:
-      - uses: actions/checkout@v4
-      - shell: _entrypoint.sh /bin/bash --noprofile --norc -eo pipefail {0}
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        shell: _entrypoint.sh /bin/bash --noprofile --norc -eo pipefail {0}
         run: |
           micromamba install --yes --name base --file environment.yml
           micromamba clean --all --yes
           micromamba run poetry config virtualenvs.create false --local
           micromamba run poetry install --all-extras
           export PYTHONPATH="$PYTHONPATH:src"
+
       - name: Run doctests
         run: micromamba run python test/doctests_runner.py
 
-  unit-tests:
-    runs-on: ubuntu-latest
-    container:
-      image: mambaorg/micromamba:bookworm-slim
-      options: --user=root
-    steps:
-      - uses: actions/checkout@v4
-      - shell: _entrypoint.sh /bin/bash --noprofile --norc -eo pipefail {0}
-        run: |
-          micromamba install --yes --name base --file environment.yml
-          micromamba clean --all --yes
-          micromamba run poetry config virtualenvs.create false --local
-          micromamba run poetry install --all-extras
-          export PYTHONPATH="$PYTHONPATH:src"
       - name: Run unit tests
         run: micromamba run python -m unittest discover -s test -p "test_*.py"
