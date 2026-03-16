@@ -1,0 +1,52 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [ published ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    container:
+      image: mambaorg/micromamba:bookworm-slim
+      options: --user=root
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install dependencies
+        shell: _entrypoint.sh /bin/bash --noprofile --norc -eo pipefail {0}
+        run: |
+          micromamba install --yes --name base --file environment.yml
+          micromamba clean --all --yes
+          micromamba run poetry config virtualenvs.create false --local
+          micromamba run poetry install --all-extras
+          export PYTHONPATH="$PYTHONPATH:src"
+
+      - name: Build package
+        run: micromamba run poetry build
+
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
