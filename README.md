@@ -18,13 +18,30 @@ Current main features:
 
 ## Installation
 
-The easiest way to get started is to create a new environment with the required python and poetry binaries. Using conda, to install the environment and activate it, run:
+### Installation from PyPI
+
+The easiest way to get started is to install the package from PyPI. Make sure you have a Python environment ready with a supported version (see the badge above), then run:
+```shell
+pip install fSTG-Toolkit
+```
+
+To install optional feature sets:
+```shell
+pip install "fSTG-Toolkit[dashboard]"   # web dashboard
+pip install "fSTG-Toolkit[plot]"        # matplotlib plots
+pip install "fSTG-Toolkit[frequent]"    # frequent pattern mining (requires Docker)
+pip install "fSTG-Toolkit[dashboard,plot,frequent]"  # everything
+```
+
+### Installation from Source
+
+To install from source, create a new environment with the required Python and Poetry binaries. Using conda:
 ```shell
 conda env create -n <env_name> -f environment.yml
 conda activate <env_name>
 ```
 
-Then in the project's root folder to install the dependencies, run:
+Then in the project's root folder, install the dependencies:
 ```shell
 poetry install
 ```
