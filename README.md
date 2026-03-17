@@ -113,6 +113,16 @@ python -m fstg_toolkit graph metrics my_graphs.zip
 
 The calculated metrics will be inserted in the dataset archive.
 
+### Frequent Pattern Mining
+
+Frequent subgraph pattern mining requires Docker and the `[frequent]` extra. To run the analysis on a dataset:
+
+```shell
+python -m fstg_toolkit graph frequent my_graphs.zip
+```
+
+The detected frequent patterns will be inserted in the dataset archive and can be explored interactively in the dashboard.
+
 ### View the results
 
 To visualize a dashboard to explore the processed data from a dataset with the `show` command, run:
@@ -138,13 +148,3 @@ If the names of the matrices are formatted, factors and subjects will be automat
 - `group1_time1_T11`.
 
 The subjects will be matched to the part that has different values between the names, and the factors will be the parts that are common to multiple names. If a part is similar in all names, it will not be considered. In this case, the subjects are `T21`, `T22`, `T31`, and `T11`, and the factors are `control` and `group1` for first factor, `time1` and `time2` for the second factor.
-
-### Frequent Pattern Mining
-
-Frequent subgraph pattern mining requires Docker and the `[frequent]` extra. To run the analysis on a dataset:
-
-```shell
-python -m fstg_toolkit graph frequent my_graphs.zip
-```
-
-The detected frequent patterns will be inserted in the dataset archive and can be explored interactively in the dashboard.
