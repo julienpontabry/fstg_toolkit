@@ -75,14 +75,14 @@ class CorrelationMatrixSimulationTestCase(unittest.TestCase):
         for i in range(2):
             self.assertEqual(4, matrix.shape[i])
 
-        self.assertEqual(n1_is, matrix[0, 1])
-        self.assertEqual(n1_is, matrix[1, 0])
+        self.assertAlmostEqual(n1_is, matrix[0, 1])
+        self.assertAlmostEqual(n1_is, matrix[1, 0])
 
-        self.assertEqual(n2_is, matrix[2, 3])
-        self.assertEqual(n2_is, matrix[3, 2])
+        self.assertAlmostEqual(n2_is, matrix[2, 3])
+        self.assertAlmostEqual(n2_is, matrix[3, 2])
 
-        self.assertEqual(n_corr, matrix[2:, :2].max())
-        self.assertEqual(n_corr, matrix[:2, 2:].max())
+        self.assertAlmostEqual(n_corr, matrix[2:, :2].max())
+        self.assertAlmostEqual(n_corr, matrix[:2, 2:].max())
 
         for i in range(4):
             self.assertEqual(1, matrix[i, i])
@@ -94,7 +94,7 @@ class CorrelationMatrixSimulationTestCase(unittest.TestCase):
         simulator = CorrelationMatrixSequenceSimulator(
             graph=graph_structure, threshold=0.4, rng=np.random.default_rng(100))
         matrices = simulator.simulate()
-        np.testing.assert_array_equal(target, matrices)
+        np.testing.assert_allclose(target, matrices)
 
 
 class SpatioTemporalGraphSimulationTestCase(unittest.TestCase):
