@@ -1261,7 +1261,7 @@ def load_spatio_temporal_graph(filepath: Path | str) -> SpatioTemporalGraph:
     ...     'Name_Area': ['Area 1', 'Area 2', 'Area 3'],
     ...     'Name_Region': ['R1', 'R2', 'R3']})
     >>> areas_desc.set_index('Id_Area', inplace=True)
-    >>> graph_path = Path('/tmp/tmp.zip')
+    >>> graph_path = Path(tempfile.gettempdir()) / 'tmp.zip'
     >>> save_spatio_temporal_graph(SpatioTemporalGraph(G, areas_desc), graph_path)
     >>> graph_struct = load_spatio_temporal_graph(graph_path)
 
@@ -1315,7 +1315,7 @@ def save_spatio_temporal_graph(graph: SpatioTemporalGraph, filepath: Path | str)
     >>> areas_desc = pd.DataFrame({
     ...     'Name_Area': ['Area 1', 'Area 2', 'Area 3'],
     ...     'Name_Region': ['R1', 'R2', 'R3']}, index=[1, 2, 3])
-    >>> graph_path = Path('/tmp/tmp.zip')
+    >>> graph_path = Path(tempfile.gettempdir()) / 'tmp.zip'
     >>> graph_struct = SpatioTemporalGraph(G, areas_desc)
     >>> save_spatio_temporal_graph(graph_struct, graph_path)
     """
