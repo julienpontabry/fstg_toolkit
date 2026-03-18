@@ -9,27 +9,31 @@ on:
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
-    container:
-      image: mambaorg/micromamba:bookworm-slim
-      options: --user=root
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        python-version: [ "3.12", "3.13" ]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Install Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
       - name: Install dependencies
-        shell: _entrypoint.sh /bin/bash --noprofile --norc -eo pipefail {0}
-        run: |
-          micromamba install --yes --name base --file environment.yml
-          micromamba clean --all --yes
-          micromamba run poetry config virtualenvs.create false --local
-          micromamba run poetry install --all-extras
-          export PYTHONPATH="$PYTHONPATH:src"
+        run: poetry install --all-extras
 
       - name: Run doctests
-        run: micromamba run python test/doctests_runner.py
+        run: poetry run python test/doctests_runner.py
 
       - name: Run unit tests
-        run: micromamba run python -m unittest discover -s test -p "test_*.py"
+        run: poetry run python -m unittest discover -s test -p "test_*.py"
