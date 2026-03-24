@@ -35,6 +35,7 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from itertools import combinations
 from pathlib import Path
 from typing import Optional, Any, Callable, Iterator, Type
 
@@ -413,3 +414,296 @@ class FrequentPatternsPopulationAnalysis:
             return result
         else:
             return self.track.reset_index('Subject').groupby('idx').count().rename(columns={'Subject': 'Count'})
+
+    def get_patterns_per_region(self, factors: list[str]) -> pd.DataFrame:
+        """Count pattern occurrences per brain region, optionally grouped by factors.
+
+        For each unique pattern, extracts all regions present in its nodes. Each
+        region occurrence is weighted by the number of subjects that have the pattern
+        in the given factor group.
+
+        Parameters
+        ----------
+        factors : list[str]
+            Column names from the tracking DataFrame to group by.
+            Pass an empty list to get counts across all subjects.
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame with columns ``[Region, Count, *factors]``.
+        """
+        counts = self.get_counts(factors)
+        records: list[dict[str, Any]] = []
+
+        if factors:
+            for (*factor_vals, idx), row in counts.iterrows():
+                pattern = self.unique_patterns[idx]
+                factor_dict = dict(zip(factors, factor_vals))
+                for _, node_data in pattern.nodes(data=True):
+                    records.append({
+                        'Region': node_data['region'],
+                        'Count': row['Count'],
+                        **factor_dict,
+                    })
+        else:
+            for idx, row in counts.iterrows():
+                pattern = self.unique_patterns[idx]
+                for _, node_data in pattern.nodes(data=True):
+                    records.append({
+                        'Region': node_data['region'],
+                        'Count': row['Count'],
+                    })
+
+        df = pd.DataFrame.from_records(records)
+        group_cols = ['Region'] + factors
+        return df.groupby(group_cols, as_index=False)['Count'].sum()
+
+    def get_temporal_dynamics(self, factors: list[str]) -> pd.DataFrame:
+        """Extract temporal edge dynamics per region, optionally grouped by factors.
+
+        For each unique pattern, extracts temporal edges (those with a ``transition``
+        attribute) and records the source node's region and the transition type.
+        Counts are weighted by the number of subjects that have the pattern in each
+        factor group.
+
+        Parameters
+        ----------
+        factors : list[str]
+            Column names from the tracking DataFrame to group by.
+            Pass an empty list to get counts across all subjects.
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame with columns ``[Region, Transition, Count, *factors]``.
+        """
+        counts = self.get_counts(factors)
+        records: list[dict[str, Any]] = []
+
+        if factors:
+            for (*factor_vals, idx), row in counts.iterrows():
+                pattern = self.unique_patterns[idx]
+                factor_dict = dict(zip(factors, factor_vals))
+                for u, v, edge_data in pattern.edges(data=True):
+                    if 'transition' in edge_data:
+                        records.append({
+                            'Region': pattern.nodes[u]['region'],
+                            'Transition': str(edge_data['transition']),
+                            'Count': row['Count'],
+                            **factor_dict,
+                        })
+        else:
+            for idx, row in counts.iterrows():
+                pattern = self.unique_patterns[idx]
+                for u, v, edge_data in pattern.edges(data=True):
+                    if 'transition' in edge_data:
+                        records.append({
+                            'Region': pattern.nodes[u]['region'],
+                            'Transition': str(edge_data['transition']),
+                            'Count': row['Count'],
+                        })
+
+        df = pd.DataFrame.from_records(records)
+        group_cols = ['Region', 'Transition'] + factors
+        return df.groupby(group_cols, as_index=False)['Count'].sum()
+
+    def get_region_co_occurrence(self, factors: list[str]) -> dict[tuple[str, ...], tuple[list[str], list[list[int]]]]:
+        """Compute region co-occurrence matrices from spatial edges, optionally grouped by factors.
+
+        For each spatial edge (no ``transition`` attribute, connecting different regions),
+        records the sorted region pair. Counts are weighted by the number of subjects
+        that have the pattern in each factor group.
+
+        Parameters
+        ----------
+        factors : list[str]
+            Column names from the tracking DataFrame to group by.
+            Pass an empty list to get a single co-occurrence matrix.
+
+        Returns
+        -------
+        dict[tuple[str, ...], tuple[list[str], list[list[int]]]]
+            A dictionary mapping factor-group tuples (or ``('',)`` if no factors) to
+            a tuple of ``(region_labels_sorted, symmetric_2d_list)`` where the 2D list
+            contains co-occurrence counts between regions.
+        """
+        counts = self.get_counts(factors)
+
+        # Collect all regions across all patterns for a consistent matrix
+        all_regions: set[str] = set()
+        for pattern in self.unique_patterns:
+            for _, node_data in pattern.nodes(data=True):
+                all_regions.add(node_data['region'])
+        region_labels = sorted(all_regions)
+        region_idx = {r: i for i, r in enumerate(region_labels)}
+        n = len(region_labels)
+
+        # Build per-group pair counts
+        group_pairs: dict[tuple[str, ...], dict[tuple[str, str], int]] = {}
+
+        if factors:
+            for (*factor_vals, idx), row in counts.iterrows():
+                key = tuple(factor_vals)
+                if key not in group_pairs:
+                    group_pairs[key] = {}
+                pattern = self.unique_patterns[idx]
+                for u, v, edge_data in pattern.edges(data=True):
+                    if 'transition' not in edge_data:
+                        r1 = pattern.nodes[u]['region']
+                        r2 = pattern.nodes[v]['region']
+                        if r1 != r2:
+                            pair = tuple(sorted([r1, r2]))
+                            group_pairs[key][pair] = group_pairs[key].get(pair, 0) + row['Count']
+        else:
+            key = ('',)
+            group_pairs[key] = {}
+            for idx, row in counts.iterrows():
+                pattern = self.unique_patterns[idx]
+                for u, v, edge_data in pattern.edges(data=True):
+                    if 'transition' not in edge_data:
+                        r1 = pattern.nodes[u]['region']
+                        r2 = pattern.nodes[v]['region']
+                        if r1 != r2:
+                            pair = tuple(sorted([r1, r2]))
+                            group_pairs[key][pair] = group_pairs[key].get(pair, 0) + row['Count']
+
+        result: dict[tuple[str, ...], tuple[list[str], list[list[int]]]] = {}
+        for key, pairs in group_pairs.items():
+            matrix = [[0] * n for _ in range(n)]
+            for (r1, r2), count in pairs.items():
+                i, j = region_idx[r1], region_idx[r2]
+                matrix[i][j] += count
+                matrix[j][i] += count
+            result[key] = (region_labels, matrix)
+
+        return result
+
+    def get_pattern_cooccurrence(self, factors: list[str]) -> dict[tuple[str, ...], list[list[int]]]:
+        """Compute pattern co-occurrence matrices, optionally grouped by factors.
+
+        For each subject in a factor group, finds all pattern indices the subject has,
+        then increments the co-occurrence counter for every pair of patterns.
+
+        Parameters
+        ----------
+        factors : list[str]
+            Column names from the tracking DataFrame to group by.
+            Pass an empty list to get a single co-occurrence matrix.
+
+        Returns
+        -------
+        dict[tuple[str, ...], list[list[int]]]
+            A dictionary mapping factor-group tuples (or ``('',)`` if no factors) to
+            a symmetric 2D list of size ``len(unique_patterns)``, where cell ``(i, j)``
+            is the number of subjects that have both pattern *i* and pattern *j*.
+        """
+        n = len(self.unique_patterns)
+        result: dict[tuple[str, ...], list[list[int]]] = {}
+
+        if factors:
+            for group, group_data in self.track.groupby(factors):
+                key = group if isinstance(group, tuple) else (group,)
+                matrix = [[0] * n for _ in range(n)]
+                # Group by subject (remaining index levels after factor groupby)
+                remaining_levels = [lvl for lvl in group_data.index.names if lvl not in factors]
+                for subject, subject_data in group_data.groupby(level=remaining_levels):
+                    indices = list(subject_data['idx'].unique())
+                    for i_val in indices:
+                        matrix[i_val][i_val] += 1
+                    for i_val, j_val in combinations(indices, 2):
+                        matrix[i_val][j_val] += 1
+                        matrix[j_val][i_val] += 1
+                result[key] = matrix
+        else:
+            matrix = [[0] * n for _ in range(n)]
+            remaining_levels = [lvl for lvl in self.track.index.names]
+            for subject, subject_data in self.track.groupby(level=remaining_levels):
+                indices = list(subject_data['idx'].unique())
+                for i_val in indices:
+                    matrix[i_val][i_val] += 1
+                for i_val, j_val in combinations(indices, 2):
+                    matrix[i_val][j_val] += 1
+                    matrix[j_val][i_val] += 1
+            result[('',)] = matrix
+
+        return result
+
+    def get_occurrence_histogram(self, factors: list[str]) -> pd.DataFrame:
+        """Build a histogram of pattern occurrence counts, optionally grouped by factors.
+
+        Computes how many patterns share the same occurrence count. For example, if 5
+        patterns each appear in exactly 3 subjects, the histogram will have a row with
+        ``Occurrences=3, Patterns=5``.
+
+        Parameters
+        ----------
+        factors : list[str]
+            Column names from the tracking DataFrame to group by.
+            Pass an empty list to get a single histogram.
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame with columns ``[Occurrences, Patterns, *factors]``.
+        """
+        counts = self.get_counts(factors)
+        records: list[dict[str, Any]] = []
+
+        if factors:
+            for (*factor_vals, idx), row in counts.iterrows():
+                factor_dict = dict(zip(factors, factor_vals))
+                records.append({
+                    'Occurrences': row['Count'],
+                    **factor_dict,
+                })
+            df = pd.DataFrame.from_records(records)
+            result = df.groupby(['Occurrences'] + factors, as_index=False).size().rename(columns={'size': 'Patterns'})
+        else:
+            for idx, row in counts.iterrows():
+                records.append({'Occurrences': row['Count']})
+            df = pd.DataFrame.from_records(records)
+            result = df.groupby('Occurrences', as_index=False).size().rename(columns={'size': 'Patterns'})
+
+        return result
+
+    def get_pattern_complexity(self, factors: list[str]) -> pd.DataFrame:
+        """Compute pattern complexity (node count) distribution, optionally grouped by factors.
+
+        For each unique pattern, computes its size as the number of nodes. The size is
+        weighted by the number of subjects that have the pattern in each factor group.
+
+        Parameters
+        ----------
+        factors : list[str]
+            Column names from the tracking DataFrame to group by.
+            Pass an empty list to get counts across all subjects.
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame with columns ``[Size, Count, *factors]``.
+        """
+        counts = self.get_counts(factors)
+        records: list[dict[str, Any]] = []
+
+        if factors:
+            for (*factor_vals, idx), row in counts.iterrows():
+                pattern = self.unique_patterns[idx]
+                factor_dict = dict(zip(factors, factor_vals))
+                records.append({
+                    'Size': len(pattern.nodes()),
+                    'Count': row['Count'],
+                    **factor_dict,
+                })
+        else:
+            for idx, row in counts.iterrows():
+                pattern = self.unique_patterns[idx]
+                records.append({
+                    'Size': len(pattern.nodes()),
+                    'Count': row['Count'],
+                })
+
+        df = pd.DataFrame.from_records(records)
+        group_cols = ['Size'] + factors
+        return df.groupby(group_cols, as_index=False)['Count'].sum()

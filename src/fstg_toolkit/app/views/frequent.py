@@ -49,7 +49,6 @@ from ...frequent import PatternEquivalenceStrategyRegistry
 from ...io import GraphsDataset
 
 EQUIVALENCE_OPTIONS = PatternEquivalenceStrategyRegistry.names()
-FIGURES_OPTIONS = FrequentFigureBuilderRegistry.names()
 
 
 layout = [
@@ -59,7 +58,7 @@ layout = [
     ]),
     dbc.Row(dcc.Dropdown([], value='', clearable=False, id='frequent-mode',
                          style={'display': 'none'})),
-    dbc.Row(dcc.Dropdown(FIGURES_OPTIONS, value=FIGURES_OPTIONS[0], clearable=False, id='frequent-figure')),
+    dbc.Row(dcc.Dropdown([], value='', clearable=False, id='frequent-figure')),
     dbc.Row(dbc.Col(create_factors_options_controls('frequent'))),
     dbc.Row(html.Div([
         dcc.Loading(
@@ -91,6 +90,21 @@ def dataset_changed(store_dataset: dict) -> tuple:
     factors, default_factors = build_factors_options(dataset)
 
     return modes, default_mode, factors, default_factors
+
+
+@callback(
+    Output('frequent-figure', 'options'),
+    Output('frequent-figure', 'value'),
+    Input('frequent-mode', 'value'),
+)
+def mode_changed(mode: str) -> tuple:
+    if not mode:
+        raise PreventUpdate
+
+    figure_options = FrequentFigureBuilderRegistry.names(mode)
+    default_figure = figure_options[0] if figure_options else ''
+
+    return figure_options, default_figure
 
 
 @callback(
@@ -127,6 +141,7 @@ def analysis_selection_changed(figure: str, equivalence_strategy: str, factors_s
     prevent_initial_call=True,
 )
 def show_pattern_tooltip(hover_data: dict, patterns_json: list) -> tuple:
+    # FIXME handle tooltip depending on the figure
     if hover_data is None or patterns_json is None:
         return False, no_update, no_update
 

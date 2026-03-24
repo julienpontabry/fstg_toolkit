@@ -32,11 +32,12 @@
 # knowledge of the CeCILL-B license and that you accept its terms.
 
 import math
-from typing import Callable
+from typing import Callable, Optional
 
 import networkx as nx
 import plotly.express as px
 from plotly import graph_objects as go
+from plotly.subplots import make_subplots
 
 from fstg_toolkit.frequent import FrequentPattern, FrequentPatternsPopulationAnalysis
 
@@ -46,20 +47,26 @@ FrequentAnalysisBuilder = Callable[[FrequentPatternsPopulationAnalysis, list[str
 class FrequentFigureBuilderRegistry:
     """Registry for frequent pattern analysis figure builders.
 
-    Builders self-register via the ``@FrequentAnalysisRegistry.register(name)``
+    Builders self-register via the ``@FrequentFigureBuilderRegistry.register(name)``
     decorator.  Look up by the registered display-name string.
+
+    Each builder may optionally declare compatible modes (e.g. ``{'s', 'st'}``).
+    A mode of ``None`` means the builder is available in all modes.
     """
 
-    _analyses: dict[str, FrequentAnalysisBuilder] = {}
+    _analyses: dict[str, tuple[FrequentAnalysisBuilder, Optional[set[str]]]] = {}
 
     @classmethod
-    def register(cls, name: str) -> Callable[[FrequentAnalysisBuilder], FrequentAnalysisBuilder]:
+    def register(cls, name: str, modes: Optional[set[str]] = None) -> Callable[[FrequentAnalysisBuilder], FrequentAnalysisBuilder]:
         """Class decorator factory that registers a builder under the given name.
 
         Parameters
         ----------
         name : str
             The display name to register the builder under.
+        modes : set[str] or None, optional
+            Set of compatible modes (e.g. ``{'s', 'st'}``).  ``None`` means
+            the builder is available in all modes.
 
         Returns
         -------
@@ -67,7 +74,7 @@ class FrequentFigureBuilderRegistry:
             Decorator that stores the builder and returns it unchanged.
         """
         def decorator(builder: FrequentAnalysisBuilder) -> FrequentAnalysisBuilder:
-            cls._analyses[name] = builder
+            cls._analyses[name] = (builder, modes)
             return builder
         return decorator
 
@@ -90,18 +97,28 @@ class FrequentFigureBuilderRegistry:
         KeyError
             If no builder is registered under this name.
         """
-        return cls._analyses[name]
+        return cls._analyses[name][0]
 
     @classmethod
-    def names(cls) -> list[str]:
-        """Return the names of all registered builders.
+    def names(cls, mode: Optional[str] = None) -> list[str]:
+        """Return the names of builders compatible with the given mode.
+
+        Parameters
+        ----------
+        mode : str
+            The current mode (e.g. ``'s'``, ``'t'``, or ``'st'``).
 
         Returns
         -------
         list[str]
-            Sorted list of registered builder display names.
+            Sorted list of compatible builder display names.
         """
-        return sorted(cls._analyses.keys())
+        return sorted(
+            name for name, (_, modes) in cls._analyses.items()
+            if modes is None or mode is None or mode in modes
+        )
+
+    # TODO add description to figures
 
 
 def build_pattern_figure(pattern: FrequentPattern) -> go.Figure:
@@ -202,6 +219,47 @@ def build_pattern_figure(pattern: FrequentPattern) -> go.Figure:
     return fig
 
 
+def __build_faceted_heatmap(data_by_group: dict[tuple[str, ...], tuple[list[str], list[list[int]]]],
+                           factors: list[str], axis_title: str) -> go.Figure:
+    """Build a heatmap figure with one subplot per factor group.
+
+    Parameters
+    ----------
+    data_by_group : dict[tuple[str, ...], tuple[list[str], list[list[int]]]]
+        Mapping from factor-group tuples to ``(labels, symmetric_2d_matrix)``.
+    factors : list[str]
+        Factor names used for subplot titles.
+    axis_title : str
+        Label for both axes.
+
+    Returns
+    -------
+    go.Figure
+        A Plotly figure with one heatmap per factor group.
+    """
+    groups = sorted(data_by_group.keys())
+    n_groups = len(groups)
+
+    # FIXME make rows/columns faceting
+    subplot_titles = [' / '.join(f'{f}={v}' for f, v in zip(factors, g)) if factors else '' for g in groups]
+    fig = make_subplots(rows=1, cols=n_groups, subplot_titles=subplot_titles,
+                        horizontal_spacing=0.05)
+
+    for col, group_key in enumerate(groups, start=1):
+        labels, matrix = data_by_group[group_key]
+        fig.add_trace(
+            go.Heatmap(z=matrix, x=labels, y=labels, colorscale='Blues',
+                       showscale=(col == n_groups)),
+            row=1, col=col,
+        )
+        fig.update_xaxes(title_text=axis_title, row=1, col=col)
+        fig.update_yaxes(title_text=axis_title, row=1, col=col)
+
+    fig.update_layout(height=600)
+
+    return fig
+
+
 @FrequentFigureBuilderRegistry.register('Pattern distribution')
 def build_pattern_frequency_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
     counts = analysis.get_counts(factors)
@@ -223,6 +281,174 @@ def build_pattern_frequency_plot(analysis: FrequentPatternsPopulationAnalysis, f
     fig.update_traces(hoverinfo='none', hovertemplate=None)
 
     # force integer scale on y-axis
+    fig.update_yaxes(dtick=1)
+
+    return fig
+
+
+@FrequentFigureBuilderRegistry.register('Temporal dynamics per region', modes={'t', 'st'})
+def build_temporal_dynamics_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
+    """Stacked bar chart of RC5 transition types per brain region.
+
+    Parameters
+    ----------
+    analysis : FrequentPatternsPopulationAnalysis
+        The population analysis to visualize.
+    factors : list[str]
+        Factor columns to facet by.
+
+    Returns
+    -------
+    go.Figure
+        A Plotly figure with regions on x-axis and transition type counts as stacked bars.
+    """
+    df = analysis.get_temporal_dynamics(factors)
+
+    params = dict(zip(('facet_row', 'facet_col'), factors))
+    fig = px.bar(
+        df, x='Region', y='Count', color='Transition', **params,
+        barmode='stack',
+        height=800,
+    )
+
+    fig.update_yaxes(dtick=1)
+
+    return fig
+
+
+@FrequentFigureBuilderRegistry.register('Region co-occurrence', modes={'s', 'st'})
+def build_region_co_occurrence_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
+    """Symmetric heatmap of region co-occurrence via spatial edges.
+
+    Parameters
+    ----------
+    analysis : FrequentPatternsPopulationAnalysis
+        The population analysis to visualize.
+    factors : list[str]
+        Factor columns to facet by.
+
+    Returns
+    -------
+    go.Figure
+        A Plotly heatmap with region pairs as axes.
+    """
+    data = analysis.get_region_co_occurrence(factors)
+    return __build_faceted_heatmap(data, factors, 'Region')
+
+
+@FrequentFigureBuilderRegistry.register('Patterns per region')
+def build_patterns_per_region_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
+    """Bar chart of pattern counts per brain region.
+
+    Parameters
+    ----------
+    analysis : FrequentPatternsPopulationAnalysis
+        The population analysis to visualize.
+    factors : list[str]
+        Factor columns to facet by.
+
+    Returns
+    -------
+    go.Figure
+        A Plotly bar chart with regions on x-axis and pattern counts on y-axis.
+    """
+    df = analysis.get_patterns_per_region(factors)
+
+    params = dict(zip(('facet_row', 'facet_col'), factors))
+    fig = px.bar(
+        df, x='Region', y='Count', **params,
+        barmode='group',
+        height=800,
+    )
+
+    fig.update_yaxes(dtick=1)
+
+    return fig
+
+
+@FrequentFigureBuilderRegistry.register('Pattern co-occurrence')
+def build_pattern_co_occurrence_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
+    """Symmetric heatmap of pattern co-occurrence across subjects.
+
+    Parameters
+    ----------
+    analysis : FrequentPatternsPopulationAnalysis
+        The population analysis to visualize.
+    factors : list[str]
+        Factor columns to facet by.
+
+    Returns
+    -------
+    go.Figure
+        A Plotly heatmap where cell (i, j) = number of subjects with both patterns.
+    """
+    data = analysis.get_pattern_cooccurrence(factors)
+
+    n = len(analysis.unique_patterns)
+    labels = [str(i + 1) for i in range(n)]  # 1-indexed pattern labels
+    heatmap_data = {key: (labels, matrix) for key, matrix in data.items()}
+    return __build_faceted_heatmap(heatmap_data, factors, 'Pattern')
+
+
+@FrequentFigureBuilderRegistry.register('Occurrence histogram')
+def build_occurrence_histogram_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
+    """Histogram of pattern occurrence counts.
+
+    Parameters
+    ----------
+    analysis : FrequentPatternsPopulationAnalysis
+        The population analysis to visualize.
+    factors : list[str]
+        Factor columns to facet by.
+
+    Returns
+    -------
+    go.Figure
+        A Plotly bar chart with occurrence counts on x-axis and number of patterns on y-axis.
+    """
+    df = analysis.get_occurrence_histogram(factors)
+
+    params = dict(zip(('facet_row', 'facet_col'), factors))
+    fig = px.bar(
+        df, x='Occurrences', y='Patterns', **params,
+        barmode='group',
+        height=800,
+    )
+
+    fig.update_xaxes(dtick=1)
+    fig.update_yaxes(dtick=1)
+
+    return fig
+
+
+@FrequentFigureBuilderRegistry.register('Pattern size')
+def build_pattern_complexity_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
+    """Histogram of pattern sizes (node counts).
+
+    Parameters
+    ----------
+    analysis : FrequentPatternsPopulationAnalysis
+        The population analysis to visualize.
+    factors : list[str]
+        Factor columns to facet by.
+
+    Returns
+    -------
+    go.Figure
+        A Plotly bar chart with pattern size on x-axis and count on y-axis.
+    """
+    df = analysis.get_pattern_complexity(factors)
+
+    params = dict(zip(('facet_row', 'facet_col'), factors))
+    fig = px.bar(
+        df, x='Size', y='Count', **params,
+        barmode='group',
+        labels={'Size': 'Pattern size (nodes)'},
+        height=800,
+    )
+
+    fig.update_xaxes(dtick=1)
+
     fig.update_yaxes(dtick=1)
 
     return fig
