@@ -154,6 +154,9 @@ def build_pattern_frequency_plot(analysis: FrequentPatternsPopulationAnalysis, f
         height=800,
     )
 
+    # hide the default bar tooltip (custom pattern tooltip is used instead)
+    fig.update_traces(hoverinfo='none', hovertemplate=None)
+
     # force integer scale on y-axis
     fig.update_yaxes(dtick=1)
 
