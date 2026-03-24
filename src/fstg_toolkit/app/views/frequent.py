@@ -59,7 +59,7 @@ layout = [
     ]),
     dbc.Row(dcc.Dropdown([], value='', clearable=False, id='frequent-mode',
                          style={'display': 'none'})),
-    dbc.Row(dcc.Dropdown([], value='', clearable=False, id='frequent-analysis')),
+    dbc.Row(dcc.Dropdown(ANALYSIS_OPTIONS, value=ANALYSIS_OPTIONS[0], clearable=False, id='frequent-analysis')),
     dbc.Row(dbc.Col(create_factors_options_controls('frequent'))),
     dbc.Row(html.Div([
         dcc.Loading(
@@ -91,19 +91,6 @@ def dataset_changed(store_dataset: dict) -> tuple:
     factors, default_factors = build_factors_options(dataset)
 
     return modes, default_mode, factors, default_factors
-
-
-@callback(
-    Output('frequent-analysis', 'options'),
-    Output('frequent-analysis', 'value'),
-    Input('frequent-mode', 'value'),
-    prevent_initial_call=True
-)
-def mode_changed(mode: str) -> tuple:
-    if not mode:
-        raise PreventUpdate
-
-    return ANALYSIS_OPTIONS, ANALYSIS_OPTIONS[0]
 
 
 @callback(
