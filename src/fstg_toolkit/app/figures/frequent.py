@@ -32,12 +32,76 @@
 # knowledge of the CeCILL-B license and that you accept its terms.
 
 import math
+from typing import Callable
 
 import networkx as nx
 import plotly.express as px
 from plotly import graph_objects as go
 
 from fstg_toolkit.frequent import FrequentPattern, FrequentPatternsPopulationAnalysis
+
+FrequentAnalysisBuilder = Callable[[FrequentPatternsPopulationAnalysis, list[str]], go.Figure]
+
+
+class FrequentFigureBuilderRegistry:
+    """Registry for frequent pattern analysis figure builders.
+
+    Builders self-register via the ``@FrequentAnalysisRegistry.register(name)``
+    decorator.  Look up by the registered display-name string.
+    """
+
+    _analyses: dict[str, FrequentAnalysisBuilder] = {}
+
+    @classmethod
+    def register(cls, name: str) -> Callable[[FrequentAnalysisBuilder], FrequentAnalysisBuilder]:
+        """Class decorator factory that registers a builder under the given name.
+
+        Parameters
+        ----------
+        name : str
+            The display name to register the builder under.
+
+        Returns
+        -------
+        Callable
+            Decorator that stores the builder and returns it unchanged.
+        """
+        def decorator(builder: FrequentAnalysisBuilder) -> FrequentAnalysisBuilder:
+            cls._analyses[name] = builder
+            return builder
+        return decorator
+
+    @classmethod
+    def get(cls, name: str) -> FrequentAnalysisBuilder:
+        """Look up a builder by its registered name.
+
+        Parameters
+        ----------
+        name : str
+            The registered display name.
+
+        Returns
+        -------
+        FrequentAnalysisBuilder
+            The registered figure builder callable.
+
+        Raises
+        ------
+        KeyError
+            If no builder is registered under this name.
+        """
+        return cls._analyses[name]
+
+    @classmethod
+    def names(cls) -> list[str]:
+        """Return the names of all registered builders.
+
+        Returns
+        -------
+        list[str]
+            Sorted list of registered builder display names.
+        """
+        return sorted(cls._analyses.keys())
 
 
 def build_pattern_figure(pattern: FrequentPattern) -> go.Figure:
@@ -138,6 +202,7 @@ def build_pattern_figure(pattern: FrequentPattern) -> go.Figure:
     return fig
 
 
+@FrequentFigureBuilderRegistry.register('Pattern distribution')
 def build_pattern_frequency_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
     counts = analysis.get_counts(factors)
 

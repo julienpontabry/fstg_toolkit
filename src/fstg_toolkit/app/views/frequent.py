@@ -44,12 +44,12 @@ from .common import (
     build_factors_options,
     create_factors_options_controls,
 )
-from ..figures.frequent import build_pattern_figure, build_pattern_frequency_plot
+from ..figures.frequent import build_pattern_figure, FrequentFigureBuilderRegistry
 from ...frequent import PatternEquivalenceStrategyRegistry
 from ...io import GraphsDataset
 
 EQUIVALENCE_OPTIONS = PatternEquivalenceStrategyRegistry.names()
-ANALYSIS_OPTIONS = ['Pattern distribution', 'Occurrence distribution']
+FIGURES_OPTIONS = FrequentFigureBuilderRegistry.names()
 
 
 layout = [
@@ -59,7 +59,7 @@ layout = [
     ]),
     dbc.Row(dcc.Dropdown([], value='', clearable=False, id='frequent-mode',
                          style={'display': 'none'})),
-    dbc.Row(dcc.Dropdown(ANALYSIS_OPTIONS, value=ANALYSIS_OPTIONS[0], clearable=False, id='frequent-analysis')),
+    dbc.Row(dcc.Dropdown(FIGURES_OPTIONS, value=FIGURES_OPTIONS[0], clearable=False, id='frequent-figure')),
     dbc.Row(dbc.Col(create_factors_options_controls('frequent'))),
     dbc.Row(html.Div([
         dcc.Loading(
@@ -96,16 +96,16 @@ def dataset_changed(store_dataset: dict) -> tuple:
 @callback(
     Output('frequent-graph', 'figure'),
     Output('frequent-patterns-store', 'data'),
-    Input('frequent-analysis', 'value'),
+    Input('frequent-figure', 'value'),
     Input('frequent-equivalence', 'value'),
     Input('frequent-factors', 'value'),
     State('store-dataset', 'data'),
     State('frequent-mode', 'value'),
     prevent_initial_call=True,
 )
-def analysis_selection_changed(analysis: str, equivalence_strategy: str, factors_selection: list[str],
+def analysis_selection_changed(figure: str, equivalence_strategy: str, factors_selection: list[str],
                                store_dataset: dict, mode: str) -> tuple:
-    if store_dataset is None or not mode or not analysis:
+    if store_dataset is None or not mode or not figure:
         raise PreventUpdate
 
     dataset = GraphsDataset.deserialize(store_dataset)
@@ -113,8 +113,9 @@ def analysis_selection_changed(analysis: str, equivalence_strategy: str, factors
     analysis = dataset.get_frequent_patterns_analysis(mode, equivalence_strategy)
 
     pattern_figures = [to_json(build_pattern_figure(p)) for p in analysis.unique_patterns]
+    figure_builder = FrequentFigureBuilderRegistry.get(figure)
 
-    return build_pattern_frequency_plot(analysis, factors_selection), pattern_figures
+    return figure_builder(analysis, factors_selection), pattern_figures
 
 
 @callback(
