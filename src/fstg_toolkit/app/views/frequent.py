@@ -138,6 +138,14 @@ def show_pattern_tooltip(hover_data: dict, patterns_json: list) -> tuple:
 
     fig = go.Figure(json.loads(patterns_json[pattern_index]))
     bbox = point['bbox']
+    pattern_number = int(point['x'])
+    pattern_count = point.get('y', '?')
 
-    return True, bbox, dcc.Graph(figure=fig, config={'displayModeBar': False},
-                                 style={'width': '200px', 'height': '200px'})
+    children = html.Div([
+        html.Div(f"Pattern {pattern_number}  —  Count: {pattern_count}",
+                 style={'padding': '4px 8px', 'font-size': '12px', 'font-weight': 'bold'}),
+        dcc.Graph(figure=fig, config={'displayModeBar': False},
+                  style={'width': '200px', 'height': '200px'}),
+    ])
+
+    return True, bbox, children
