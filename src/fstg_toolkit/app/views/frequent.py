@@ -34,7 +34,7 @@
 import json
 
 import dash_bootstrap_components as dbc
-from dash import Input, Output, State, callback, dcc, no_update
+from dash import Input, Output, State, callback, dcc, html, no_update
 from dash.exceptions import PreventUpdate
 from plotly import graph_objects as go
 from plotly.io import to_json
@@ -61,14 +61,14 @@ layout = [
                          style={'display': 'none'})),
     dbc.Row(dcc.Dropdown([], value='', clearable=False, id='frequent-analysis')),
     dbc.Row(dbc.Col(create_factors_options_controls('frequent'))),
-    dbc.Row(
+    dbc.Row(html.Div([
         dcc.Loading(
             children=[dcc.Graph(figure={}, id='frequent-graph', config=plotly_config, clear_on_unhover=True)],
             type='circle', overlay_style={'visibility': 'visible', 'filter': 'blur(2px)'}
-        )
-    ),
+        ),
+        dcc.Tooltip(id='frequent-pattern-tooltip', style={'max-width': '320px', 'padding': '0'})
+    ], style={'position': 'relative'})),  # div + relative position needed to keep tooltip at the right place
     dcc.Store(id='frequent-patterns-store'),
-    dcc.Tooltip(id='frequent-pattern-tooltip', style={'max-width': '320px', 'padding': '0'}),
 ]
 
 
