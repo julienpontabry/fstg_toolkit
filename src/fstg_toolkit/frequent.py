@@ -248,8 +248,8 @@ class PatternStructureRegionsTransitions(PatternEquivalenceStrategy):
 
     @classmethod
     def equivalent(cls, p1: 'FrequentPattern', p2: 'FrequentPattern') -> bool:
-        return p1.nodes(data=True) == p2.nodes(data=True) and \
-            p1.edges(data=True) == p2.edges(data=True)
+        return list(p1.nodes(data=True)) == list(p2.nodes(data=True)) and \
+            list(p1.edges(data=True)) == list(p2.edges(data=True))
 
 
 class FrequentPattern(nx.DiGraph):
