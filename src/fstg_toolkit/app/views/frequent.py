@@ -65,7 +65,7 @@ layout = [
             children=[dcc.Graph(figure={}, id='frequent-graph', config=plotly_config, clear_on_unhover=True)],
             type='circle', overlay_style={'visibility': 'visible', 'filter': 'blur(2px)'}
         ),
-        dcc.Tooltip(id='frequent-pattern-tooltip', style={'max-width': '320px', 'padding': '0'})
+        dcc.Tooltip(id='frequent-pattern-tooltip', style={'max-width': '440px', 'padding': '0'})
     ], style={'position': 'relative'})),  # div + relative position needed to keep tooltip at the right place
     dcc.Store(id='frequent-patterns-store'),
 ]
@@ -138,29 +138,60 @@ def analysis_selection_changed(figure: str, equivalence_strategy: str, factors_s
     Output('frequent-pattern-tooltip', 'children'),
     Input('frequent-graph', 'hoverData'),
     State('frequent-patterns-store', 'data'),
+    State('frequent-figure', 'value'),
     prevent_initial_call=True,
 )
-def show_pattern_tooltip(hover_data: dict, patterns_json: list) -> tuple:
-    # FIXME handle tooltip depending on the figure
-    if hover_data is None or patterns_json is None:
+def show_pattern_tooltip(hover_data: dict, patterns_json: list, figure: str) -> tuple:
+    if hover_data is None or patterns_json is None or not figure:
+        return False, no_update, no_update
+
+    tooltip_type = FrequentFigureBuilderRegistry.tooltip_type(figure)
+    if tooltip_type is None:
         return False, no_update, no_update
 
     point = hover_data['points'][0]
-    pattern_index = int(point['x']) - 1  # histogram x is 1-based
-
-    if pattern_index < 0 or pattern_index >= len(patterns_json):
-        return False, no_update, no_update
-
-    fig = go.Figure(json.loads(patterns_json[pattern_index]))
     bbox = point['bbox']
-    pattern_number = int(point['x'])
-    pattern_count = point.get('y', '?')
 
-    children = html.Div([
-        html.Div(f"Pattern {pattern_number}  —  Count: {pattern_count}",
-                 style={'padding': '4px 8px', 'font-size': '12px', 'font-weight': 'bold'}),
-        dcc.Graph(figure=fig, config={'displayModeBar': False},
-                  style={'width': '200px', 'height': '200px'}),
-    ])
+    if tooltip_type == 'pattern':
+        pattern_index = int(point['x']) - 1  # x is 1-based
+
+        if pattern_index < 0 or pattern_index >= len(patterns_json):
+            return False, no_update, no_update
+
+        fig = go.Figure(json.loads(patterns_json[pattern_index]))
+        pattern_number = pattern_index + 1
+        pattern_count = point.get('y', '?')
+
+        children = html.Div([
+            html.Div(f"Pattern {pattern_number}  —  Count: {pattern_count}",
+                     style={'padding': '4px 8px', 'font-size': '12px', 'font-weight': 'bold'}),
+            dcc.Graph(figure=fig, config={'displayModeBar': False},
+                      style={'width': '200px', 'height': '200px'}),
+        ])
+
+    elif tooltip_type == 'pattern-pair':
+        index_x = int(point['x']) - 1  # heatmap x/y labels are 1-based strings
+        index_y = int(point['y']) - 1
+
+        if not (0 <= index_x < len(patterns_json) and 0 <= index_y < len(patterns_json)):
+            return False, no_update, no_update
+
+        fig_x = go.Figure(json.loads(patterns_json[index_x]))
+        fig_y = go.Figure(json.loads(patterns_json[index_y]))
+        co_occurrence = point.get('z', '?')
+
+        children = html.Div([
+            html.Div(f"Pattern {index_x + 1}  ×  Pattern {index_y + 1}  —  Co-occurrences: {co_occurrence}",
+                     style={'padding': '4px 8px', 'font-size': '12px', 'font-weight': 'bold'}),
+            html.Div([
+                dcc.Graph(figure=fig_x, config={'displayModeBar': False},
+                          style={'width': '200px', 'height': '200px'}),
+                dcc.Graph(figure=fig_y, config={'displayModeBar': False},
+                          style={'width': '200px', 'height': '200px'}),
+            ], style={'display': 'flex', 'flex-direction': 'row'}),
+        ])
+
+    else:
+        return False, no_update, no_update
 
     return True, bbox, children

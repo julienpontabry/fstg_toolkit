@@ -51,14 +51,27 @@ class FrequentFigureBuilderRegistry:
     Builders self-register via the ``@FrequentFigureBuilderRegistry.register(name)``
     decorator.  Look up by the registered display-name string.
 
-    Each builder may optionally declare compatible modes (e.g. ``{'s', 'st'}``).
-    A mode of ``None`` means the builder is available in all modes.
+    Each builder may optionally declare compatible modes (e.g. ``{'s', 'st'}``)
+    and a tooltip type.  A mode of ``None`` means the builder is available in
+    all modes.  A tooltip of ``None`` means no custom tooltip is shown.
+
+    Tooltip types
+    -------------
+    ``None``
+        No custom tooltip.
+    ``'pattern'``
+        Hover point carries a 1-based pattern index on *x*; show the
+        corresponding pattern graph and its count.
+    ``'pattern-pair'``
+        Hover point carries 1-based pattern indices on both *x* and *y*
+        (heatmap cell); show both pattern graphs and the co-occurrence count.
     """
 
-    _analyses: dict[str, tuple[FrequentAnalysisBuilder, Optional[set[str]]]] = {}
+    _analyses: dict[str, tuple[FrequentAnalysisBuilder, Optional[set[str]], Optional[str]]] = {}
 
     @classmethod
-    def register(cls, name: str, modes: Optional[set[str]] = None) -> Callable[[FrequentAnalysisBuilder], FrequentAnalysisBuilder]:
+    def register(cls, name: str, modes: Optional[set[str]] = None,
+                 tooltip: Optional[str] = None) -> Callable[[FrequentAnalysisBuilder], FrequentAnalysisBuilder]:
         """Class decorator factory that registers a builder under the given name.
 
         Parameters
@@ -68,6 +81,9 @@ class FrequentFigureBuilderRegistry:
         modes : set[str] or None, optional
             Set of compatible modes (e.g. ``{'s', 'st'}``).  ``None`` means
             the builder is available in all modes.
+        tooltip : str or None, optional
+            Tooltip type for this figure.  One of ``'pattern'``,
+            ``'pattern-pair'``, or ``None`` (no tooltip).
 
         Returns
         -------
@@ -75,7 +91,7 @@ class FrequentFigureBuilderRegistry:
             Decorator that stores the builder and returns it unchanged.
         """
         def decorator(builder: FrequentAnalysisBuilder) -> FrequentAnalysisBuilder:
-            cls._analyses[name] = (builder, modes)
+            cls._analyses[name] = (builder, modes, tooltip)
             return builder
         return decorator
 
@@ -101,6 +117,27 @@ class FrequentFigureBuilderRegistry:
         return cls._analyses[name][0]
 
     @classmethod
+    def tooltip_type(cls, name: str) -> Optional[str]:
+        """Return the tooltip type declared for the given figure builder.
+
+        Parameters
+        ----------
+        name : str
+            The registered display name.
+
+        Returns
+        -------
+        str or None
+            The tooltip type (``'pattern'``, ``'pattern-pair'``, or ``None``).
+
+        Raises
+        ------
+        KeyError
+            If no builder is registered under this name.
+        """
+        return cls._analyses[name][2]
+
+    @classmethod
     def names(cls, mode: Optional[str] = None) -> list[str]:
         """Return the names of builders compatible with the given mode.
 
@@ -115,7 +152,7 @@ class FrequentFigureBuilderRegistry:
             Sorted list of compatible builder display names.
         """
         return sorted(
-            name for name, (_, modes) in cls._analyses.items()
+            name for name, (_, modes, _tooltip) in cls._analyses.items()
             if modes is None or mode is None or mode in modes
         )
 
@@ -261,7 +298,7 @@ def __build_faceted_heatmap(data_by_group: dict[tuple[str, ...], tuple[list[str]
     return fig
 
 
-@FrequentFigureBuilderRegistry.register('Pattern distribution')
+@FrequentFigureBuilderRegistry.register('Pattern distribution', tooltip='pattern')
 def build_pattern_frequency_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
     counts = analysis.get_counts(factors)
 
@@ -369,7 +406,7 @@ def build_patterns_per_region_plot(analysis: FrequentPatternsPopulationAnalysis,
     return fig
 
 
-@FrequentFigureBuilderRegistry.register('Pattern co-occurrence')
+@FrequentFigureBuilderRegistry.register('Pattern co-occurrence', tooltip='pattern-pair')
 def build_pattern_co_occurrence_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
     """Symmetric heatmap of pattern co-occurrence across subjects.
 
@@ -390,7 +427,12 @@ def build_pattern_co_occurrence_plot(analysis: FrequentPatternsPopulationAnalysi
     n = len(analysis.unique_patterns)
     labels = [str(i + 1) for i in range(n)]  # 1-indexed pattern labels
     heatmap_data = {key: (labels, matrix) for key, matrix in data.items()}
-    return __build_faceted_heatmap(heatmap_data, factors, 'Pattern')
+    fig = __build_faceted_heatmap(heatmap_data, factors, 'Pattern')
+
+    # hide default tooltip so only the custom pattern-pair tooltip is shown
+    fig.update_traces(hoverinfo='none', hovertemplate=None)
+
+    return fig
 
 
 @FrequentFigureBuilderRegistry.register('Occurrence histogram')
