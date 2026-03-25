@@ -365,7 +365,8 @@ def __build_faceted_heatmap(data_by_group: dict[tuple[str, ...], tuple[list[str]
 
 
 @FrequentFigureBuilderRegistry.register('Patterns distribution', tooltip='pattern',
-                                        description='Distribution of unique patterns.')
+                                        description='Distribution of unique patterns. Helps identify most prevalent '
+                                                    'patterns and distribution differences among groups.')
 def build_pattern_frequency_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
     counts = analysis.get_counts(factors)
 
@@ -392,7 +393,8 @@ def build_pattern_frequency_plot(analysis: FrequentPatternsPopulationAnalysis, f
 
 
 @FrequentFigureBuilderRegistry.register('Temporal dynamics per region', modes={'t', 'st'},
-                                        description='Distribution of patterns count among region and temporal transitions.')
+                                        description='Distribution of patterns count among region and temporal transitions. '
+                                                    'Reveals how different regions participate in temporal organization of the system.')
 def build_temporal_dynamics_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
     """Stacked bar chart of RC5 transition types per brain region.
 
@@ -430,7 +432,8 @@ def build_temporal_dynamics_plot(analysis: FrequentPatternsPopulationAnalysis, f
 
 
 @FrequentFigureBuilderRegistry.register('Region co-occurrence', modes={'s', 'st'},
-                                        description='Symmetric heatmap showing how often two brain regions appear together in a spatial edge across all frequent patterns.')
+                                        description='Heatmap showing how often two region appear together in frequent patterns. '
+                                                    'Reveals structural associations and identifies strongly connected regions.')
 def build_region_co_occurrence_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
     """Symmetric heatmap of region co-occurrence via spatial edges.
 
@@ -451,7 +454,8 @@ def build_region_co_occurrence_plot(analysis: FrequentPatternsPopulationAnalysis
 
 
 @FrequentFigureBuilderRegistry.register('Patterns per region',
-                                        description='Distribution of patterns count among the region.')
+                                        description='Distribution of patterns count among the regions. '
+                                                    'Identifies most dynamic regions.')
 def build_patterns_per_region_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
     """Bar chart of pattern counts per brain region.
 
@@ -488,7 +492,8 @@ def build_patterns_per_region_plot(analysis: FrequentPatternsPopulationAnalysis,
 
 
 @FrequentFigureBuilderRegistry.register('Pattern co-occurrence', tooltip='pattern-pair',
-                                        description='Heatmaps showing the number of subjects that simultaneously exhibit both patterns.')
+                                        description='Heatmap of the number of subjects that simultaneously exhibit both patterns. '
+                                                    'Reveals which pattern combinations tend to co-occur, indicating related or dependent processes.')
 def build_pattern_co_occurrence_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
     """Symmetric heatmap of pattern co-occurrence across subjects.
 
@@ -518,7 +523,7 @@ def build_pattern_co_occurrence_plot(analysis: FrequentPatternsPopulationAnalysi
 
 
 @FrequentFigureBuilderRegistry.register('Occurrence histogram',
-                                        description='Histogram of unique pattern occurrences.')
+                                        description='Histogram of unique pattern occurrences. Shows the prevalence spectrum from unique to highly common patterns.')
 def build_occurrence_histogram_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
     """Histogram of pattern occurrence counts.
 
@@ -557,7 +562,7 @@ def build_occurrence_histogram_plot(analysis: FrequentPatternsPopulationAnalysis
 
 
 @FrequentFigureBuilderRegistry.register('Pattern size',
-                                        description='Distribution of patterns by their number of nodes (graph size).')
+                                        description='Distribution of patterns by their number of nodes (graph size). Characterizes the complexity and scale of discovered patterns.')
 def build_pattern_complexity_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
     """Histogram of pattern sizes (node counts).
 
