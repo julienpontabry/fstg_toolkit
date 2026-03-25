@@ -41,7 +41,7 @@ import tempfile
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, IO, Protocol, Optional, Generator, Iterable, Type
+from typing import Any, IO, Protocol, Optional, Generator, Iterable, Type, TypeVar
 from zipfile import ZipFile, ZipInfo
 
 import networkx as nx
@@ -110,7 +110,10 @@ def _spatio_temporal_object_hook(obj: dict) -> dict:
     return obj
 
 
-class DataHandler(Protocol):
+ItemType = TypeVar('T')
+
+
+class DataHandler[T](Protocol):
     """Protocol defining the interface for data format handlers.
 
     A ``DataHandler`` is responsible for serializing and deserializing a
@@ -118,7 +121,8 @@ class DataHandler(Protocol):
     between human-readable names and their on-disk filenames.
     """
 
-    def matches(self, filename: str) -> bool:
+    @classmethod
+    def matches(cls, filename: str) -> bool:
         """Check if the handler can handle a file from its filename.
 
         Parameters
@@ -132,7 +136,8 @@ class DataHandler(Protocol):
             ``True`` if this handler can process the given filename.
         """
 
-    def serialize(self, item: Any, fp: IO, **context: Any) -> None:
+    @classmethod
+    def serialize(cls, item: T, fp: IO, **context: Any) -> None:
         """Serialize the item to a file-like object.
 
         Parameters
@@ -145,7 +150,8 @@ class DataHandler(Protocol):
             Optional extra keyword arguments passed through to the handler.
         """
 
-    def deserialize(self, fp: IO, **context: Any) -> Any:
+    @classmethod
+    def deserialize(cls, fp: IO, **context: Any) -> T:
         """Deserialize the item from a file-like object.
 
         Parameters
@@ -161,7 +167,8 @@ class DataHandler(Protocol):
             The deserialized data object.
         """
 
-    def filename2name(self, filename: str) -> str:
+    @classmethod
+    def filename2name(cls, filename: str) -> str:
         """Convert a filename to its corresponding name.
 
         Parameters
@@ -175,7 +182,8 @@ class DataHandler(Protocol):
             Human-readable name (e.g. ``"foo"``).
         """
 
-    def name2filename(self, name: str) -> str:
+    @classmethod
+    def name2filename(cls, name: str) -> str:
         """Convert a name to its corresponding filename.
 
         Parameters
@@ -389,34 +397,34 @@ class DataRegistry:
 
 
 @DataRegistry.register('areas')
-class AreasDescHandler(Protocol):
+class AreasDescHandler(DataHandler[pd.DataFrame]):
     """Handler for the areas descriptor CSV file (``areas.csv``)."""
 
     filename: str = 'areas.csv'
 
-    @staticmethod
-    def matches(filename: str) -> bool:
-        return filename.lower() == AreasDescHandler.filename
+    @classmethod
+    def matches(cls, filename: str) -> bool:
+        return filename.lower() == cls.filename
 
-    @staticmethod
-    def serialize(item: pd.DataFrame, fp: IO) -> None:
+    @classmethod
+    def serialize(cls, item: pd.DataFrame, fp: IO, **context: Any) -> None:
         item.to_csv(fp)
 
-    @staticmethod
-    def deserialize(fp: IO) -> pd.DataFrame:
+    @classmethod
+    def deserialize(cls, fp: IO, **context: Any) -> pd.DataFrame:
         return pd.read_csv(fp, index_col='Id_Area')
 
-    @staticmethod
-    def filename2name(_) -> str:
-        return Path(AreasDescHandler.filename).stem
+    @classmethod
+    def filename2name(cls, _) -> str:
+        return Path(cls.filename).stem
 
-    @staticmethod
-    def name2filename(_) -> str:
-        return AreasDescHandler.filename
+    @classmethod
+    def name2filename(cls, _) -> str:
+        return cls.filename
 
 
 @DataRegistry.register('graphs')
-class GraphHandler:
+class GraphHandler(DataHandler[SpatioTemporalGraph]):
     """Handler for :class:`~fstg_toolkit.SpatioTemporalGraph` stored as JSON files.
 
     Filenames must end with ``.json`` and must *not* match the
@@ -425,18 +433,18 @@ class GraphHandler:
 
     pattern: re.Pattern = re.compile(r'^(?!.*motifs_enriched_.+\.json$)(?P<name>.*)\.json$')
 
-    @staticmethod
-    def matches(filename: str) -> bool:
-        return GraphHandler.pattern.match(filename) is not None
+    @classmethod
+    def matches(cls, filename: str) -> bool:
+        return cls.pattern.match(filename) is not None
 
-    @staticmethod
-    def serialize(item: SpatioTemporalGraph, fp: IO) -> None:
+    @classmethod
+    def serialize(cls, item: SpatioTemporalGraph, fp: IO, **context: Any) -> None:
         graph_dict = nx.json_graph.node_link_data(item, edges='edges')
         graph_json = json.dumps(graph_dict, cls=_SpatioTemporalGraphEncoder)
         fp.write(graph_json.encode('utf-8'))
 
-    @staticmethod
-    def deserialize(fp: IO, **context: Any) -> SpatioTemporalGraph:
+    @classmethod
+    def deserialize(cls, fp: IO, **context: Any) -> SpatioTemporalGraph:
         areas = context.get('areas')
         if areas is None:
             raise ValueError("Graph deserialization requires 'areas' in context.")
@@ -445,57 +453,57 @@ class GraphHandler:
         graph = nx.json_graph.node_link_graph(graph_dict, edges='edges')
         return SpatioTemporalGraph(graph, areas)
 
-    @staticmethod
-    def filename2name(filename: str) -> str:
-        if match := GraphHandler.pattern.match(filename):
+    @classmethod
+    def filename2name(cls, filename: str) -> str:
+        if match := cls.pattern.match(filename):
             return match.group('name')
         else:
             return 'graph'
 
-    @staticmethod
-    def name2filename(name: str) -> str:
+    @classmethod
+    def name2filename(cls, name: str) -> str:
         return f'{name}.json'
 
 
 @DataRegistry.register('matrices')
-class MatrixHandler(Protocol):
+class MatrixHandler(DataHandler[np.ndarray]):
     """Handler for correlation matrices stored as ``.npy`` files."""
 
     pattern: re.Pattern = re.compile(r'.+\.npy$')
 
-    @staticmethod
-    def matches(filename: str) -> bool:
-        return MatrixHandler.pattern.match(filename) is not None
+    @classmethod
+    def matches(cls, filename: str) -> bool:
+        return cls.pattern.match(filename) is not None
 
-    @staticmethod
-    def serialize(item: np.ndarray, fp: IO) -> None:
+    @classmethod
+    def serialize(cls, item: np.ndarray, fp: IO, **context: Any) -> None:
         np.save(fp, item)
 
-    @staticmethod
-    def deserialize(fp: IO) -> np.ndarray:
+    @classmethod
+    def deserialize(cls, fp: IO, **context: Any) -> np.ndarray:
         return np.load(fp, allow_pickle=False)
 
-    @staticmethod
-    def filename2name(filename: str) -> str:
+    @classmethod
+    def filename2name(cls, filename: str) -> str:
         return Path(filename).stem
 
-    @staticmethod
-    def name2filename(name: str) -> str:
+    @classmethod
+    def name2filename(cls, name: str) -> str:
         return f'{name}.npy'
 
 
 @DataRegistry.register('metrics')
-class MetricsHandler:
+class MetricsHandler(DataHandler[pd.DataFrame]):
     """Handler for metric data frames stored as ``metrics_<name>.csv`` files."""
 
     pattern: re.Pattern = re.compile(r'^metrics_(?P<name>.+)\.csv$')
 
-    @staticmethod
-    def matches(filename: str) -> bool:
-        return MetricsHandler.pattern.match(filename) is not None
+    @classmethod
+    def matches(cls, filename: str) -> bool:
+        return cls.pattern.match(filename) is not None
 
-    @staticmethod
-    def serialize(item: pd.DataFrame, fp: IO) -> None:
+    @classmethod
+    def serialize(cls, item: pd.DataFrame, fp: IO, **context: Any) -> None:
         df: pd.DataFrame = item.copy()
 
         # serialize dictionaries if any
@@ -537,8 +545,8 @@ class MetricsHandler:
         """
         return {RC5.from_name(k): v for k, v in d.items() if RC5.includes(k)}
 
-    @staticmethod
-    def deserialize(fp: IO) -> pd.DataFrame:
+    @classmethod
+    def deserialize(cls, fp: IO, **context: Any) -> pd.DataFrame:
         df = pd.read_csv(fp, index_col=0)
 
         # deserialize dictionaries if any
@@ -546,7 +554,7 @@ class MetricsHandler:
             if any(isinstance(x, str) and x.strip().startswith('{') and x.strip().endswith('}')\
                    for x in df[col].dropna()):
                 logger.debug(f"Deserializing RC5 dict column '{col}'.")
-                df[col] = df[col].apply(lambda x: MetricsHandler.__to_rc5_if_possible(json.loads(x))
+                df[col] = df[col].apply(lambda x: cls.__to_rc5_if_possible(json.loads(x))
                 if isinstance(x, str) and x.strip().startswith('{') and x.strip().endswith('}') else x)
 
         # deserialize multi-index if any
@@ -564,20 +572,20 @@ class MetricsHandler:
 
         return df
 
-    @staticmethod
-    def filename2name(filename: str) -> str:
-        if match := MetricsHandler.pattern.match(filename):
+    @classmethod
+    def filename2name(cls, filename: str) -> str:
+        if match := cls.pattern.match(filename):
             return match.group('name')
         else:
             return 'metrics'
 
-    @staticmethod
-    def name2filename(name: str) -> str:
+    @classmethod
+    def name2filename(cls, name: str) -> str:
         return f'metrics_{name}.csv'
 
 
 @DataRegistry.register('frequent_patterns')
-class FrequentPatternsHandler:
+class FrequentPatternsHandler(DataHandler[FrequentPatterns]):
     """Handler for frequent pattern from SPMiner
 
     The filenames are ``<subject>/motifs_enriched_<mode>.json``, where
@@ -586,31 +594,31 @@ class FrequentPatternsHandler:
 
     pattern: re.Pattern = re.compile(r'^(?P<subject>.+)/motifs_enriched_(?P<mode>s|t|st)\.json$')
 
-    @staticmethod
-    def matches(filename: str) -> bool:
-        return FrequentPatternsHandler.pattern.match(filename) is not None
+    @classmethod
+    def matches(cls, filename: str) -> bool:
+        return cls.pattern.match(filename) is not None
 
-    @staticmethod
-    def serialize(item: FrequentPatterns, fp: IO) -> None:
+    @classmethod
+    def serialize(cls, item: FrequentPatterns, fp: IO, **context: Any) -> None:
         patterns_dict = {name: nx.json_graph.node_link_data(pattern, edges='edges') for name, pattern in item}
         patterns_json = json.dumps(patterns_dict, cls=_SpatioTemporalGraphEncoder)
         fp.write(patterns_json.encode('utf-8'))
 
-    @staticmethod
-    def deserialize(fp: IO) -> FrequentPatterns:
+    @classmethod
+    def deserialize(cls, fp: IO, **context: Any) -> FrequentPatterns:
         patterns_dict = json.load(fp, object_hook=_spatio_temporal_object_hook)
         patterns = {name: nx.json_graph.node_link_graph(pattern_dict, edges='edges')
                     for name, pattern_dict in patterns_dict.items()}
         return FrequentPatterns(patterns)
 
-    @staticmethod
-    def filename2name(filename: str) -> str:
-        if match := FrequentPatternsHandler.pattern.match(filename):
+    @classmethod
+    def filename2name(cls, filename: str) -> str:
+        if match := cls.pattern.match(filename):
             return ','.join(match.groups())
         return filename
 
-    @staticmethod
-    def name2filename(name: str) -> str:
+    @classmethod
+    def name2filename(cls, name: str) -> str:
         subject, mode = name.split(',')
         return f'{subject}/motifs_enriched_{mode}.json'
 
