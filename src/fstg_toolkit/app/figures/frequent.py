@@ -509,7 +509,7 @@ def build_pattern_co_occurrence_plot(analysis: FrequentPatternsPopulationAnalysi
     go.Figure
         A Plotly heatmap where cell (i, j) = number of subjects with both patterns.
     """
-    data = analysis.get_pattern_cooccurrence(factors)
+    data = analysis.get_pattern_co_occurrence(factors)
 
     n = len(analysis.unique_patterns)
     labels = [str(i + 1) for i in range(n)]  # 1-indexed pattern labels

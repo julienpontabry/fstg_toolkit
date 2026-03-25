@@ -525,6 +525,82 @@ class FrequentPatternsPopulationAnalysis:
             PatternIndices=('PatternIdx', lambda x: ', '.join(str(i) for i in sorted(set(x))))
         )
 
+    @staticmethod
+    def _collect_all_regions(unique_patterns: list['FrequentPattern']) -> tuple[list[str], dict[str, int]]:
+        """Collect and index all regions across unique patterns.
+
+        Parameters
+        ----------
+        unique_patterns : list[FrequentPattern]
+            Patterns to scan.
+
+        Returns
+        -------
+        tuple[list[str], dict[str, int]]
+            Sorted region labels and region-to-matrix-index mapping.
+        """
+        all_regions: set[str] = set()
+        for pattern in unique_patterns:
+            for _, node_data in pattern.nodes(data=True):
+                all_regions.add(node_data['region'])
+        region_labels = sorted(all_regions)
+        return region_labels, {r: i for i, r in enumerate(region_labels)}
+
+    @staticmethod
+    def _count_spatial_edge_pairs(pattern: 'FrequentPattern', count: int) -> dict[tuple[str, str], int]:
+        """Return weighted spatial-edge region pairs for a single pattern.
+
+        Only considers edges without a ``transition`` attribute that connect
+        two distinct regions.
+
+        Parameters
+        ----------
+        pattern : FrequentPattern
+            Pattern whose spatial edges are scanned.
+        count : int
+            Weight applied to each pair found.
+
+        Returns
+        -------
+        dict[tuple[str, str], int]
+            Mapping from sorted ``(r1, r2)`` region pairs to weighted counts.
+        """
+        pairs: dict[tuple[str, str], int] = {}
+        for u, v, edge_data in pattern.edges(data=True):
+            if 'transition' not in edge_data:
+                r1: str = pattern.nodes[u]['region']
+                r2: str = pattern.nodes[v]['region']
+                if r1 != r2:
+                    pair = (r1, r2) if r1 <= r2 else (r2, r1)
+                    pairs[pair] = pairs.get(pair, 0) + count
+        return pairs
+
+    @staticmethod
+    def _build_symmetric_matrix(pairs: dict[tuple[str, str], int],
+                                 region_idx: dict[str, int], n: int) -> list[list[int]]:
+        """Build a symmetric co-occurrence matrix from region pairs.
+
+        Parameters
+        ----------
+        pairs : dict[tuple[str, str], int]
+            Sorted region pairs and their counts.
+        region_idx : dict[str, int]
+            Region-to-matrix-index mapping.
+        n : int
+            Matrix dimension.
+
+        Returns
+        -------
+        list[list[int]]
+            ``n×n`` symmetric matrix with pair counts.
+        """
+        matrix = [[0] * n for _ in range(n)]
+        for (r1, r2), count in pairs.items():
+            i, j = region_idx[r1], region_idx[r2]
+            matrix[i][j] += count
+            matrix[j][i] += count
+        return matrix
+
     def get_region_co_occurrence(self, factors: list[str]) -> dict[tuple[str, ...], tuple[list[str], list[list[int]]]]:
         """Compute region co-occurrence matrices from spatial edges, optionally grouped by factors.
 
@@ -546,44 +622,81 @@ class FrequentPatternsPopulationAnalysis:
             contains co-occurrence counts between regions.
         """
         counts = self.get_counts(factors)
-
-        # Collect all regions across all patterns for a consistent matrix
-        all_regions: set[str] = set()
-        for pattern in self.unique_patterns:
-            for _, node_data in pattern.nodes(data=True):
-                all_regions.add(node_data['region'])
-        region_labels = sorted(all_regions)
-        region_idx = {r: i for i, r in enumerate(region_labels)}
+        region_labels, region_idx = self._collect_all_regions(self.unique_patterns)
         n = len(region_labels)
 
-        # Build per-group pair counts
         group_pairs: dict[tuple[str, ...], dict[tuple[str, str], int]] = {}
-
         for factor_dict, idx, count in self._iter_counts(counts, factors):
             key = tuple(factor_dict[f] for f in factors) if factors else ()
-            if key not in group_pairs:
-                group_pairs[key] = {}
-            pattern = self.unique_patterns[idx]
-            for u, v, edge_data in pattern.edges(data=True):
-                if 'transition' not in edge_data:
-                    r1: str = pattern.nodes[u]['region']
-                    r2: str = pattern.nodes[v]['region']
-                    if r1 != r2:
-                        pair = (r1, r2) if r1 <= r2 else (r2, r1)
-                        group_pairs[key][pair] = group_pairs[key].get(pair, 0) + count
+            group_pairs.setdefault(key, {})
+            for pair, c in self._count_spatial_edge_pairs(self.unique_patterns[idx], count).items():
+                group_pairs[key][pair] = group_pairs[key].get(pair, 0) + c
 
-        result: dict[tuple[str, ...], tuple[list[str], list[list[int]]]] = {}
-        for key, pairs in group_pairs.items():
-            matrix = [[0] * n for _ in range(n)]
-            for (r1, r2), count in pairs.items():
-                i, j = region_idx[r1], region_idx[r2]
-                matrix[i][j] += count
-                matrix[j][i] += count
-            result[key] = (region_labels, matrix)
+        return {key: (region_labels, self._build_symmetric_matrix(pairs, region_idx, n))
+                for key, pairs in group_pairs.items()}
 
-        return result
+    @staticmethod
+    def _get_group_by_level_param(data: pd.DataFrame,
+                                  exclude_factors: list[str]) -> 'str | list[str]':
+        """Compute the groupby level parameter after excluding factor levels.
 
-    def get_pattern_cooccurrence(self, factors: list[str]) -> dict[tuple[str, ...], list[list[int]]]:
+        Parameters
+        ----------
+        data : pd.DataFrame
+            DataFrame whose index names are inspected.
+        exclude_factors : list[str]
+            Index level names to exclude.
+
+        Returns
+        -------
+        str | list[str]
+            Single level name if only one remains, else a list.
+        """
+        remaining = [lvl for lvl in data.index.names if lvl not in exclude_factors]
+        return remaining[0] if len(remaining) == 1 else remaining
+
+    @staticmethod
+    def _increment_pattern_matrix(matrix: list[list[int]], indices: list[int]) -> None:
+        """Increment co-occurrence counts for a subject's pattern indices.
+
+        Parameters
+        ----------
+        matrix : list[list[int]]
+            Co-occurrence matrix updated in-place.
+        indices : list[int]
+            Pattern indices present for one subject.
+        """
+        for i_val in indices:
+            matrix[i_val][i_val] += 1
+        for i_val, j_val in combinations(indices, 2):
+            matrix[i_val][j_val] += 1
+            matrix[j_val][i_val] += 1
+
+    def _build_pattern_co_occurrence_matrix(self, track_data: pd.DataFrame,
+                                            level_param: 'str | list[str]',
+                                            n: int) -> list[list[int]]:
+        """Build a pattern co-occurrence matrix for a single factor group.
+
+        Parameters
+        ----------
+        track_data : pd.DataFrame
+            Subset of the tracking DataFrame for one group.
+        level_param : str | list[str]
+            Level parameter passed to ``groupby``.
+        n : int
+            Number of unique patterns (matrix dimension).
+
+        Returns
+        -------
+        list[list[int]]
+            ``n×n`` symmetric co-occurrence matrix.
+        """
+        matrix = [[0] * n for _ in range(n)]
+        for _, subject_data in track_data.groupby(level=level_param):
+            self._increment_pattern_matrix(matrix, list(subject_data['idx'].unique()))
+        return matrix
+
+    def get_pattern_co_occurrence(self, factors: list[str]) -> dict[tuple[str, ...], list[list[int]]]:
         """Compute pattern co-occurrence matrices, optionally grouped by factors.
 
         For each subject in a factor group, finds all pattern indices the subject has,
@@ -608,30 +721,11 @@ class FrequentPatternsPopulationAnalysis:
         if factors:
             for group, group_data in self.track.groupby(factors):
                 key = group if isinstance(group, tuple) else (group,)
-                matrix = [[0] * n for _ in range(n)]
-                # Group by subject (remaining index levels after factor groupby)
-                remaining_levels = [lvl for lvl in group_data.index.names if lvl not in factors]
-                level_param = remaining_levels[0] if len(remaining_levels) == 1 else remaining_levels
-                for subject, subject_data in group_data.groupby(level=level_param):
-                    indices = list(subject_data['idx'].unique())
-                    for i_val in indices:
-                        matrix[i_val][i_val] += 1
-                    for i_val, j_val in combinations(indices, 2):
-                        matrix[i_val][j_val] += 1
-                        matrix[j_val][i_val] += 1
-                result[key] = matrix
+                level_param = self._get_group_by_level_param(group_data, factors)
+                result[key] = self._build_pattern_co_occurrence_matrix(group_data, level_param, n)
         else:
-            matrix = [[0] * n for _ in range(n)]
-            remaining_levels = list(self.track.index.names)
-            level_param = remaining_levels[0] if len(remaining_levels) == 1 else remaining_levels
-            for subject, subject_data in self.track.groupby(level=level_param):
-                indices = list(subject_data['idx'].unique())
-                for i_val in indices:
-                    matrix[i_val][i_val] += 1
-                for i_val, j_val in combinations(indices, 2):
-                    matrix[i_val][j_val] += 1
-                    matrix[j_val][i_val] += 1
-            result[()] = matrix
+            level_param = self._get_group_by_level_param(self.track, [])
+            result[()] = self._build_pattern_co_occurrence_matrix(self.track, level_param, n)
 
         return result
 
