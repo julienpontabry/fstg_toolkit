@@ -571,7 +571,7 @@ class FrequentPatternsPopulationAnalysis:
                             pair = tuple(sorted([r1, r2]))
                             group_pairs[key][pair] = group_pairs[key].get(pair, 0) + row['Count']
         else:
-            key = ('',)
+            key = ()
             group_pairs[key] = {}
             for idx, row in counts.iterrows():
                 pattern = self.unique_patterns[idx]
@@ -642,7 +642,7 @@ class FrequentPatternsPopulationAnalysis:
                 for i_val, j_val in combinations(indices, 2):
                     matrix[i_val][j_val] += 1
                     matrix[j_val][i_val] += 1
-            result[('',)] = matrix
+            result[()] = matrix
 
         return result
 

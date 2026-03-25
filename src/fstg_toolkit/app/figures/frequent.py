@@ -32,7 +32,7 @@
 # knowledge of the CeCILL-B license and that you accept its terms.
 
 import math
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 import networkx as nx
 import plotly.express as px
@@ -276,24 +276,68 @@ def __build_faceted_heatmap(data_by_group: dict[tuple[str, ...], tuple[list[str]
         A Plotly figure with one heatmap per factor group.
     """
     groups = sorted(data_by_group.keys())
-    n_groups = len(groups)
 
-    # FIXME make rows/columns faceting
-    subplot_titles = [' / '.join(f'{f}={v}' for f, v in zip(factors, g)) if factors else '' for g in groups]
-    fig = make_subplots(rows=1, cols=n_groups, subplot_titles=subplot_titles,
-                        horizontal_spacing=0.05)
+    # Compute grid dimensions for rows/columns faceting
+    if len(factors) == 0:
+        row_vals: list[Any] = [()]
+        col_vals: list[Any] = [()]
+    elif len(factors) == 1:
+        row_vals = groups
+        col_vals = [('',)]
+    else:
+        row_vals = sorted({g[0] for g in groups})
+        col_vals = sorted({g[1] for g in groups})
 
-    for col, group_key in enumerate(groups, start=1):
+    n_rows = len(row_vals)
+    n_cols = len(col_vals)
+
+    # Map each group key to its 1-based (row, col) position
+    if len(factors) == 0:
+        group_to_rc: dict[tuple[str, ...], tuple[int, int]] = {(): (1, 1)}
+    elif len(factors) == 1:
+        group_to_rc = {key: (r, 1) for r, key in enumerate(row_vals, start=1)}
+    else:
+        row_index = {v: i for i, v in enumerate(row_vals, start=1)}
+        col_index = {v: i for i, v in enumerate(col_vals, start=1)}
+        group_to_rc = {key: (row_index[key[0]], col_index[key[1]]) for key in groups}
+
+    # Subplot titles in row-major order (required by make_subplots)
+    if len(factors) == 0:
+        subplot_titles: list[str] = ['']
+    elif len(factors) == 1:
+        subplot_titles = [f'{factors[0]}={rv[0]}' for rv in row_vals]
+    else:
+        subplot_titles = [
+            f'{factors[0]}={rv} / {factors[1]}={cv}'
+            for rv in row_vals
+            for cv in col_vals
+        ]
+
+    fig = make_subplots(
+        rows=n_rows,
+        cols=n_cols,
+        subplot_titles=subplot_titles,
+        horizontal_spacing=0.08,
+        vertical_spacing=0.13,
+    )
+
+    last_key = groups[-1]
+
+    for group_key in groups:
+        row, col = group_to_rc[group_key]
         labels, matrix = data_by_group[group_key]
         fig.add_trace(
-            go.Heatmap(z=matrix, x=labels, y=labels, colorscale='Blues',
-                       showscale=(col == n_groups)),
-            row=1, col=col,
+            go.Heatmap(
+                z=matrix, x=labels, y=labels,
+                colorscale='Blues',
+                showscale=(group_key == last_key),
+            ),
+            row=row, col=col,
         )
-        fig.update_xaxes(title_text=axis_title, row=1, col=col)
-        fig.update_yaxes(title_text=axis_title, row=1, col=col)
+        fig.update_xaxes(title_text=axis_title, row=row, col=col)
+        fig.update_yaxes(title_text=axis_title, row=row, col=col)
 
-    fig.update_layout(height=600)
+    fig.update_layout(height=max(800, 500 * n_rows))
 
     return fig
 
