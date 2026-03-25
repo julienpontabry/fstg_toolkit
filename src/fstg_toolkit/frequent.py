@@ -566,10 +566,10 @@ class FrequentPatternsPopulationAnalysis:
             pattern = self.unique_patterns[idx]
             for u, v, edge_data in pattern.edges(data=True):
                 if 'transition' not in edge_data:
-                    r1 = pattern.nodes[u]['region']
-                    r2 = pattern.nodes[v]['region']
+                    r1: str = pattern.nodes[u]['region']
+                    r2: str = pattern.nodes[v]['region']
                     if r1 != r2:
-                        pair = tuple(sorted([r1, r2]))
+                        pair = (r1, r2) if r1 <= r2 else (r2, r1)
                         group_pairs[key][pair] = group_pairs[key].get(pair, 0) + count
 
         result: dict[tuple[str, ...], tuple[list[str], list[list[int]]]] = {}
