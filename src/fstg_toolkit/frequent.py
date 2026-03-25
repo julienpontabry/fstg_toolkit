@@ -622,7 +622,8 @@ class FrequentPatternsPopulationAnalysis:
                 matrix = [[0] * n for _ in range(n)]
                 # Group by subject (remaining index levels after factor groupby)
                 remaining_levels = [lvl for lvl in group_data.index.names if lvl not in factors]
-                for subject, subject_data in group_data.groupby(level=remaining_levels):
+                level_param = remaining_levels[0] if len(remaining_levels) == 1 else remaining_levels
+                for subject, subject_data in group_data.groupby(level=level_param):
                     indices = list(subject_data['idx'].unique())
                     for i_val in indices:
                         matrix[i_val][i_val] += 1
@@ -632,8 +633,9 @@ class FrequentPatternsPopulationAnalysis:
                 result[key] = matrix
         else:
             matrix = [[0] * n for _ in range(n)]
-            remaining_levels = [lvl for lvl in self.track.index.names]
-            for subject, subject_data in self.track.groupby(level=remaining_levels):
+            remaining_levels = list(self.track.index.names)
+            level_param = remaining_levels[0] if len(remaining_levels) == 1 else remaining_levels
+            for subject, subject_data in self.track.groupby(level=level_param):
                 indices = list(subject_data['idx'].unique())
                 for i_val in indices:
                     matrix[i_val][i_val] += 1
