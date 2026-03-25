@@ -415,6 +415,32 @@ class FrequentPatternsPopulationAnalysis:
         else:
             return self.track.reset_index('Subject').groupby('idx').count().rename(columns={'Subject': 'Count'})
 
+    @staticmethod
+    def _iter_counts(counts: pd.DataFrame, factors: list[str]) -> Iterator[tuple[dict[str, Any], int, int]]:
+        """Iterate over counts rows with unpacked factor dict, idx, and count.
+
+        Handles the conditional unpacking of rows based on whether factors are present,
+        yielding a consistent (factor_dict, idx, count) tuple for each row.
+
+        Parameters
+        ----------
+        counts : pd.DataFrame
+            DataFrame from get_counts() with index levels for factors (if any) and 'idx'.
+        factors : list[str]
+            Column names that were used to group in get_counts().
+
+        Yields
+        ------
+        tuple[dict[str, Any], int, int]
+            (factor_dict, idx, count) where factor_dict is empty if factors is empty.
+        """
+        if factors:
+            for (*factor_vals, idx), count in counts.itertuples(name=None):
+                yield dict(zip(factors, factor_vals)), idx, count
+        else:
+            for idx, count in counts.itertuples(name=None):
+                yield {}, idx, count
+
     def get_patterns_per_region(self, factors: list[str]) -> pd.DataFrame:
         """Count pattern occurrences per brain region, optionally grouped by factors.
 
@@ -438,27 +464,15 @@ class FrequentPatternsPopulationAnalysis:
         counts = self.get_counts(factors)
         records: list[dict[str, Any]] = []
 
-        if factors:
-            for idx, count in counts.itertuples(name=None):
-                *factor_vals, idx = idx
-                pattern = self.unique_patterns[idx]
-                factor_dict = dict(zip(factors, factor_vals))
-                for _, node_data in pattern.nodes(data=True):
-                    records.append({
-                        'Region': node_data['region'],
-                        'Count': count,
-                        'PatternIdx': idx + 1,
-                        **factor_dict,
-                    })
-        else:
-            for idx, count in counts.itertuples(name=None):
-                pattern = self.unique_patterns[idx]
-                for _, node_data in pattern.nodes(data=True):
-                    records.append({
-                        'Region': node_data['region'],
-                        'Count': count,
-                        'PatternIdx': idx + 1,
-                    })
+        for factor_dict, idx, count in self._iter_counts(counts, factors):
+            pattern = self.unique_patterns[idx]
+            for _, node_data in pattern.nodes(data=True):
+                records.append({
+                    'Region': node_data['region'],
+                    'Count': count,
+                    'PatternIdx': idx + 1,
+                    **factor_dict,
+                })
 
         df = pd.DataFrame.from_records(records)
         group_cols = ['Region'] + factors
@@ -492,31 +506,17 @@ class FrequentPatternsPopulationAnalysis:
         counts = self.get_counts(factors)
         records: list[dict[str, Any]] = []
 
-        if factors:
-            for idx, count in counts.itertuples(name=None):
-                *factor_vals, idx = idx
-                pattern = self.unique_patterns[idx]
-                factor_dict = dict(zip(factors, factor_vals))
-                for u, v, edge_data in pattern.edges(data=True):
-                    if 'transition' in edge_data:
-                        records.append({
-                            'Region': pattern.nodes[u]['region'],
-                            'Transition': str(edge_data['transition']),
-                            'Count': count,
-                            'PatternIdx': idx + 1,
-                            **factor_dict,
-                        })
-        else:
-            for idx, count in counts.itertuples(name=None):
-                pattern = self.unique_patterns[idx]
-                for u, v, edge_data in pattern.edges(data=True):
-                    if 'transition' in edge_data:
-                        records.append({
-                            'Region': pattern.nodes[u]['region'],
-                            'Transition': str(edge_data['transition']),
-                            'Count': count,
-                            'PatternIdx': idx + 1,
-                        })
+        for factor_dict, idx, count in self._iter_counts(counts, factors):
+            pattern = self.unique_patterns[idx]
+            for u, v, edge_data in pattern.edges(data=True):
+                if 'transition' in edge_data:
+                    records.append({
+                        'Region': pattern.nodes[u]['region'],
+                        'Transition': str(edge_data['transition']),
+                        'Count': count,
+                        'PatternIdx': idx + 1,
+                        **factor_dict,
+                    })
 
         df = pd.DataFrame.from_records(records)
         group_cols = ['Region', 'Transition'] + factors
@@ -559,32 +559,18 @@ class FrequentPatternsPopulationAnalysis:
         # Build per-group pair counts
         group_pairs: dict[tuple[str, ...], dict[tuple[str, str], int]] = {}
 
-        if factors:
-            for idx, count in counts.itertuples(name=None):
-                *factor_vals, idx = idx
-                key = tuple(factor_vals)
-                if key not in group_pairs:
-                    group_pairs[key] = {}
-                pattern = self.unique_patterns[idx]
-                for u, v, edge_data in pattern.edges(data=True):
-                    if 'transition' not in edge_data:
-                        r1 = pattern.nodes[u]['region']
-                        r2 = pattern.nodes[v]['region']
-                        if r1 != r2:
-                            pair = tuple(sorted([r1, r2]))
-                            group_pairs[key][pair] = group_pairs[key].get(pair, 0) + count
-        else:
-            key = ()
-            group_pairs[key] = {}
-            for idx, count in counts.itertuples(name=None):
-                pattern = self.unique_patterns[idx]
-                for u, v, edge_data in pattern.edges(data=True):
-                    if 'transition' not in edge_data:
-                        r1 = pattern.nodes[u]['region']
-                        r2 = pattern.nodes[v]['region']
-                        if r1 != r2:
-                            pair = tuple(sorted([r1, r2]))
-                            group_pairs[key][pair] = group_pairs[key].get(pair, 0) + count
+        for factor_dict, idx, count in self._iter_counts(counts, factors):
+            key = tuple(factor_dict[f] for f in factors) if factors else ()
+            if key not in group_pairs:
+                group_pairs[key] = {}
+            pattern = self.unique_patterns[idx]
+            for u, v, edge_data in pattern.edges(data=True):
+                if 'transition' not in edge_data:
+                    r1 = pattern.nodes[u]['region']
+                    r2 = pattern.nodes[v]['region']
+                    if r1 != r2:
+                        pair = tuple(sorted([r1, r2]))
+                        group_pairs[key][pair] = group_pairs[key].get(pair, 0) + count
 
         result: dict[tuple[str, ...], tuple[list[str], list[list[int]]]] = {}
         for key, pairs in group_pairs.items():
@@ -672,18 +658,12 @@ class FrequentPatternsPopulationAnalysis:
         counts = self.get_counts(factors)
         records: list[dict[str, Any]] = []
 
-        if factors:
-            for idx, count in counts.itertuples(name=None):
-                *factor_vals, idx = idx
-                factor_dict = dict(zip(factors, factor_vals))
-                records.append({
-                    'Occurrences': count,
-                    'PatternIdx': idx + 1,
-                    **factor_dict,
-                })
-        else:
-            for idx, count in counts.itertuples(name=None):
-                records.append({'Occurrences': count, 'PatternIdx': idx + 1})
+        for factor_dict, idx, count in self._iter_counts(counts, factors):
+            records.append({
+                'Occurrences': count,
+                'PatternIdx': idx + 1,
+                **factor_dict,
+            })
 
         df = pd.DataFrame.from_records(records)
         group_cols = ['Occurrences'] + factors
@@ -714,25 +694,14 @@ class FrequentPatternsPopulationAnalysis:
         counts = self.get_counts(factors)
         records: list[dict[str, Any]] = []
 
-        if factors:
-            for idx, count in counts.itertuples(name=None):
-                *factor_vals, idx = idx
-                pattern = self.unique_patterns[idx]
-                factor_dict = dict(zip(factors, factor_vals))
-                records.append({
-                    'Size': len(pattern.nodes()),
-                    'Count': count,
-                    'PatternIdx': idx + 1,
-                    **factor_dict,
-                })
-        else:
-            for idx, count in counts.itertuples(name=None):
-                pattern = self.unique_patterns[idx]
-                records.append({
-                    'Size': len(pattern.nodes()),
-                    'Count': count,
-                    'PatternIdx': idx + 1,
-                })
+        for factor_dict, idx, count in self._iter_counts(counts, factors):
+            pattern = self.unique_patterns[idx]
+            records.append({
+                'Size': len(pattern.nodes()),
+                'Count': count,
+                'PatternIdx': idx + 1,
+                **factor_dict,
+            })
 
         df = pd.DataFrame.from_records(records)
         group_cols = ['Size'] + factors
