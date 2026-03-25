@@ -67,11 +67,12 @@ class FrequentFigureBuilderRegistry:
         (heatmap cell); show both pattern graphs and the co-occurrence count.
     """
 
-    _analyses: dict[str, tuple[FrequentAnalysisBuilder, Optional[set[str]], Optional[str]]] = {}
+    _analyses: dict[str, tuple[FrequentAnalysisBuilder, Optional[set[str]], Optional[str], Optional[str]]] = {}
 
     @classmethod
     def register(cls, name: str, modes: Optional[set[str]] = None,
-                 tooltip: Optional[str] = None) -> Callable[[FrequentAnalysisBuilder], FrequentAnalysisBuilder]:
+                 tooltip: Optional[str] = None,
+                 description: Optional[str] = None) -> Callable[[FrequentAnalysisBuilder], FrequentAnalysisBuilder]:
         """Class decorator factory that registers a builder under the given name.
 
         Parameters
@@ -84,6 +85,8 @@ class FrequentFigureBuilderRegistry:
         tooltip : str or None, optional
             Tooltip type for this figure.  One of ``'pattern'``,
             ``'pattern-pair'``, or ``None`` (no tooltip).
+        description : str or None, optional
+            Short human-readable description of what the figure shows.
 
         Returns
         -------
@@ -91,7 +94,7 @@ class FrequentFigureBuilderRegistry:
             Decorator that stores the builder and returns it unchanged.
         """
         def decorator(builder: FrequentAnalysisBuilder) -> FrequentAnalysisBuilder:
-            cls._analyses[name] = (builder, modes, tooltip)
+            cls._analyses[name] = (builder, modes, tooltip, description)
             return builder
         return decorator
 
@@ -138,6 +141,27 @@ class FrequentFigureBuilderRegistry:
         return cls._analyses[name][2]
 
     @classmethod
+    def get_description(cls, name: str) -> Optional[str]:
+        """Return the description declared for the given figure builder.
+
+        Parameters
+        ----------
+        name : str
+            The registered display name.
+
+        Returns
+        -------
+        str or None
+            The human-readable description, or ``None`` if not set.
+
+        Raises
+        ------
+        KeyError
+            If no builder is registered under this name.
+        """
+        return cls._analyses[name][3]
+
+    @classmethod
     def names(cls, mode: Optional[str] = None) -> list[str]:
         """Return the names of builders compatible with the given mode.
 
@@ -152,11 +176,9 @@ class FrequentFigureBuilderRegistry:
             Sorted list of compatible builder display names.
         """
         return sorted(
-            name for name, (_, modes, _tooltip) in cls._analyses.items()
+            name for name, (_, modes, _tooltip, _desc) in cls._analyses.items()
             if modes is None or mode is None or mode in modes
         )
-
-    # TODO add description to figures
 
 
 def build_pattern_figure(pattern: FrequentPattern) -> go.Figure:
@@ -342,7 +364,8 @@ def __build_faceted_heatmap(data_by_group: dict[tuple[str, ...], tuple[list[str]
     return fig
 
 
-@FrequentFigureBuilderRegistry.register('Pattern distribution', tooltip='pattern')
+@FrequentFigureBuilderRegistry.register('Patterns distribution', tooltip='pattern',
+                                        description='Distribution of unique patterns.')
 def build_pattern_frequency_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
     counts = analysis.get_counts(factors)
 
@@ -368,7 +391,8 @@ def build_pattern_frequency_plot(analysis: FrequentPatternsPopulationAnalysis, f
     return fig
 
 
-@FrequentFigureBuilderRegistry.register('Temporal dynamics per region', modes={'t', 'st'})
+@FrequentFigureBuilderRegistry.register('Temporal dynamics per region', modes={'t', 'st'},
+                                        description='Distribution of patterns count among region and temporal transitions.')
 def build_temporal_dynamics_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
     """Stacked bar chart of RC5 transition types per brain region.
 
@@ -405,7 +429,8 @@ def build_temporal_dynamics_plot(analysis: FrequentPatternsPopulationAnalysis, f
     return fig
 
 
-@FrequentFigureBuilderRegistry.register('Region co-occurrence', modes={'s', 'st'})
+@FrequentFigureBuilderRegistry.register('Region co-occurrence', modes={'s', 'st'},
+                                        description='Symmetric heatmap showing how often two brain regions appear together in a spatial edge across all frequent patterns.')
 def build_region_co_occurrence_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
     """Symmetric heatmap of region co-occurrence via spatial edges.
 
@@ -425,7 +450,8 @@ def build_region_co_occurrence_plot(analysis: FrequentPatternsPopulationAnalysis
     return __build_faceted_heatmap(data, factors, 'Region')
 
 
-@FrequentFigureBuilderRegistry.register('Patterns per region')
+@FrequentFigureBuilderRegistry.register('Patterns per region',
+                                        description='Distribution of patterns count among the region.')
 def build_patterns_per_region_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
     """Bar chart of pattern counts per brain region.
 
@@ -461,7 +487,8 @@ def build_patterns_per_region_plot(analysis: FrequentPatternsPopulationAnalysis,
     return fig
 
 
-@FrequentFigureBuilderRegistry.register('Pattern co-occurrence', tooltip='pattern-pair')
+@FrequentFigureBuilderRegistry.register('Pattern co-occurrence', tooltip='pattern-pair',
+                                        description='Heatmaps showing the number of subjects that simultaneously exhibit both patterns.')
 def build_pattern_co_occurrence_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
     """Symmetric heatmap of pattern co-occurrence across subjects.
 
@@ -490,7 +517,8 @@ def build_pattern_co_occurrence_plot(analysis: FrequentPatternsPopulationAnalysi
     return fig
 
 
-@FrequentFigureBuilderRegistry.register('Occurrence histogram')
+@FrequentFigureBuilderRegistry.register('Occurrence histogram',
+                                        description='Histogram of unique pattern occurrences.')
 def build_occurrence_histogram_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
     """Histogram of pattern occurrence counts.
 
@@ -528,7 +556,8 @@ def build_occurrence_histogram_plot(analysis: FrequentPatternsPopulationAnalysis
     return fig
 
 
-@FrequentFigureBuilderRegistry.register('Pattern size')
+@FrequentFigureBuilderRegistry.register('Pattern size',
+                                        description='Distribution of patterns by their number of nodes (graph size).')
 def build_pattern_complexity_plot(analysis: FrequentPatternsPopulationAnalysis, factors: list[str]) -> go.Figure:
     """Histogram of pattern sizes (node counts).
 

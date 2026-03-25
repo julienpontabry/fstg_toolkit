@@ -59,6 +59,7 @@ layout = [
     dbc.Row(dcc.Dropdown([], value='', clearable=False, id='frequent-mode',
                          style={'display': 'none'})),
     dbc.Row(dcc.Dropdown([], value='', clearable=False, id='frequent-figure')),
+    dbc.Row(dbc.Col(html.Small('', id='frequent-figure-description', className='text-muted'))),
     dbc.Row(dbc.Col(create_factors_options_controls('frequent'))),
     dbc.Row(html.Div([
         dcc.Loading(
@@ -105,6 +106,16 @@ def mode_changed(mode: str) -> tuple:
     default_figure = figure_options[0] if figure_options else ''
 
     return figure_options, default_figure
+
+
+@callback(
+    Output('frequent-figure-description', 'children'),
+    Input('frequent-figure', 'value'),
+)
+def figure_changed(figure: str) -> str:
+    if not figure:
+        return ''
+    return FrequentFigureBuilderRegistry.get_description(figure) or ''
 
 
 @callback(
