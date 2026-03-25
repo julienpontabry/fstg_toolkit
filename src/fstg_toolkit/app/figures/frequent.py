@@ -39,6 +39,7 @@ import plotly.express as px
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
+from fstg_toolkit.app.figures.common import integer_tick_step
 from fstg_toolkit.frequent import FrequentPattern, FrequentPatternsPopulationAnalysis
 
 FrequentAnalysisBuilder = Callable[[FrequentPatternsPopulationAnalysis, list[str]], go.Figure]
@@ -280,8 +281,8 @@ def build_pattern_frequency_plot(analysis: FrequentPatternsPopulationAnalysis, f
     # hide the default bar tooltip (custom pattern tooltip is used instead)
     fig.update_traces(hoverinfo='none', hovertemplate=None)
 
-    # force integer scale on y-axis
-    fig.update_yaxes(dtick=1)
+    # only integer ticks
+    fig.update_yaxes(tick0=0, dtick=integer_tick_step(int(counts['Count'].max())))
 
     return fig
 
@@ -311,7 +312,8 @@ def build_temporal_dynamics_plot(analysis: FrequentPatternsPopulationAnalysis, f
         height=800,
     )
 
-    fig.update_yaxes(dtick=1)
+    # only integer ticks
+    fig.update_yaxes(tick0=0, dtick=integer_tick_step(int(df['Count'].max())))
 
     return fig
 
@@ -361,7 +363,8 @@ def build_patterns_per_region_plot(analysis: FrequentPatternsPopulationAnalysis,
         height=800,
     )
 
-    fig.update_yaxes(dtick=1)
+    # only integer ticks
+    fig.update_yaxes(tick0=0, dtick=integer_tick_step(int(df['Count'].max())))
 
     return fig
 
@@ -415,8 +418,9 @@ def build_occurrence_histogram_plot(analysis: FrequentPatternsPopulationAnalysis
         height=800,
     )
 
-    fig.update_xaxes(dtick=1)
-    fig.update_yaxes(dtick=1)
+    # only integer ticks
+    fig.update_xaxes(tick0=0, dtick=integer_tick_step(int(df['Occurrences'].max())))
+    fig.update_yaxes(tick0=0, dtick=integer_tick_step(int(df['Patterns'].max())))
 
     return fig
 
@@ -447,8 +451,8 @@ def build_pattern_complexity_plot(analysis: FrequentPatternsPopulationAnalysis, 
         height=800,
     )
 
-    fig.update_xaxes(dtick=1)
-
-    fig.update_yaxes(dtick=1)
+    # only integer ticks
+    fig.update_xaxes(tick0=0, dtick=integer_tick_step(int(df['Size'].max())))
+    fig.update_yaxes(tick0=0, dtick=integer_tick_step(int(df['Count'].max())))
 
     return fig
