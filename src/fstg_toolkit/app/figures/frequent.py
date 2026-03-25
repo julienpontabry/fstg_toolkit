@@ -345,12 +345,18 @@ def build_temporal_dynamics_plot(analysis: FrequentPatternsPopulationAnalysis, f
     params = dict(zip(('facet_row', 'facet_col'), factors))
     fig = px.bar(
         df, x='Region', y='Count', color='Transition', **params,
+        custom_data=['PatternIndices'],
         barmode='stack',
         height=800,
     )
 
     # only integer ticks
     fig.update_yaxes(tick0=0, dtick=integer_tick_step(int(df['Count'].max())))
+
+    fig.update_traces(hovertemplate=(
+        'Region: %{x}<br>Transition: %{data.name}<br>Count: %{y}'
+        '<br>Patterns: %{customdata[0]}<extra></extra>'
+    ))
 
     return fig
 
@@ -396,12 +402,17 @@ def build_patterns_per_region_plot(analysis: FrequentPatternsPopulationAnalysis,
     params = dict(zip(('facet_row', 'facet_col'), factors))
     fig = px.bar(
         df, x='Region', y='Count', **params,
+        custom_data=['PatternIndices'],
         barmode='group',
         height=800,
     )
 
     # only integer ticks
     fig.update_yaxes(tick0=0, dtick=integer_tick_step(int(df['Count'].max())))
+
+    fig.update_traces(hovertemplate=(
+        'Region: %{x}<br>Count: %{y}<br>Patterns: %{customdata[0]}<extra></extra>'
+    ))
 
     return fig
 
@@ -456,13 +467,19 @@ def build_occurrence_histogram_plot(analysis: FrequentPatternsPopulationAnalysis
     params = dict(zip(('facet_row', 'facet_col'), factors))
     fig = px.bar(
         df, x='Occurrences', y='Patterns', **params,
+        custom_data=['PatternIndices'],
         barmode='group',
         height=800,
+        labels={'Patterns': 'Patterns count'},
     )
 
     # only integer ticks
     fig.update_xaxes(tick0=0, dtick=integer_tick_step(int(df['Occurrences'].max())))
     fig.update_yaxes(tick0=0, dtick=integer_tick_step(int(df['Patterns'].max())))
+
+    fig.update_traces(hovertemplate=(
+        'Occurrences: %{x}<br>Patterns count: %{y}<br>Patterns: %{customdata[0]}<extra></extra>'
+    ))
 
     return fig
 
@@ -488,6 +505,7 @@ def build_pattern_complexity_plot(analysis: FrequentPatternsPopulationAnalysis, 
     params = dict(zip(('facet_row', 'facet_col'), factors))
     fig = px.bar(
         df, x='Size', y='Count', **params,
+        custom_data=['PatternIndices'],
         barmode='group',
         labels={'Size': 'Pattern size (nodes)'},
         height=800,
@@ -496,5 +514,9 @@ def build_pattern_complexity_plot(analysis: FrequentPatternsPopulationAnalysis, 
     # only integer ticks
     fig.update_xaxes(tick0=0, dtick=integer_tick_step(int(df['Size'].max())))
     fig.update_yaxes(tick0=0, dtick=integer_tick_step(int(df['Count'].max())))
+
+    fig.update_traces(hovertemplate=(
+        'Size: %{x}<br>Count: %{y}<br>Patterns: %{customdata[0]}<extra></extra>'
+    ))
 
     return fig

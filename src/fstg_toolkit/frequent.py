@@ -431,7 +431,9 @@ class FrequentPatternsPopulationAnalysis:
         Returns
         -------
         pd.DataFrame
-            A DataFrame with columns ``[Region, Count, *factors]``.
+            A DataFrame with columns ``[Region, Count, PatternIndices, *factors]``,
+            where ``PatternIndices`` is a sorted comma-separated string of 1-based
+            pattern indices that contain at least one node in that region.
         """
         counts = self.get_counts(factors)
         records: list[dict[str, Any]] = []
@@ -444,6 +446,7 @@ class FrequentPatternsPopulationAnalysis:
                     records.append({
                         'Region': node_data['region'],
                         'Count': row['Count'],
+                        'PatternIdx': idx + 1,
                         **factor_dict,
                     })
         else:
@@ -453,11 +456,15 @@ class FrequentPatternsPopulationAnalysis:
                     records.append({
                         'Region': node_data['region'],
                         'Count': row['Count'],
+                        'PatternIdx': idx + 1,
                     })
 
         df = pd.DataFrame.from_records(records)
         group_cols = ['Region'] + factors
-        return df.groupby(group_cols, as_index=False)['Count'].sum()
+        return df.groupby(group_cols, as_index=False).agg(
+            Count=('Count', 'sum'),
+            PatternIndices=('PatternIdx', lambda x: ', '.join(str(i) for i in sorted(set(x))))
+        )
 
     def get_temporal_dynamics(self, factors: list[str]) -> pd.DataFrame:
         """Extract temporal edge dynamics per region, optionally grouped by factors.
@@ -476,7 +483,10 @@ class FrequentPatternsPopulationAnalysis:
         Returns
         -------
         pd.DataFrame
-            A DataFrame with columns ``[Region, Transition, Count, *factors]``.
+            A DataFrame with columns ``[Region, Transition, Count, PatternIndices, *factors]``,
+            where ``PatternIndices`` is a sorted comma-separated string of 1-based
+            pattern indices that have at least one temporal edge matching that region
+            and transition type.
         """
         counts = self.get_counts(factors)
         records: list[dict[str, Any]] = []
@@ -491,6 +501,7 @@ class FrequentPatternsPopulationAnalysis:
                             'Region': pattern.nodes[u]['region'],
                             'Transition': str(edge_data['transition']),
                             'Count': row['Count'],
+                            'PatternIdx': idx + 1,
                             **factor_dict,
                         })
         else:
@@ -502,11 +513,15 @@ class FrequentPatternsPopulationAnalysis:
                             'Region': pattern.nodes[u]['region'],
                             'Transition': str(edge_data['transition']),
                             'Count': row['Count'],
+                            'PatternIdx': idx + 1,
                         })
 
         df = pd.DataFrame.from_records(records)
         group_cols = ['Region', 'Transition'] + factors
-        return df.groupby(group_cols, as_index=False)['Count'].sum()
+        return df.groupby(group_cols, as_index=False).agg(
+            Count=('Count', 'sum'),
+            PatternIndices=('PatternIdx', lambda x: ', '.join(str(i) for i in sorted(set(x))))
+        )
 
     def get_region_co_occurrence(self, factors: list[str]) -> dict[tuple[str, ...], tuple[list[str], list[list[int]]]]:
         """Compute region co-occurrence matrices from spatial edges, optionally grouped by factors.
@@ -645,7 +660,9 @@ class FrequentPatternsPopulationAnalysis:
         Returns
         -------
         pd.DataFrame
-            A DataFrame with columns ``[Occurrences, Patterns, *factors]``.
+            A DataFrame with columns ``[Occurrences, Patterns, PatternIndices, *factors]``,
+            where ``PatternIndices`` is a sorted comma-separated string of 1-based
+            pattern indices that have that occurrence count.
         """
         counts = self.get_counts(factors)
         records: list[dict[str, Any]] = []
@@ -655,17 +672,19 @@ class FrequentPatternsPopulationAnalysis:
                 factor_dict = dict(zip(factors, factor_vals))
                 records.append({
                     'Occurrences': row['Count'],
+                    'PatternIdx': idx + 1,
                     **factor_dict,
                 })
-            df = pd.DataFrame.from_records(records)
-            result = df.groupby(['Occurrences'] + factors, as_index=False).size().rename(columns={'size': 'Patterns'})
         else:
             for idx, row in counts.iterrows():
-                records.append({'Occurrences': row['Count']})
-            df = pd.DataFrame.from_records(records)
-            result = df.groupby('Occurrences', as_index=False).size().rename(columns={'size': 'Patterns'})
+                records.append({'Occurrences': row['Count'], 'PatternIdx': idx + 1})
 
-        return result
+        df = pd.DataFrame.from_records(records)
+        group_cols = ['Occurrences'] + factors
+        return df.groupby(group_cols, as_index=False).agg(
+            Patterns=('PatternIdx', 'count'),
+            PatternIndices=('PatternIdx', lambda x: ', '.join(str(i) for i in sorted(x)))
+        )
 
     def get_pattern_complexity(self, factors: list[str]) -> pd.DataFrame:
         """Compute pattern complexity (node count) distribution, optionally grouped by factors.
@@ -682,7 +701,9 @@ class FrequentPatternsPopulationAnalysis:
         Returns
         -------
         pd.DataFrame
-            A DataFrame with columns ``[Size, Count, *factors]``.
+            A DataFrame with columns ``[Size, Count, PatternIndices, *factors]``,
+            where ``PatternIndices`` is a sorted comma-separated string of 1-based
+            pattern indices that have that node count.
         """
         counts = self.get_counts(factors)
         records: list[dict[str, Any]] = []
@@ -694,6 +715,7 @@ class FrequentPatternsPopulationAnalysis:
                 records.append({
                     'Size': len(pattern.nodes()),
                     'Count': row['Count'],
+                    'PatternIdx': idx + 1,
                     **factor_dict,
                 })
         else:
@@ -702,8 +724,12 @@ class FrequentPatternsPopulationAnalysis:
                 records.append({
                     'Size': len(pattern.nodes()),
                     'Count': row['Count'],
+                    'PatternIdx': idx + 1,
                 })
 
         df = pd.DataFrame.from_records(records)
         group_cols = ['Size'] + factors
-        return df.groupby(group_cols, as_index=False)['Count'].sum()
+        return df.groupby(group_cols, as_index=False).agg(
+            Count=('Count', 'sum'),
+            PatternIndices=('PatternIdx', lambda x: ', '.join(str(i) for i in sorted(x)))
+        )
