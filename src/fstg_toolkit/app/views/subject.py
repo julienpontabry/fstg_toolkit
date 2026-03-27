@@ -37,8 +37,8 @@ from dash.dependencies import ALL
 from dash.exceptions import PreventUpdate
 
 from .common import update_factor_controls, plotly_config
-from ..figures.subject import build_subject_figure, generate_temporal_graph_props, build_spatial_figure, \
-    generate_spatial_graph_props
+from ..figures.subject import (build_subject_figure, generate_temporal_graph_props, build_spatial_figure,
+                               generate_spatial_graph_props, NODE_PROP_LABELS)
 from ...io import GraphsDataset
 
 layout = [
@@ -51,6 +51,22 @@ layout = [
         dbc.Col(dbc.Button("Apply", color='secondary', id='apply-button'),
                 className='d-grid gap-2 d-md-block', align='center')
     ], className='g-0'),
+    dbc.Row([
+        dbc.Col([
+            dbc.Label("Node color", size='sm'),
+            dcc.Dropdown(
+                options=[{'label': v, 'value': k} for k, v in NODE_PROP_LABELS.items()],
+                value='internal_strength', clearable=False, id='node-color-prop'
+            ),
+        ], width=6),
+        dbc.Col([
+            dbc.Label("Node size", size='sm'),
+            dcc.Dropdown(
+                options=[{'label': v, 'value': k} for k, v in NODE_PROP_LABELS.items()],
+                value='efficiency', clearable=False, id='node-size-prop'
+            ),
+        ], width=6),
+    ], className='mt-1'),
     dbc.Row(
         dcc.Loading(
             children=[dcc.Graph(figure={}, id='st-graph', config=plotly_config)],
@@ -125,12 +141,14 @@ def factors_changed(factor_values, store_dataset, current_selection):
     Output('apply-button', 'disabled'),
     Input('apply-button', 'n_clicks'),
     Input('subject-selection', 'value'),
+    Input('node-color-prop', 'value'),
+    Input('node-size-prop', 'value'),
     State('regions-selection', 'value'),
     State({'type': 'subject-factor', 'index': ALL}, 'value'),
     State('store-dataset', 'data'),
     prevent_initial_call=True
 )
-def selection_changed(n_clicks, subject, regions, factor_values, store_dataset):
+def selection_changed(n_clicks, subject, color_prop, size_prop, regions, factor_values, store_dataset):
     if (n_clicks is not None and n_clicks <= 0) or store_dataset is None:
         raise PreventUpdate
 
@@ -146,7 +164,7 @@ def selection_changed(n_clicks, subject, regions, factor_values, store_dataset):
 
     # loads the dataset and create figure properties from the loaded graph
     graph = dataset.get_graph(ids)
-    figure_props = generate_temporal_graph_props(graph, regions)
+    figure_props = generate_temporal_graph_props(graph, regions, color_prop, size_prop)
 
     areas = dataset.areas_desc['Name_Area']
     return build_subject_figure(figure_props, areas), figure_props['spatial_connections'], True

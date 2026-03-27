@@ -45,8 +45,15 @@ from ... import SpatioTemporalGraph
 from ...graph import RC5
 from ...visualization import __CoordinatesGenerator, _trans_color
 
+NODE_PROP_LABELS: dict[str, str] = {
+    'internal_strength': 'Internal strength',
+    'efficiency': 'Efficiency',
+}
 
-def generate_temporal_graph_props(graph: SpatioTemporalGraph, regions: list[str]) -> dict[str, Any]:
+
+def generate_temporal_graph_props(graph: SpatioTemporalGraph, regions: list[str],
+                                  color_prop: str = 'internal_strength',
+                                  size_prop: str = 'efficiency') -> dict[str, Any]:
     start_graph = graph.sub(t=0)
 
     # define nodes' properties
@@ -64,8 +71,8 @@ def generate_temporal_graph_props(graph: SpatioTemporalGraph, regions: list[str]
         nodes = [n for n, d in start_graph.nodes.items() if d['region'] == region]
         coord = nodes_coord_gen.generate(nodes, levels[-1])
         x, y = tuple(zip(*coord.values()))
-        nodes_color += [graph.nodes[n]['internal_strength'] for n in coord.keys()]
-        nodes_sizes += [graph.nodes[n]['efficiency'] for n in coord.keys()]
+        nodes_color += [graph.nodes[n][color_prop] for n in coord.keys()]
+        nodes_sizes += [graph.nodes[n][size_prop] for n in coord.keys()]
         nodes_areas += [graph.nodes[n]['areas'] for n in coord.keys()]
 
         levels.append(max(y) + 2)
@@ -111,6 +118,7 @@ def generate_temporal_graph_props(graph: SpatioTemporalGraph, regions: list[str]
         'height': levels[-1] - 2,
         'regions': regions,
         'spatial_connections': spat_conn,
+        'color_label': NODE_PROP_LABELS.get(color_prop, color_prop),
     }
 
 
@@ -126,7 +134,7 @@ def build_subject_figure(props: dict[str, Any], areas: pd.Series) -> go.Figure:
                 'cmin': -1, 'cmid': 0, 'cmax': 1, 'line_width': 0,
                 'colorscale': 'RdBu_r', 'showscale': True,
                 'colorbar': {
-                    'title': {'text': "Internal strength", 'side': 'right'}
+                    'title': {'text': props.get('color_label', 'Internal strength'), 'side': 'right'}
                 }}
     )
 
