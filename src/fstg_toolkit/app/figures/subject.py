@@ -32,6 +32,7 @@
 # knowledge of the CeCILL-B license and that you accept its terms.
 
 from collections import defaultdict
+from math import floor, ceil
 from typing import Any
 
 import numpy as np
@@ -136,7 +137,7 @@ def build_subject_figure(props: dict[str, Any], areas: pd.Series) -> go.Figure:
                    for s in props['nodes_areas']],
         marker={'size': __scale_size(props['nodes_sizes']),
                 'color': props['nodes_color'],
-                'cmin': -1, 'cmax': 1, 'line_width': 0,
+                'cmin': floor(min(props['nodes_color'])), 'cmax': ceil(max(props['nodes_color'])), 'line_width': 0,
                 'colorscale': 'RdBu_r', 'showscale': True,
                 'colorbar': {
                     'title': {'text': props.get('color_label', 'Internal strength'), 'side': 'right'}
