@@ -8,25 +8,26 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    container:
-      image: mambaorg/micromamba:bookworm-slim
-      options: --user=root
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+
+      - name: Setup micromamba
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: environment.yml
+          init-shell: bash
+          cache-environment: true
 
       - name: Install dependencies
-        shell: _entrypoint.sh /bin/bash --noprofile --norc -eo pipefail {0}
+        shell: bash -el {0}
         run: |
-          micromamba install --yes --name base --file environment.yml
-          micromamba clean --all --yes
-          micromamba run poetry config virtualenvs.create false --local
-          micromamba run poetry install --all-extras
-          export PYTHONPATH="$PYTHONPATH:src"
+          poetry config virtualenvs.create false --local
+          poetry install --all-extras
 
       - name: Build package
-        run: micromamba run poetry build
+        shell: bash -el {0}
+        run: poetry build
 
       - name: Upload dist artifacts
         uses: actions/upload-artifact@v4
