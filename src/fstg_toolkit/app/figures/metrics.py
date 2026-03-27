@@ -59,8 +59,9 @@ def __add_band_and_line_traces(fig: go.Figure, times: list, mean_vals: list, ci_
 
     Three traces are appended to *fig*: an invisible upper-bound scatter, a
     lower-bound scatter filled toward the upper one (``fill='tonexty'``), and
-    the mean line on top.  When *row* and *col* are provided the traces are
-    placed in the corresponding subplot cell.
+    the mean line on top.  Hovering over the average line shows the mean and
+    the 95 % CI bounds for that time point.  When *row* and *col* are provided
+    the traces are placed in the corresponding subplot cell.
 
     Parameters
     ----------
@@ -95,6 +96,13 @@ def __add_band_and_line_traces(fig: go.Figure, times: list, mean_vals: list, ci_
     lower = [m - c for m, c in zip(mean_vals, ci_vals)]
     rgba_fill = hex_to_rgba(color, 0.2)
 
+    hover_template = (
+        'Time: %{x}<br>'
+        'Average: %{y:.4f}<br>'
+        '95% CI: [%{customdata[1]:.4f}, %{customdata[2]:.4f}]'
+        '<extra></extra>'
+    )
+
     fig.add_trace(
         go.Scatter(x=times, y=upper, mode='lines', line={'width': 0}, showlegend=False, hoverinfo='skip'),
         **subplot_kwargs)
@@ -103,7 +111,8 @@ def __add_band_and_line_traces(fig: go.Figure, times: list, mean_vals: list, ci_
                    showlegend=False, hoverinfo='skip'),
         **subplot_kwargs)
     fig.add_trace(
-        go.Scatter(x=times, y=mean_vals, mode='lines', name=name, line={'color': color}, showlegend=show_legend),
+        go.Scatter(x=times, y=mean_vals, mode='lines', name=name, line={'color': color}, showlegend=show_legend,
+                   hovertemplate=hover_template, customdata=list(zip(mean_vals, lower, upper))),
         **subplot_kwargs)
 
 
