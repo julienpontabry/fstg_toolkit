@@ -41,3 +41,24 @@ def integer_tick_step(max_val: int, max_range: int = 5) -> int:
     if max_val <= max_range:
         return 1
     return max(1, round(max_val / 8))
+
+
+def hex_to_rgba(hex_color: str, alpha: float) -> str:
+    """Convert a hex colour string to an RGBA CSS string.
+
+    Parameters
+    ----------
+    hex_color : str
+        Colour in ``#RRGGBB`` format (e.g. ``'#636EFA'``).
+    alpha : float
+        Opacity in the range [0, 1].
+
+    Returns
+    -------
+    str
+        Colour in ``rgba(R, G, B, alpha)`` format suitable for Plotly.
+    """
+    r = int(hex_color[1:3], 16)
+    g = int(hex_color[3:5], 16)
+    b = int(hex_color[5:7], 16)
+    return f'rgba({r},{g},{b},{alpha})'
