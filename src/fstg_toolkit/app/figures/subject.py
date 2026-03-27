@@ -39,6 +39,7 @@ import pandas as pd
 from matplotlib import cm as _mpl_cm
 from plotly import graph_objects as go
 
+from .common import norm_min_max_size
 from ..core.color import HueInterpolator
 from ..core.geometry import Arc, ArcShape, Line, LineShape, Ribbon, RibbonShape
 from ... import SpatioTemporalGraph
@@ -123,15 +124,19 @@ def generate_temporal_graph_props(graph: SpatioTemporalGraph, regions: list[str]
 
 
 def build_subject_figure(props: dict[str, Any], areas: pd.Series) -> go.Figure:
+    def __scale_size(s: list[float], power: float = 5, max_size: float = 6) -> list[float]:
+        s = norm_min_max_size(s)
+        return (max_size * np.power(s, power)).tolist()
+
     nodes_trace = go.Scatter(
         x=props['nodes_x'], y=props['nodes_y'],
         mode='markers',
         hoverinfo='text',
         hovertext=["<br>".join([areas.loc[i] for i in s])
                    for s in props['nodes_areas']],
-        marker={'size': 6*np.power(props['nodes_sizes'], 5),
+        marker={'size': __scale_size(props['nodes_sizes']),
                 'color': props['nodes_color'],
-                'cmin': -1, 'cmid': 0, 'cmax': 1, 'line_width': 0,
+                'cmin': -1, 'cmax': 1, 'line_width': 0,
                 'colorscale': 'RdBu_r', 'showscale': True,
                 'colorbar': {
                     'title': {'text': props.get('color_label', 'Internal strength'), 'side': 'right'}

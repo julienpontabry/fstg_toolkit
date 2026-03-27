@@ -31,6 +31,8 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
+import numpy as np
+
 
 def integer_tick_step(max_val: int, max_range: int = 5) -> int:
     """Return a tick step so that ticks land only on integers.
@@ -62,3 +64,10 @@ def hex_to_rgba(hex_color: str, alpha: float) -> str:
     g = int(hex_color[3:5], 16)
     b = int(hex_color[5:7], 16)
     return f'rgba({r},{g},{b},{alpha})'
+
+
+def norm_min_max_size(s: list[float], new_min: float = 0, new_max: float = 1) -> list[float]:
+    s_min = np.min(s)
+    s_max = np.max(s)
+    scale = s_max - s_min
+    return ((new_max - new_min) * np.subtract(s, s_min) / scale + new_min).tolist()
