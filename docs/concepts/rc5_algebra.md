@@ -37,7 +37,7 @@ dynamics:
 - **PO** — The pattern partially reorganises: some connections are retained while others are
   replaced. This is the most common relation in dynamic data.
 - **DC** — The connectivity pattern undergoes complete reorganisation with no overlap to the
-  previous time step. This is rare and may indicate a state transition or noise.
+  previous time step. This usually indicates unrelated regions.
 
 ## Usage in Code
 
@@ -68,7 +68,4 @@ for u, v, data in graph.edges(data=True):
 ```
 
 ## References
-
-- Randell, D. A., Cui, Z., & Cohn, A. G. (1992). A spatial logic based on regions and connection.
-  *Proceedings of the 3rd International Conference on Knowledge Representation and Reasoning*,
-  165–176.
+- Randell, et al. (1992) *A spatial logic based on regions and connection.*, Proceedings of the 3rd International Conference on Knowledge Representation and Reasoning, pp. 165–176.

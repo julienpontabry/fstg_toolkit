@@ -13,4 +13,7 @@ python:
     - method: pip
       path: .
       extra_requirements:
+        - dashboard
+        - frequent
+        - plot
         - docs

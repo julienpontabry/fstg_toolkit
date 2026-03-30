@@ -112,6 +112,7 @@ Requires the `[plot]` extra.
 
 ```shell
 # Multipartite layout (x = time, y = areas)
+# NOTE: only for very small graphs
 python -m fstg_toolkit plot my_graph.zip multipartite
 
 # Spatial connectivity at time t=2

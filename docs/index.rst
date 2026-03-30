@@ -3,7 +3,7 @@ fSTG Toolkit documentation
 
 **fSTG Toolkit** is an open-source Python library and CLI for Spatio-Temporal Graph Analysis of fMRI data.
 It models brain connectivity data as spatio-temporal graphs and provides tools for building,
-analysing, simulating, and interactively visualising them via a Dash web dashboard.
+analysing, and interactively visualising them via a Dash web dashboard.
 
 .. toctree::
    :maxdepth: 2
@@ -14,14 +14,9 @@ analysing, simulating, and interactively visualising them via a Dash web dashboa
 
 .. toctree::
    :maxdepth: 2
-   :caption: Tutorials
+   :caption: Advanced
 
    tutorials/index
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Concepts
-
    concepts/index
 
 .. toctree::

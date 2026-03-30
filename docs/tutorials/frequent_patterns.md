@@ -1,7 +1,6 @@
 # Frequent Subgraph Pattern Mining
 
-fSTG Toolkit integrates [SPMiner](https://github.com/snap-stanford/SubgraphMatching) to detect
-frequently recurring subgraph patterns across all spatio-temporal graphs in a dataset.
+fSTG Toolkit integrates {ref}`SPMiner <spminer-ref>` to detect frequently recurring subgraph patterns across all spatio-temporal graphs in a dataset.
 
 ## Prerequisites
 
@@ -58,15 +57,23 @@ for name, pattern in patterns.items():
 
 **Docker not found**
 : Ensure Docker is installed and the `docker` CLI is on your `PATH`. Run `docker info` to
-  verify the daemon is running.
+  verify the daemon is running. Also, you must be able to run docker in [rootless mode](https://docs.docker.com/engine/security/rootless/).
 
-**First build takes a long time**
+**First docker image build takes a while**
 : The SPMiner image is built from source on first use. This is expected; subsequent calls reuse
   the cached image.
+
+**Mining frequent patterns may take a long time**
+: Depending on the size of your graphs and the number of timepoints, mining the frequent may take quite a long time. A progress bar help you to follow the progress.
 
 **No patterns found**
 : SPMiner may return empty results if the dataset is small or the graphs are too dissimilar.
   Try increasing the dataset size or adjusting the correlation threshold when building graphs.
+
+## References
+
+- (spminer-ref)=
+  Zeghina et al. (2023) *Multi-SPMiner: A Deep Learning Framework for Multi-Graph Frequent Pattern Mining with Application to spatiotemporal Graphs*, Procedia Computer Science, vol. 225, pp. 1094-1103, ISSN 1877-0509, DOI: 10.1016/j.procs.2023.10.097.
 
 ## Next Steps
 

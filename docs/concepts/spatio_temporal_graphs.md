@@ -68,5 +68,3 @@ Spatio-temporal graphs are well suited for:
 - **Group comparison** — comparing graph metrics between patient groups and healthy controls.
 - **Pattern discovery** — finding recurring subgraph patterns that appear across multiple subjects
   using frequent subgraph mining.
-- **Simulation** — generating synthetic datasets with controlled connectivity dynamics for
-  pipeline validation.

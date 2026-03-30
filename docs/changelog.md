@@ -2,7 +2,7 @@
 
 All notable changes to fSTG Toolkit are documented here.
 
-## fSTG-Toolkit v1.1.0 Latest
+## fSTG-Toolkit v1.1.0
 
 ### Features
 

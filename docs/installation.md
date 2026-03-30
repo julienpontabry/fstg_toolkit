@@ -23,7 +23,7 @@ pip install "fSTG-Toolkit[dashboard,plot,frequent]" # all features
 
 ## Install from Source
 
-Clone the repository and create a dedicated environment using conda:
+Clone the repository and set up the environment. For instance using `conda` and the provided `environment.yml`:
 
 ```shell
 conda env create -n <env_name> -f environment.yml
@@ -61,9 +61,9 @@ python -m fstg_toolkit --version
 
 ## Optional Dependencies
 
-| Extra | What it enables | Additional requirement |
-|-------|----------------|------------------------|
-| `dashboard` | Interactive Dash web dashboard | — |
-| `plot` | `multipartite_plot`, `spatial_plot`, `temporal_plot` | — |
-| `frequent` | Frequent subgraph pattern mining via SPMiner | [Docker](https://docs.docker.com/get-docker/) must be installed and running |
-| `docs` | Build this documentation | — |
+| Extra | What it enables                                         | Additional requirement |
+|-------|---------------------------------------------------------|------------------------|
+| `dashboard` | Interactive Dash web dashboard (standalone and serving) | — |
+| `plot` | Graph plotting utilities with `matplotlib`               | — |
+| `frequent` | Frequent subgraph pattern mining via SPMiner            | [Docker](https://docs.docker.com/get-docker/) must be installed and running |
+| `docs` | Build this documentation                                | — |

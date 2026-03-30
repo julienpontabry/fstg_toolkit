@@ -9,5 +9,4 @@ building_graphs
 computing_metrics
 running_dashboard
 frequent_patterns
-simulation
 ```
