@@ -32,89 +32,15 @@
 # knowledge of the CeCILL-B license and that you accept its terms.
 
 import logging
-import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from itertools import combinations
-from pathlib import Path
-from typing import Optional, Any, Callable, Iterator, Type
+from typing import Any, Callable, Iterator, Type
 
 import networkx as nx
 import pandas as pd
 
-from ._docker_utils import DockerHelper, DockerNotAvailableException, DockerImage
-
 logger = logging.getLogger()
-
-
-class SPMinerService:
-    """Service wrapper for the SPMiner frequent subgraph pattern miner.
-
-    Manages the Docker image lifecycle (build/load on demand) and provides a
-    simple interface to run the miner on a directory of input graphs and collect
-    the results.
-    """
-
-    def __init__(self):
-        """Initialise the service by connecting to Docker.
-
-        Raises
-        ------
-        RuntimeError
-            If Docker is not available on the host system.
-        """
-        try:
-            self.__docker_helper = DockerHelper()
-        except DockerNotAvailableException as e:
-            raise RuntimeError("Unable to initialize SPMiner service.") from e
-
-        self.__docker_image: Optional[DockerImage] = None
-        self.__progress_reg = re.compile(r'^\[(?P<completed>\d+)/(?P<total>\d+)]')
-
-    def prepare(self):
-        """Build or load the SPMiner Docker image if it is not already loaded.
-
-        The image is built from the ``spminer/`` submodule located next to this
-        package. Subsequent calls are no-ops if the image is already loaded.
-        """
-        if self.__docker_image is None:
-            # TODO use an external config file?
-            tag = 'spminer:latest'
-            build_path = Path(__file__).parent.parent / 'spminer'
-            self.__docker_image = self.__docker_helper.load_local_image(tag, build_path)
-
-    def run(self, input_dir: Path, output_dir: Path):
-        """Run the SPMiner container on a directory of graph files.
-
-        Mounts ``input_dir`` as read-only and ``output_dir`` as read-write
-        inside the container. Progress updates are yielded as they arrive.
-
-        Parameters
-        ----------
-        input_dir: Path
-            Directory containing the input graph files.
-        output_dir: Path
-            Directory where the miner will write its output.
-
-        Yields
-        ------
-        tuple[int, int]
-            ``(completed, total)`` progress tuples parsed from container stdout.
-        """
-        self.prepare()  # makes sure docker image is set
-
-        output = self.__docker_image.run(
-            volumes={str(input_dir.resolve()): {'bind': '/app/data', 'mode': 'ro'},
-                     str(output_dir.resolve()): {'bind': '/app/results_batch', 'mode': 'rw'}},
-            stdout=True,
-            stderr=True
-        )
-
-        for line in output:
-            if len(line) < 10:
-                if match := self.__progress_reg.match(line):
-                    yield int(match.group('completed'))-1, int(match.group('total'))
-            logger.debug(line[:-1] if line[-1] == '\n' else line)
 
 
 class PatternEquivalenceStrategy(ABC):

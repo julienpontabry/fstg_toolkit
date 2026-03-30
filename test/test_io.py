@@ -39,7 +39,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-from fstg_toolkit.frequent import FrequentPattern, FrequentPatterns
+from fstg_toolkit.frequent.patterns import FrequentPattern, FrequentPatterns
 from fstg_toolkit.graph import SpatioTemporalGraph, RC5
 from fstg_toolkit.io import DataLoader, DataSaver, FrequentPatternsIO, GraphsDataset, \
     load_spatio_temporal_graph, save_spatio_temporal_graph, _SpatioTemporalGraphEncoder

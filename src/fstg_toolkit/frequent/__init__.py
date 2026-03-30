@@ -31,31 +31,24 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL-B license and that you accept its terms.
 
-from importlib.metadata import version
-
-from .factory import spatio_temporal_graph_from_corr_matrices
-from .graph import SpatioTemporalGraph
-from .io import load_spatio_temporal_graph, save_spatio_temporal_graph
-from .simulation import CorrelationMatrixSequenceSimulator, generate_pattern, SpatioTemporalGraphSimulator
-
-__version__ = version(__package__)
+from .patterns import (
+    FrequentPatterns, FrequentPattern, FrequentPatternsPopulationAnalysis, PatternEquivalenceStrategy,
+    PatternStructure, PatternStructureTransitions, PatternStructureRegionsTransitions, PatternEquivalenceStrategyRegistry
+)
 
 __all__ = [
-    'spatio_temporal_graph_from_corr_matrices',
-    'SpatioTemporalGraph',
-    'load_spatio_temporal_graph',
-    'save_spatio_temporal_graph',
-    'CorrelationMatrixSequenceSimulator',
-    'generate_pattern',
-    'SpatioTemporalGraphSimulator'
+    'FrequentPatterns',
+    'FrequentPattern',
+    'FrequentPatternsPopulationAnalysis',
+    'PatternEquivalenceStrategy',
+    'PatternStructure',
+    'PatternStructureTransitions',
+    'PatternStructureRegionsTransitions',
+    'PatternEquivalenceStrategyRegistry'
 ]
 
 try:
-    from .visualization import multipartite_plot, spatial_plot, temporal_plot
-    __all__ += [
-        'multipartite_plot',
-        'spatial_plot',
-        'temporal_plot',
-    ]
+    from .spminer import SPMinerService
+    __all__.append('SPMinerService')
 except ImportError:
     pass

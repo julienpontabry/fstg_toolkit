@@ -37,7 +37,7 @@ from typing import Any
 import networkx as nx
 import pandas as pd
 
-from fstg_toolkit.frequent import (
+from fstg_toolkit.frequent.patterns import (
     FrequentPattern,
     FrequentPatterns,
     FrequentPatternsPopulationAnalysis,
