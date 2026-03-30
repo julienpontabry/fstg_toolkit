@@ -144,15 +144,15 @@ def build_subject_figure(props: dict[str, Any], areas: pd.Series) -> go.Figure:
                 }}
     )
 
-    edges_traces = []
-    for x, y, c in zip(props['edges_x'], props['edges_y'], props['edges_colors']):
-        edges_trace = go.Scatter(
-            x=x, y=y,
-            mode='lines',
-            hoverinfo='skip',
-            line={'width': 0.5, 'color': c}
-        )
-        edges_traces.append(edges_trace)
+    color_groups: dict[str, dict] = defaultdict(lambda: {'x': [], 'y': []})
+    for (x0, x1), (y0, y1), c in zip(props['edges_x'], props['edges_y'], props['edges_colors']):
+        color_groups[c]['x'].extend([x0, x1, None])
+        color_groups[c]['y'].extend([y0, y1, None])
+    edges_traces = [
+        go.Scatter(x=data['x'], y=data['y'], mode='lines', hoverinfo='skip',
+                   line={'width': 0.5, 'color': color})
+        for color, data in color_groups.items()
+    ]
 
     # ticks for region labels
     multi_lines_regions = [r.replace(' ', '<br>') for r in props['regions']]
@@ -166,8 +166,19 @@ def build_subject_figure(props: dict[str, Any], areas: pd.Series) -> go.Figure:
     shapes = [__create_path_props(path.to_svg(), 'gray', f'rgb{color}')
               for path, color in zip(region_line_paths, HueInterpolator().sample(len(region_line_paths)))]
 
+    hover_trace = go.Scatter(
+        x=[], y=[],
+        mode='markers+lines',
+        name='hover-spatial-connections',
+        hoverinfo='skip',
+        marker={'size': [], 'color': [], 'line': {'width': 0},
+                'symbol': 'square', 'opacity': 1.0},
+        line={'width': 1.0, 'color': 'orange'},
+        showlegend=False
+    )
+
     return go.Figure(
-        data=[*edges_traces, nodes_trace],
+        data=[*edges_traces, nodes_trace, hover_trace],
         layout=go.Layout(
             plot_bgcolor='white',
             height=21*(props['height']+2)+126,
