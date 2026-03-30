@@ -775,16 +775,16 @@ def serve(data_path: Path, upload_path: Path, debug: bool, port: int, db_path: P
 
 ## main entry point ###########################################################
 
+cli.add_command(graph)
+
+if plt is not None:
+    cli.add_command(plot)
+
+if app_config is not None:
+    cli.add_command(dashboard)
+
+if SPMinerService is not None:
+    graph.add_command(frequent)
+
 if __name__ == '__main__':
-    cli.add_command(graph)
-
-    if plt is not None:
-        cli.add_command(plot)
-
-    if app_config is not None:
-        cli.add_command(dashboard)
-
-    if SPMinerService is not None:
-        graph.add_command(frequent)
-
     cli()
