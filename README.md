@@ -2,7 +2,7 @@
 [![CI](https://github.com/julienpontabry/fstg_toolkit/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/julienpontabry/fstg_toolkit/actions/workflows/ci.yml)
 ![PyPI - Version](https://img.shields.io/pypi/v/fSTG-Toolkit)
 ![PyPI - License](https://img.shields.io/pypi/l/fSTG-Toolkit)
-![Read the Docs](https://img.shields.io/readthedocs/fSTG-Toolkit)
+[![Read the Docs](https://img.shields.io/readthedocs/fSTG-Toolkit)](https://fstg-toolkit.readthedocs.io/)
 
 # fSTG Toolkit: an Open-Source Software for Spatio-Temporal Graph Analysis of fMRI data
 
@@ -55,97 +55,27 @@ poetry install --extras frequent    # frequent pattern mining (requires Docker)
 poetry install --all-extras         # everything
 ```
 
-## Usage
-
-The CLI tool provides several command groups: `graph`, `plot` and `dashboard`. To see the complete list of commands, run:
-```shell
-python -m fstg_toolkit --help
-```
-
-Use the `--help` option with any command to get specific help. Some examples and explanations are provided in the next section.
-
-## Examples
-
-### Build one or multiple graphs
-
-Assume the timeseries of correlation matrices are stored in a numpy pickle file (`matrices.npz` or `matrices.npy`) and the definitions of the areas and regions are in a CSV file (`areas.csv`).
-
-The areas/regions definition must be formatted as follows:
-
-| Id_Area | Name_Area | Name_Region |
-|---------|-----------|-------------|
-| 1       | Area1     | Region1     |
-| 2       | Area2     | Region1     |
-| 3       | Area3     | Region2     |
-| 4       | Area4     | Region3     |
-
-Accordingly, the CSV file should look like this:
-
-```csv
-Id_Area,Name_Area,Name_Region
-1,Area1,Region1
-2,Area2,Region1
-3,Area3,Region2
-4,Area4,Region3
-```
-
-To build a spatio-temporal graph from the inputs and save the graph to the archive file `my_graph.zip`, use the command:
+## Quick Start
 
 ```shell
-python -m fstg_toolkit graph build -o my_graph.zip areas.csv matrices.npz
-```
+# Build graphs from a correlation matrix file and an areas CSV
+python -m fstg_toolkit graph build -o my_graphs.zip areas.csv matrices.npz
 
-The `build` command also works with multiple sequences of matrices. All sequences stored in a single `.npz` or `.npy` will be read. To build sequences from multiple files, input them all:
-```shell
-python -m fstg_toolkit graph build -o my_graphs.zip areas.csv matrices-1.npz matrices-2.npz matrices-3.npz
-```
-
-A correlation threshold can be set with `-t` (default 0.4):
-```shell
-python -m fstg_toolkit graph build -o my_graph.zip -t 0.5 areas.csv matrices.npz
-```
-
-### Calculate metrics
-
-Metrics can be calculated using the `metrics` command. From a dataset of built spatio-temporal graphs, run:
-```shell
+# Compute graph metrics
 python -m fstg_toolkit graph metrics my_graphs.zip
-```
 
-The calculated metrics will be inserted in the dataset archive.
-
-### Frequent Pattern Mining
-
-Frequent subgraph pattern mining requires Docker and the `[frequent]` extra. To run the analysis on a dataset:
-
-```shell
-python -m fstg_toolkit graph frequent my_graphs.zip
-```
-
-The detected frequent patterns will be inserted in the dataset archive and can be explored interactively in the dashboard.
-
-### View the results
-
-To visualize a dashboard to explore the processed data from a dataset with the `show` command, run:
-```shell
+# Open the interactive dashboard
 python -m fstg_toolkit dashboard show my_graphs.zip
 ```
 
-It will start a local server and open a web browser containing the dashboard, that includes the content of the dataset, the raw matrices, a visualization of the spatio-temporal graphs, etc. An illustration of the dashboard is shown below.
+The areas CSV must contain `Id_Area`, `Name_Area`, and `Name_Region` columns. Correlation matrices must be NumPy files (`.npz` or `.npy`) with shape `(T, N, N)`.
 
-![Illustration of the dashboard.](docs/_static/images/illustration_web-viewer.png)
-
-To run a persistent multi-dataset server, use the `serve` command:
+Use `--help` on any command for full options:
 ```shell
-python -m fstg_toolkit dashboard serve <data_path> <upload_path>
+python -m fstg_toolkit --help
+python -m fstg_toolkit graph build --help
 ```
 
-#### Factors and Subjects Detection
+Full usage documentation, tutorials, and API reference are available at **[fstg-toolkit.readthedocs.io](https://fstg-toolkit.readthedocs.io/)**.
 
-If the names of the matrices are formatted, factors and subjects will be automatically detected and can be used to filter the data and choose the display of the plots. The parts of the names must be separated either by underscores (`_`) or by slashes (`/`) or a combination of both. For instance, the following names will be correctly parsed:
-- `control_time1_T21`;
-- `control/time2_T22`;
-- `group1_time2/T31`;
-- `group1_time1_T11`.
-
-The subjects will be matched to the part that has different values between the names, and the factors will be the parts that are common to multiple names. If a part is similar in all names, it will not be considered. In this case, the subjects are `T21`, `T22`, `T31`, and `T11`, and the factors are `control` and `group1` for first factor, `time1` and `time2` for the second factor.
+![Illustration of the dashboard.](docs/_static/images/illustration_web-viewer.png)
