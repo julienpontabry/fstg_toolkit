@@ -1,34 +1,31 @@
 # Changelog
 
 All notable changes to fSTG Toolkit are documented here.
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [1.1.0] — 2026-03-30
+## fSTG-Toolkit v1.1.0 Latest
 
-### Added
+### Features
 
-- Epilog tips in CLI help messages for optional features when the relevant extras are not installed.
-- Faster graph interactions in the dashboard.
+- Frequent patterns: New figures for frequent subgraph patterns, including pattern index/count tooltips, co-occurrence heatmaps, and a figure registry
+- Configurable graph nodes: Node color and size are now configurable; color scale adapts to data
+- Confidence bounds for metrics: Added 95% confidence bounds to plots
+- Improved tooltips: Metrics tooltips customized per figure; tooltips adapt to figure context; pattern indices shown in non-pattern tooltips
+- Pattern figure descriptions: Added scientific descriptions for pattern figures
 
-### Fixed
+### Bug Fixes
 
-- No crash when optional dependencies are not installed at startup.
-- Improved handling of epilog tips for extras dependencies.
-- GitHub Actions publish workflow.
+- Fixed nodes' size mapping
+- Fixed tooltips positioning relative to frequent patterns histograms
+- Fixed default tooltip hidden behind custom tooltip on patterns graph
+- Fixed integer tick marks on count scales
 
-## [1.0.0] — Initial release
 
-### Added
+## fSTG-Toolkit v1.0.0
 
-- `graph build` CLI command to build spatio-temporal graphs from correlation matrices.
-- `graph metrics` CLI command to compute spatial and temporal graph metrics.
-- `graph simulate` CLI command group for pattern and sequence simulation.
-- `graph frequent` CLI command for frequent subgraph pattern mining via SPMiner.
-- `dashboard show` and `dashboard serve` CLI commands for the interactive web dashboard.
-- `plot` CLI command group for matplotlib-based graph visualisations.
-- `SpatioTemporalGraph` class extending `networkx.DiGraph`.
-- `RC5` enum encoding temporal transitions (EQ, PP, PPi, PO, DC).
-- `DataLoader` and `DataSaver` classes for ZIP-based serialisation.
-- `CorrelationMatrixSequenceSimulator` and `SpatioTemporalGraphSimulator` for synthetic data.
-- SPMiner Docker integration for frequent subgraph pattern mining.
-- CeCILL-B license.
+Initial release with all functionalities:
+
+- spatio-temporal graph building ;
+- local and global metrics computation ;
+- frequent patterns analysis ;
+- dashboard and visualization ;
+- dashboard serving.
