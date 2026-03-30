@@ -133,7 +133,7 @@ python -m fstg_toolkit dashboard show my_graphs.zip
 
 It will start a local server and open a web browser containing the dashboard, that includes the content of the dataset, the raw matrices, a visualization of the spatio-temporal graphs, etc. An illustration of the dashboard is shown below.
 
-![Illustration of the dashboard.](doc/images/illustration_web-viewer.png)
+![Illustration of the dashboard.](docs/_static/images/illustration_web-viewer.png)
 
 To run a persistent multi-dataset server, use the `serve` command:
 ```shell
