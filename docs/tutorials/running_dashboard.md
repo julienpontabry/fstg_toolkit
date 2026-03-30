@@ -53,37 +53,116 @@ Both paths must be existing, writable directories.
 | `--token-size` / `-t` | `3` | Token length for dataset URLs (increase for many simultaneous users) |
 | `--debug` | off | Enable Dash debug mode |
 
-## Dashboard Pages
+### Home Page
 
-### Home
+The home page gives a step-by-step overview of the workflow: submit a dataset, monitor
+processing, and then explore the dashboard once processing is complete.
 
-Overview of the toolkit and links to loaded datasets.
+![fSTG-View serving home page](../_static/images/illustration_serving_home.png)
+
+### Submitting a Dataset
+
+The **Submit** page (persistent mode only) lets you upload a new dataset to the server.
+Provide a name, select your areas CSV file and one or more matrix files (NPZ or NPY),
+and choose which optional processing steps to run:
+
+- **Include raw matrices** — keep the original matrices in the output archive.
+- **Compute metrics** — calculate spatial and temporal graph metrics.
+- **Compute frequent patterns** — run frequent subgraph mining via SPMiner (requires Docker).
+
+After clicking **Submit**, processing starts in the background and the dataset appears
+in the list with a *Pending* status.
+
+![Submit page](../_static/images/illustration_serving_submit.png)
 
 ### Dataset List
 
-Lists all datasets currently loaded in the server. Click a dataset to open its dashboard.
+The **Datasets** page lists all submitted datasets and their current processing status.
+Each card can be expanded to show the submitted files and any error messages.
 
-### Dashboard
+Datasets go through four states:
 
-The main interactive view for a single dataset. Contains:
+| Badge | Meaning |
+|-------|---------|
+| **Pending** | Waiting in the processing queue |
+| **Processing** | Currently being processed |
+| **Completed** | Processing finished successfully |
+| **Failed** | An error occurred — expand the card for details |
 
-- **Data tab** — subjects and factors detected from matrix names; filter selector
-- **Matrices tab** — heatmap visualisation of the raw correlation matrices
-- **Graph tab** — spatio-temporal graph visualisation per subject
-- **Metrics tab** — interactive charts of spatial and temporal metrics
-- **Patterns tab** — frequent subgraph patterns (if pattern mining has been run)
+Click the **Dashboard** icon next to a completed dataset to open it in a new tab, or the
+**Download** icon to retrieve the processed ZIP archive.
 
-### Submit
+![Dataset list — completed](../_static/images/illustration_serving_list-complete.png)
 
-Upload new `.zip` datasets to the server (persistent mode only).
+## Dashboard Pages
+
+Once a dataset is opened, the dashboard provides five tabs for interactive exploration.
+
+### Dataset Tab
+
+The **Dataset** tab gives a global overview of the loaded data: the list of brain
+regions/areas with their identifiers and region names, a bar chart of how many areas
+belong to each region, and a table of all detected subjects with their factor breakdown
+and a stacked bar chart of their distribution.
+
+Use this tab to verify that the toolkit parsed your areas CSV and matrix filenames
+correctly before exploring further.
+
+![Dashboard — Dataset tab](../_static/images/illustration_dasboard_dataset.png)
+
+### Raw Data Tab
+
+The **Raw data** tab shows heatmap visualisations of the original correlation matrices
+before graph construction. Use the **Factor 1**, **Factor 2**, and **Time** dropdowns at
+the top to filter which matrices are displayed. This is useful for a sanity check of the
+raw correlations and for spotting noisy or outlier subjects.
+
+![Dashboard — Raw data tab](../_static/images/illustration_dashboard_raw.png)
+
+### Subject Tab
+
+The **Subject** tab displays the spatio-temporal graph for a single subject as an
+interactive multipartite plot — areas on the vertical axis, time steps on the horizontal
+axis. Spatial edges (functional connectivity) appear as horizontal links; temporal edges
+(RC5 relations) connect the same area across consecutive time steps.
+
+Use the **Factor 1**, **Factor 2**, and **Title** dropdowns to select the subject, then
+choose the **Node color** and **Node size** metrics from the dropdowns below the graph
+to highlight specific graph properties. Hover over nodes and edges for detailed values.
+
+![Dashboard — Subject tab](../_static/images/illustration_dashboard_graph.png)
+
+### Metrics Tab
+
+The **Metrics** tab provides interactive charts of the computed graph metrics.
+
+Switch between **Local** and **Global** in the first dropdown:
+
+- **Local** — per-node spatial metrics (e.g., efficiency, clustering) plotted as time
+  series across subjects. Select a metric and use the factor dropdowns to compare groups.
+  Each factor level is shown as a coloured band (mean ± standard deviation).
+
+  ![Dashboard — Metrics tab (local)](../_static/images/illustration_dashboard_metrics-local.png)
+
+- **Global** — per-graph temporal metrics (e.g., burstiness) shown as violin plots across
+  factor levels, making group differences immediately visible.
+
+  ![Dashboard — Metrics tab (global)](../_static/images/illustration_dashboard_metrics-global.png)
+
+### Frequent Patterns Tab
+
+The **Frequent Patterns** tab is available after running frequent subgraph pattern mining.
+It shows how discovered patterns distribute across brain regions and RC5 temporal
+transitions, broken down by factor level. Use the **Equivalence class** and
+**Temporal dynamics** dropdowns to navigate between pattern families.
+
+![Dashboard — Frequent Patterns tab](../_static/images/illustration_dashboard_frequent.png)
 
 ## Factor and Subject Filtering
 
 If your matrix names follow the `factor_factor_subject` naming convention, the dashboard
-automatically detects factors and presents them as filter dropdowns in the Data tab.
+automatically detects factors and presents them as filter dropdowns throughout all tabs.
 See [Usage: Factor and Subject Detection](../usage.md#factor-and-subject-detection) for details.
-
-![Dashboard screenshot](../_static/images/illustration_web-viewer.png)
 
 ## Next Steps
 
