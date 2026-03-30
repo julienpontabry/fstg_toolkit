@@ -32,6 +32,7 @@
 # knowledge of the CeCILL-B license and that you accept its terms.
 
 __help_epilog = []
+__graph_help_epilog = []
 
 import multiprocessing
 import re
@@ -78,7 +79,9 @@ try:
     from .frequent import SPMinerService
 except ImportError as e:
     SPMinerService = None
-    __help_epilog.append(f"⚠️  Install '{__package__}[frequent]' to unlock the frequent patterns analysis command.")
+    epilog_tip = f"⚠️  Install '{__package__}[frequent]' to unlock the frequent patterns analysis command."
+    __help_epilog.append(epilog_tip)
+    __graph_help_epilog.append(epilog_tip)
 
 
 console = Console()
@@ -126,7 +129,7 @@ def __load_graph(filepath: Path) -> SpatioTemporalGraph:
 ## building and computing #####################################################
 
 
-@click.group()
+@click.group(epilog="\n\n".join(__graph_help_epilog))
 def graph():
     """Build, calculate metrics and simulate graphs."""
     pass
