@@ -1,3 +1,4 @@
+name: fSTG-Toolkit
 channels:
   - conda-forge
   - defaults
