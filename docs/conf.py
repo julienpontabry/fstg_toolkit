@@ -73,6 +73,7 @@ intersphinx_mapping = {
 
 html_theme = 'furo'
 html_static_path = ['_static']
+html_logo = '_static/images/fSTG_logo.svg'
 
 html_theme_options = {
     'source_repository': 'https://github.com/julienpontabry/fstg_toolkit',

@@ -1,3 +1,8 @@
+.. image:: _static/images/fSTG_logo_large.svg
+   :align: center
+   :width: 80%
+   :alt: fSTG Toolkit
+
 fSTG Toolkit documentation
 ===========================
 
