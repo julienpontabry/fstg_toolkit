@@ -11,7 +11,7 @@ authors:
     family: Pontabry
     affiliation: 1
   - firstname: Assaad
-    family: Zhegina
+    family: Zeghina
     affiliation: 1
   - firstname: Antoine
     family: Vacavant
