@@ -19,6 +19,10 @@ authors:
     surname: Zeghina
     orcid: 0000-0002-2649-5609
     affiliation: 1
+  - given-names: Céline
+    surname: Meillier
+    orcid: 0000-0001-6563-7449
+    affiliation: 1
   - given-names: Antoine
     surname: Vacavant
     orcid: 0000-0001-9616-3282
@@ -130,7 +134,7 @@ Generative AI assistance was used in preparing the software documentation and in
 
 # Acknowledgements
 
-This work was funded by the ANR MoS-T project (grant ANR-21-CE23-0015). The authors thank Céline Meillier for her insight on the project and on the toolkit, the IMIS research team at ICube for user testing and Laetitia Degiorgis for providing the mouse-model functional connectivity dataset used during the development.
+This work was funded by the ANR MoS-T project (grant ANR-21-CE23-0015). The authors thank the IMIS research team at ICube for user testing and especially Laetitia Degiorgis for providing the mouse-model functional connectivity dataset used during the development.
 
 
 # References
