@@ -68,7 +68,7 @@ The toolkit presented in this article implements a serializable longitudinal con
 - burstiness and memory of reorganization events, borrowed from temporal network analysis [@goh2008burstiness; @holme2012temporal];
 - subgraph patterns recurring across subjects, using Multi-SPMiner [@zeghina2023multispminer].
 
-The purpose of fSTG-Toolkit is to widen the available tools to study reorganization in network neurosciences [@bassett2017network]. While the primary focus of the toolkit is the analysis of brain connectivity data, it only requires as input a sequence of correlation matrices and a parcellation table. Therefore, any connectivity data complying with this contract can be analyzed and visualized.
+The purpose of fSTG-Toolkit is to widen the available tools studying the reorganization in network neurosciences [@bassett2017network]. While its focus is brain connectivity, its only input requirement is a sequence of correlation matrices and a parcellation table.
 
 Note that this toolkit does not include a preprocessing pipeline: the raw BOLD signal must be processed in the standard ways before use. Also, it does not include the exhaustive metric catalogues of the established graph theory toolboxes.
 
@@ -97,15 +97,15 @@ The RC5 model has been chosen as temporal transition algebra because it offers f
 
 A spatio-temporal graph is implemented as a subclass of the NetworkX `DiGraph` class. This choice makes the entire package's ecosystem available and encompasses both representation of spatial and temporal edges, at a cost of storing twice the spatial edges. Then, most metrics are a few lines long, without having to convert between structures.
 
-The core of the toolkit depends only on NetworkX [@hagberg2008networkx], NumPy [@harris2020numpy], pandas [@mckinney2010pandas] and Click, plus a few small helper packages. Opt-in extras are available to give more functionalities like plotting with Matplotlib [@hunter2007matplotlib], dashboard and frequent pattern mining. The latter relies on Multi-SPMiner [@zeghina2023multispminer], the authors' adaptation of SPMiner [@ying2024spminer] to spatio-temporal graphs, shipped alongside fSTG-Toolkit as a component. When requested, it is run inside a Docker container to avoid dependencies conflicts with the toolkit. As a counterpart, frequent patterns mining requires a running Docker daemon and the first run is slowed by the build of the Docker image.
+The core of the toolkit depends only on NetworkX [@hagberg2008networkx], NumPy [@harris2020numpy], pandas [@mckinney2010pandas] and Click, plus a few small helper packages. Opt-in extras add plotting with Matplotlib [@hunter2007matplotlib], the dashboard and frequent pattern mining. The latter relies on Multi-SPMiner [@zeghina2023multispminer], the authors' adaptation of SPMiner [@ying2024spminer] to spatio-temporal graphs, shipped alongside fSTG-Toolkit and run in a Docker container to avoid dependency conflicts. Therefore, it requires a running Docker daemon, and the first run is slowed by the build of the image.
 
-The visualization dashboard, available with the `dashboard` extra, allows the user to explore interactively the spatio-temporal graphs, the metrics and the frequent patterns. It comes in two flavours: a local dashboard that opens a single result archive, and a service deployed on a local network, where a user can upload a dataset from a browser, start its processing and return later to explore the results. \autoref{fig:dashboard} shows the spatio-temporal graph view.
+The dashboard, available with the `dashboard` extra, lets the user explore interactively the spatio-temporal graphs, the metrics and the frequent patterns. It comes in two flavors: a local dashboard that opens a single result archive, and a service on local network where users can upload a dataset, start its processing and return later to explore the results. \autoref{fig:dashboard} shows the graph view.
 
 ![The interactive dashboard, showing a subject's spatio-temporal graph alongside the metrics derived from it.\label{fig:dashboard}](figures/dashboard.png)
 
-As the metrics are implemented as an extensible decorator-based metric registry, the users can therefore register their own metrics on the fly, without needing to fork the entire repository.
+As the metrics are declared through a decorator-based registry, the users can add their own on the fly, without forking the repository.
 
-To produce a traceable and shareable results file, all artifacts (raw matrices, graphs in JSON format, metrics and mined patterns) are stored in a single ZIP archive. New artifacts can be added without changing the container format, using the data registry and the data handler protocol.
+All artifacts (raw matrices, graphs in JSON, metrics and mined patterns) are stored in one ZIP archive, making results traceable and shareable. A data registry and handler protocol allow new kind of artifact without changing the container's format.
 
 The toolkit also ships a simulator that generates spatio-temporal graph patterns and full sequences with known ground truth. It is used to validate the metrics and the pattern mining, without any real data.
 
@@ -119,10 +119,6 @@ Finally, the toolkit is extensively tested, with more than four thousand lines o
 The frequent pattern mining component is the reference implementation of the authors' published spatio-temporal graph mining research: Multi-SPMiner [@zeghina2023multispminer] and continued in DeepQMiner [@zeghina2025deepqminer]. See @zeghina2024review for a landscape survey of this research area. By encapsulating in a software the outcome of this research, fSTG-Toolkit is what makes that work usable on brain connectivity data by researchers who are not graph-mining specialists.
 
 The toolkit has been presented to the community during a live software demonstration at the 2026 IEEE ISBI conference [@pontabry2026isbidemo]. The source code is available on [GitHub](https://github.com/julienpontabry/fstg_toolkit), has been released and published on [PyPI](https://pypi.org/project/fSTG-Toolkit/), and is formally deposited on HAL [@pontabry2026software]. The full documentation for concepts, installation and usage is accessible on its [ReadTheDoc](https://fstg-toolkit.readthedocs.io/en/latest/) page.
-
-The toolkit is being adopted in the author lab to complete the set of tools used to analyze the dynamic of brain connectivity data. It is planned to support, at least partly, future studies on the dynamic reorganization of brain functional connectivity.
-
-While it has been built with neurosciences in mind, the only assumptions on the input are sequences of correlation matrices and a parcellation table. Therefore, other applications outside of neurosciences are under study: for instance it could be used to study the reorganization of territorial data. 
 
 Development has been driven by real data: the toolkit was built and validated against a mouse-model functional connectivity dataset, and user-tested by neuroscientists. It is being adopted in the authors' laboratory to support ongoing studies on brain reorganization dynamic. Because the only assumptions on the inputs are a sequence of correlation matrices and a parcellation table, applications outside neurosciences, e.g. the reorganization of territorial data, are also under investigation.
 
