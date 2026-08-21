@@ -109,7 +109,7 @@ All artifacts (raw matrices, graphs in JSON, metrics and mined patterns) are sto
 
 The toolkit also ships a simulator that generates spatio-temporal graph patterns and full sequences with known ground truth. It can be used to study the behavior of the metrics and the pattern mining, without any real data.
 
-Two limits follow from these choices. First, the correlation threshold is a user parameter that applies to the whole sequence and its choice can be difficult and arbitrary. Furthermore, results can change depending on this threshold. Second, the toolkit includes metrics but performs no group-level statistical inference: comparisons between subjects or cohorts are descriptive. Two conventions are also worth noting: burstiness returns sentinel values when a graph contains no or too few reorganization events and single-area networks are assigned an efficiency of 1.
+Two limits follow from these choices. First, the correlation threshold is a user parameter that applies to the whole sequence and its choice can be difficult and arbitrary. Furthermore, results can change depending on this threshold. Second, the toolkit includes metrics but performs no group-level statistical inference: comparisons between subjects or cohorts are descriptive. Two conventions are also worth noting: burstiness and memory return sentinel values when a graph contains no or too few reorganization events and single-area networks are assigned an efficiency of 1.
 
 Finally, the toolkit is extensively tested, with more than four thousand lines of tests plus executed doctests, run in continuous integration on Linux and macOS across Python 3.12 and 3.13. However, the Dash callbacks are only tested manually rather than by automated tests.
 
