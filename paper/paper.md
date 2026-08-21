@@ -50,7 +50,7 @@ A functional MRI session is usually reduced to a single connectivity matrix per 
 - spatial edges link two such sets at a given timepoint;
 - temporal edges link the sets between timepoints and carry a label describing the temporal change.
 
-fSTG-Toolkit provides everything necessary to build such a graph and analyze it: spatial and temporal graph metrics, frequent pattern mining across subjects and interactive visual exploration. It is written in pure Python, built upon NetworkX [@hagberg2008networkx] and installable from PyPI. It is usable through a command-line tool, a Python API, or a web dashboard.
+fSTG-Toolkit provides everything necessary to build such a graph and analyze it: spatial and temporal graph metrics, frequent pattern mining across subjects and interactive visual exploration. Its core is written in pure Python, and it is built upon NetworkX [@hagberg2008networkx] and installable from PyPI. It is usable through a command-line tool, a Python API, or a web dashboard.
 
 
 # Statement of need
