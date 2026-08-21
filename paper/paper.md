@@ -46,9 +46,9 @@ bibliography: paper.bib
 
 A functional MRI session is usually reduced to a single connectivity matrix per subject, which averages away the very thing longitudinal studies want to observe: how connectivity reorganizes. Some methods use sliding window techniques to produce a sequence of matrices for many timepoints, but the actual reorganization between timepoints is often overlooked. fSTG-Toolkit turns a sequence of connectivity matrices into a single graph object that keeps the time axis. This spatio-temporal graph is composed of three families of elements:
 
-- nodes are groups of mutually correlated brain areas inside an anatomical region, at a given timepoint;
-- spatial edges link two such groups at a given timepoint;
-- temporal edges link the same group between timepoints and carry a label describing the temporal change.
+- nodes are sets of correlated brain areas inside a region, at a given timepoint;
+- spatial edges link two such sets at a given timepoint;
+- temporal edges link the sets between timepoints and carry a label describing the temporal change.
 
 fSTG-Toolkit provides everything necessary to build such a graph and analyze it: spatial and temporal graph metrics, frequent pattern mining across subjects and interactive visual exploration. It is written in pure Python, built upon NetworkX [@hagberg2008networkx] and installable from PyPI. It is usable through a command-line tool, a Python API, or a web dashboard.
 
