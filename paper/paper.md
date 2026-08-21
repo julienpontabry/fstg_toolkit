@@ -50,7 +50,7 @@ A functional MRI session is usually reduced to a single connectivity matrix per 
 - spatial edges link two such groups at a given timepoint;
 - temporal edges link the same group between timepoints and carry a label describing the temporal change.
 
-fSTG-Toolkit provides everything necessary to build such graph and analyze it: spatial and temporal graph metrics, frequent pattern mining across subjects and interactive visual exploration. It is written in pure Python, built upon NetworkX [@hagberg2008networkx] and installable from PyPI. It is usable through a command-line tool, a Python API, or a web dashboard.
+fSTG-Toolkit provides everything necessary to build such a graph and analyze it: spatial and temporal graph metrics, frequent pattern mining across subjects and interactive visual exploration. It is written in pure Python, built upon NetworkX [@hagberg2008networkx] and installable from PyPI. It is usable through a command-line tool, a Python API, or a web dashboard.
 
 
 # Statement of need
@@ -62,10 +62,10 @@ Dynamic connectivity studies aim to describe the reorganization of the cerebral 
 
 In practice, pipelines in labs are usually composed of a manual glueing of Python libraries: NetworkX, Nilearn [@nilearn], pandas, etc. The workflows are usually built for one particular usage or study and they are rarely shared. It impacts their reproducibility across cohorts.
 
-The toolkit presented in this article implements a serializable longitudinal connectivity graph whose temporal edges carry an interpretable and mutually exclusive relation vocabulary. Because the reorganization is encoded in the structure of the graph, it becomes directly measurable and minable: 
+The toolkit presented in this article implements a serializable longitudinal connectivity graph whose temporal edges carry an interpretable and mutually exclusive relation vocabulary. Because the reorganization is encoded in the structure of the graph, it becomes directly measurable and minable:
 
 - reorganization rate and the distribution of transition types;
-- burstiness and memory reorganization events, borrowed from temporal network analysis [@goh2008burstiness; @holme2012temporal];
+- burstiness and memory of reorganization events, borrowed from temporal network analysis [@goh2008burstiness; @holme2012temporal];
 - subgraph patterns recurring across subjects, using Multi-SPMiner [@zeghina2023multispminer].
 
 The purpose of fSTG-Toolkit is to widen the available tools to study reorganization in network neurosciences [@bassett2017network]. While the primary focus of the toolkit is the analysis of brain connectivity data, it only requires as input a sequence of correlation matrices and a parcellation table. Therefore, any connectivity data complying with this contract can be analyzed and visualized.
@@ -79,11 +79,11 @@ The Brain Connectivity Toolbox [@rubinov2010bct] and the GUI-driven toolboxes bu
 
 For capturing temporal variability, sliding-window methods like ICA with k-means clustering pipelines [@allen2014tracking] and toolboxes such as DynamicBC [@liao2014dynamicbc] are field standard. Their limit originates from the association of one label per window: the local topological relations between successive windows are discarded and the results are highly dependent on the window length and the number of clusters [@lurie2020questions].
 
-A python ecosystem has since grown around this family: teneto [@thompson2017teneto] for temporal-network measures on fMRI, dynconnmap [@marimpis2021dyconnmap] and DySCo [@dealteriis2025dysco] for dynamic connectivity estimation, and the Comet toolbox [@burkhardt2026comet] multiple analysis of dynamic connectivity pipelines. All of them quantify how connectivity varies over time, but the relation between two consecutive configurations remains untyped: none of them labels what happened to a given group of areas between two timepoints.
+A Python ecosystem has since grown around this family: teneto [@thompson2017teneto] for temporal-network measures on fMRI, dyconnmap [@marimpis2021dyconnmap] and DySCo [@dealteriis2025dysco] for dynamic connectivity estimation, and the Comet toolbox [@burkhardt2026comet] for assembling and comparing dynamic connectivity pipelines. All of them quantify how connectivity varies over time, but the relation between two consecutive configurations remains untyped: none of them labels what happened to a given group of areas between two timepoints.
 
-fSTG-Toolkit does not replace the cited software, it complements them. To the authors' knowledge, it is the first openly available toolkit for brain connectivity that simultaneously
+fSTG-Toolkit does not replace these tools; it complements them. To the authors' knowledge, it is the first openly available toolkit for brain connectivity that simultaneously
 
-1. encodes inter-timepoints reorganization as typed graph structure using a region connection algebra and
+1. encodes inter-timepoint reorganization as a typed graph structure using a region connection algebra and
 2. ships an end-to-end software from matrices to graph, to metrics, to frequent patterns mining and to interactive exploration in one tool.
 
 
@@ -109,14 +109,14 @@ To produce a traceable and shareable results file, all artifacts (raw matrices, 
 
 The toolkit also ships a simulator that generates spatio-temporal graph patterns and full sequences with known ground truth. It is used to validate the metrics and the pattern mining, without any real data.
 
-Two limits follow from these choices. First, the correlation threshold is a user parameter that applies to the whole sequence and its choice can be difficult and arbitrary. Furthermore, results can change depending on this threshold. Second, the toolkit include metrics but performs no group-level statistical inference: comparisons between subjects or cohorts are descriptive. Two conventions are also worth noting: burstiness returns sentinel values when a graph contains no or too few reorganization events and single-area networks are assigned an efficiency of 1. 
+Two limits follow from these choices. First, the correlation threshold is a user parameter that applies to the whole sequence and its choice can be difficult and arbitrary. Furthermore, results can change depending on this threshold. Second, the toolkit includes metrics but performs no group-level statistical inference: comparisons between subjects or cohorts are descriptive. Two conventions are also worth noting: burstiness returns sentinel values when a graph contains no or too few reorganization events and single-area networks are assigned an efficiency of 1.
 
 Finally, the toolkit is extensively tested, with more than four thousand lines of tests plus executed doctests, run in continuous integration on Linux and macOS across Python 3.12 and 3.13. However, the Dash callbacks are only tested manually rather than by automated tests.
 
 
 # Research impact statement
 
-The frequent pattern mining component is the reference implementation of the authors' published spatio-temporal graph mining research: Multi-SPMiner [@zeghina2023multispminer] and continued in DeepQMiner [@zeghina2025deepqminer]. See [@zeghina2024review] for a landscape survey of this research area. By encapsulating in a software the outcome of this research, fSTG-Toolkit is what makes that work usable on brain connectivity data by researchers who are not graph-mining specialists.
+The frequent pattern mining component is the reference implementation of the authors' published spatio-temporal graph mining research: Multi-SPMiner [@zeghina2023multispminer] and continued in DeepQMiner [@zeghina2025deepqminer]. See @zeghina2024review for a landscape survey of this research area. By encapsulating in a software the outcome of this research, fSTG-Toolkit is what makes that work usable on brain connectivity data by researchers who are not graph-mining specialists.
 
 The toolkit has been presented to the community during a live software demonstration at the 2026 IEEE ISBI conference [@pontabry2026isbidemo]. The source code is available on [GitHub](https://github.com/julienpontabry/fstg_toolkit), has been released and published on [PyPI](https://pypi.org/project/fSTG-Toolkit/), and is formally deposited on HAL [@pontabry2026software]. The full documentation for concepts, installation and usage is accessible on its [ReadTheDoc](https://fstg-toolkit.readthedocs.io/en/latest/) page.
 
