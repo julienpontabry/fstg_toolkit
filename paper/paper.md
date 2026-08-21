@@ -55,12 +55,12 @@ fSTG-Toolkit provides everything necessary to build such a graph and analyze it:
 
 # Statement of need
 
-Dynamic connectivity studies aim to describe the reorganization of the cerebral connectivity, usually through a time frame. However, the two main approaches do not provide clear insights:
+Dynamic connectivity studies aim to describe how cerebral connectivity reorganizes over time. However, neither of the two main approaches makes the transition between successive timepoints explicit:
 
 - static pipelines integrate the time axis into one correlation matrix;
 - dynamic pipelines produce a sequence of brain states using sliding windows and clustering [@hutchison2013dynamic; @allen2014tracking; @preti2017dynamic].
 
-In practice, pipelines in labs are usually composed of a manual glueing of Python libraries: NetworkX, Nilearn [@nilearn], pandas, etc. The workflows are usually built for one particular usage or study and they are rarely shared. It impacts their reproducibility across cohorts.
+In practice, pipelines in labs are often assembled by hand from general-purpose Python libraries such as NetworkX, Nilearn [@nilearn] and pandas. Such workflows are typically written for a single study and seldom released, which limits their reuse and reproducibility across cohorts.
 
 The toolkit presented in this article implements a serializable longitudinal connectivity graph whose temporal edges carry an interpretable and mutually exclusive relation vocabulary. Because the reorganization is encoded in the structure of the graph, it becomes directly measurable and minable:
 
@@ -75,7 +75,7 @@ Note that this toolkit does not include a preprocessing pipeline: the raw BOLD s
 
 # State of the field
 
-The Brain Connectivity Toolbox [@rubinov2010bct] and the GUI-driven toolboxes built around it (e.g. GraphVar [@kruschwitz2015graphvar; @waller2018graphvar2], GRETNA [@wang2015gretna] or BRAPH [@mijalkov2017braph; @tiunn2026braph2]) are mature and have exhaustively documented metric catalogues that set the field standard for static analyses. However, they rely on a single connectivity matrix as unit of analysis. Time is accounted for only as repeated, independent analyses, and the results must be compared externally. For instance, BRAPH 2 [@tiunn2026braph2] supports both longitudinal comparison of the same subjects across timepoints and multilayer networks, in which a node is duplicated across layers and linked by coupling edges. However, those coupling edges are untyped idendity links, so the transition itself still carries no information.
+The Brain Connectivity Toolbox [@rubinov2010bct] and the GUI-driven toolboxes built around it (e.g. GraphVar [@kruschwitz2015graphvar; @waller2018graphvar2], GRETNA [@wang2015gretna] or BRAPH [@mijalkov2017braph; @tiunn2026braph2]) are mature and have exhaustively documented metric catalogues that set the field standard for static analyses. However, they rely on a single connectivity matrix as unit of analysis. Time is accounted for only as repeated, independent analyses, and the results must be compared externally. The closest exception is BRAPH 2 [@tiunn2026braph2], which supports both longitudinal comparison of the same subjects across timepoints and multilayer networks, in which a node is duplicated across layers and linked by coupling edges. However, those coupling edges are untyped identity links, so the transition itself still carries no information.
 
 For capturing temporal variability, sliding-window methods like ICA with k-means clustering pipelines [@allen2014tracking] and toolboxes such as DynamicBC [@liao2014dynamicbc] are field standard. Their limit originates from the association of one label per window: the local topological relations between successive windows are discarded and the results are highly dependent on the window length and the number of clusters [@lurie2020questions].
 
@@ -89,11 +89,11 @@ fSTG-Toolkit does not replace these tools; it complements them. To the authors' 
 
 # Software design
 
-Each correlation matrix is thresholded into a graph using a user-defined threshold. Within each user-defined region, the connected components of that graph are collapsed into a single node. This double parcellation is what makes the transitions algebra definable: the relations between sets of brain areas have a clear meaning in that context. As a counterpart, the individual areas are no longer represented in the graph's structure, although the information is preserved in each node's attribute. See \autoref{fig:concept}(A-B).
+Each correlation matrix is thresholded into a graph. Within each user-defined region (grouping areas), the connected components of that graph are collapsed into a single node, so a node represents a set of areas in a given region at a given timepoint. This is what makes the transitions algebra definable: the relations between successive sets have a direct interpretation. As a counterpart, individual areas are no longer structural elements, although the information is preserved in each node's attribute. See \autoref{fig:concept}(A-B).
 
 ![Overview of the spatio-temporal graph model. (A) At each time point the correlation matrix is thresholded. (B) Connected components of areas within each user-defined region becomes the nodes. (C) Temporal edges carry the RC5 relation between the two sets of areas; a network with no overlap at the next timepoint (DC) has simply no outgoing edge, as for {A8} towards {A6}.\label{fig:concept}](figures/concept.png)
 
-The RC5 model has been chosen as temporal transition algebra because it offers five exhaustive and mutually exclusive relations [@randell1992]. The five modeled transitions are: unchanged (EQ), grown (PP), shrunk (PPi), partially reorganized (PO) and groups without overlap between successive timepoints are disconnected (DC) and simply not linked by a temporal edge. With this transition vocabulary, a neuroscientist can read the meaning directly from its visualization and a subgraph mining algorithm can operate on its finite states.  However, the quantization is lost: a change of one area or twenty areas will be both labeled with the same transition. An example is illustrated in \autoref{fig:concept}(C).
+The RC5 model has been chosen as temporal transition algebra because it offers five exhaustive and mutually exclusive relations [@randell1992]. The five modeled transitions are: unchanged (EQ), grown (PP), shrunk (PPi), partially reorganized (PO) and disconnected (DC). With this transition vocabulary, a neuroscientist can read the meaning directly from its visualization and a subgraph mining algorithm can operate on its finite states. However, the magnitude of the change is lost: for instance, gaining one area or gaining twenty areas both yield the same PP label. An example is illustrated in \autoref{fig:concept}(C).
 
 A spatio-temporal graph is implemented as a subclass of the NetworkX `DiGraph` class. This choice makes the entire package's ecosystem available and encompasses both representation of spatial and temporal edges, at a cost of storing twice the spatial edges. Then, most metrics are a few lines long, without having to convert between structures.
 
