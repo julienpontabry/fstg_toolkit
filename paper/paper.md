@@ -66,7 +66,7 @@ The toolkit presented in this article implements a serializable longitudinal con
 
 - reorganization rate and the distribution of transition types;
 - burstiness and memory of reorganization events, borrowed from temporal network analysis [@goh2008burstiness; @holme2012temporal];
-- subgraph patterns recurring across subjects, using Multi-SPMiner [@zeghina2023multispminer].
+- subgraph patterns recurring across subjects, based upon Multi-SPMiner [@zeghina2023multispminer].
 
 The purpose of fSTG-Toolkit is to widen the available tools studying the reorganization in network neurosciences [@bassett2017network]. While its focus is brain connectivity, its only input requirement is a sequence of correlation matrices and a parcellation table.
 
