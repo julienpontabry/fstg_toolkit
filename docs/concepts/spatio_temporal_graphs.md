@@ -2,17 +2,18 @@
 
 ## What is a Spatio-Temporal Graph?
 
-A **spatio-temporal graph (STG)** is a directed graph that models how brain connectivity evolves
-over time. Each node in the graph represents a **brain area at a specific time point**, and edges
-encode two distinct types of relationships:
+A **spatio-temporal graph (STG)** is a multi-graph (directed in time, undirected in space) that models how 
+brain connectivity evolves over time. Each node in the graph represents a **set of brain areas at a specific time point**, 
+and edges encode two distinct types of relationships:
 
-- **Spatial edges** — connect two brain areas *at the same time point* when their correlation
-  exceeds the threshold. They represent synchronous functional connectivity.
-- **Temporal edges** — connect a brain area (or group of areas) across consecutive time points,
-  labelled with an RC5 transition type. They encode how connectivity patterns *change* over time.
+- **Spatial edges** — connect two sets of brain areas *at the same time point* and *in the same region* when their 
+  correlation exceeds the threshold. They represent synchronous functional connectivity.
+- **Temporal edges** — connect a set of areas across consecutive time points, labeled with an RC5 transition type. 
+  They encode how connectivity patterns *change* over time.
 
 This representation unifies the spatial structure of brain connectivity with its temporal dynamics
-into a single graph object, enabling both snapshot-level and longitudinal analyses.
+into a single graph object, enabling both snapshot-level and longitudinal analyses. The brain areas can be grouped
+in sets, represented as nodes, when they belong to the same user-defined region.
 
 ## Graph Structure
 
