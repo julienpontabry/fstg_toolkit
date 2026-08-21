@@ -70,7 +70,7 @@ The toolkit presented in this article implements a serializable longitudinal con
 
 The purpose of fSTG-Toolkit is to widen the available tools to study reorganization in network neurosciences [@bassett2017network]. While the primary focus of the toolkit is the analysis of brain connectivity data, it only requires as input a sequence of correlation matrices and a parcellation table. Therefore, any connectivity data complying with this contract can be analyzed and visualized.
 
-Note that this toolkit does not include a preprocessing pipeline: the raw BOLD signal must be processed in the standard ways before use. Also, it does not include the exhaustive metric catologues of the established graph theory toolboxes.
+Note that this toolkit does not include a preprocessing pipeline: the raw BOLD signal must be processed in the standard ways before use. Also, it does not include the exhaustive metric catalogues of the established graph theory toolboxes.
 
 
 # State of the field
