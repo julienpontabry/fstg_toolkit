@@ -107,7 +107,7 @@ As the metrics are declared through a decorator-based registry, the users can ad
 
 All artifacts (raw matrices, graphs in JSON, metrics and mined patterns) are stored in one ZIP archive, making results traceable and shareable. A data registry and handler protocol allow new kind of artifact without changing the container's format.
 
-The toolkit also ships a simulator that generates spatio-temporal graph patterns and full sequences with known ground truth. It is used to validate the metrics and the pattern mining, without any real data.
+The toolkit also ships a simulator that generates spatio-temporal graph patterns and full sequences with known ground truth. It can be used to study the behavior of the metrics and the pattern mining, without any real data.
 
 Two limits follow from these choices. First, the correlation threshold is a user parameter that applies to the whole sequence and its choice can be difficult and arbitrary. Furthermore, results can change depending on this threshold. Second, the toolkit includes metrics but performs no group-level statistical inference: comparisons between subjects or cohorts are descriptive. Two conventions are also worth noting: burstiness returns sentinel values when a graph contains no or too few reorganization events and single-area networks are assigned an efficiency of 1.
 
