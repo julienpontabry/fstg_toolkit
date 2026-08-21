@@ -2,7 +2,7 @@
 
 ## Overview
 
-fSTG Toolkit uses the **RC5 (Region Connection Calculus, 5 relations)** to encode how the
+fSTG Toolkit uses the **RCC-5 (Region Connection Calculus, 5 relations)**, noted RC5, to encode how the
 connectivity of a brain area changes between two consecutive time steps. Each temporal edge in a
 spatio-temporal graph carries an RC5 label that concisely describes the topological relationship
 between two connectivity patterns.
