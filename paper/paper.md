@@ -125,7 +125,7 @@ Development has been driven by real data: the toolkit was built and validated ag
 
 # AI usage disclosure
 
-Generative AI assistance was used in preparing the software documentation and in drafting this manuscript. Its use in the source code was limited to occasional targeted assistance in resolving specific implementation problems. The problem framing, the spatio-temporal graph and RC5 data model, and all architectural decisions presented in this article are the authors' own. The authors have reviewed and tested all code and documentation and take full responsibility for the content and claims of this work.
+Generative AI assistance was used in preparing the software documentation, in structuring the outline of this manuscript and in reformulating some parts of the text. Its use in the source code was limited to occasional targeted assistance in resolving specific implementation problems. The problem framing, the spatio-temporal graph and RC5 data model, and all architectural decisions presented in this article are the authors' own. The authors have reviewed and tested all code and documentation and take full responsibility for the content and claims of this work.
 
 
 # Acknowledgements
