@@ -7,6 +7,6 @@ Step-by-step guides for the most common fSTG Toolkit workflows.
 
 building_graphs
 computing_metrics
-running_dashboard
 frequent_patterns
+running_dashboard
 ```
