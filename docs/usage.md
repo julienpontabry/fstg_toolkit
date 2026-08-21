@@ -1,6 +1,6 @@
 # Usage
 
-fSTG Toolkit provides a CLI with four command groups: `graph`, `plot`, `dashboard`, and `simulate`.
+fSTG Toolkit provides a CLI with four command groups: `graph`, `plot` and `dashboard`.
 
 ```shell
 python -m fstg_toolkit --help

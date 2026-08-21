@@ -1,4 +1,4 @@
-# RC5 Interval Algebra
+# RC5 Algebra
 
 ## Overview
 
@@ -7,12 +7,12 @@ connectivity of a brain area changes between two consecutive time steps. Each te
 spatio-temporal graph carries an RC5 label that concisely describes the topological relationship
 between two connectivity patterns.
 
-RC5 is a subset of Allen's interval algebra, restricted to five mutually exclusive and jointly
+RC5 is region connection algebra, describing five mutually exclusive and jointly
 exhaustive relations between two regions (connectivity patterns).
 
 ## The Five Relations
 
-Let **A** and **B** be the sets of brain areas connected to a given region at time steps `t` and
+Let **A** and **B** be the sets of brain areas within a given region in a network at time steps `t` and
 `t+1` respectively.
 
 | Relation | Symbol | Meaning | Connectivity change |
@@ -34,10 +34,11 @@ dynamics:
   additional areas become connected. This may signal network expansion or recruitment.
 - **PPi** — The connectivity pattern shrinks: some connections are lost while none are gained.
   This may reflect network pruning or disengagement.
-- **PO** — The pattern partially reorganises: some connections are retained while others are
-  replaced. This is the most common relation in dynamic data.
-- **DC** — The connectivity pattern undergoes complete reorganisation with no overlap to the
-  previous time step. This usually indicates unrelated regions.
+- **PO** — The pattern partially reorganizes: some connections are retained while others are
+  replaced. This reflects PP and PPi dynamics hapening at the same time.
+- **DC** — The connectivity pattern undergoes complete reorganization with no overlap to the
+  previous time step. This usually indicates unrelated regions and is represented as the absence
+  of temporal edge. Therefore, this label is never used in practice, it is only implied.
 
 ## Usage in Code
 
@@ -64,7 +65,7 @@ in their `rc5` attribute:
 ```python
 for u, v, data in graph.edges(data=True):
     if data.get('type') == 'temporal':
-        print(f"{u} → {v}: {data['rc5']}")
+        print(f"{u} → {v}: {data['transition']}")
 ```
 
 ## References

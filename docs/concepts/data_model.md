@@ -9,19 +9,15 @@ and can hold one or more spatio-temporal graphs together with their associated d
 
 ```
 my_graphs.zip
-├── areas.csv                    # Brain area/region definitions
-├── matrices/
-│   ├── subject1.npz             # Raw correlation matrices (optional)
-│   └── subject2.npz
-├── graphs/
-│   ├── subject1.json            # Serialised spatio-temporal graph
-│   └── subject2.json
-├── metrics/
-│   ├── local.csv                # Spatial metrics (per node, per time step)
-│   └── global.csv               # Temporal metrics (per graph)
-└── patterns/
-    ├── pattern_0.json           # Frequent subgraph patterns (if mined)
-    └── pattern_1.json
+├── areas.csv                                # Brain area/region definitions
+├── subject1.npy                             # Raw correlation matrices (optional)
+├── subject2.npy
+├── subject1.json                            # Serialised spatio-temporal graph
+├── subject2.json            
+├── local.csv                                # Spatial metrics (per node, per time step)
+├── global.csv                               # Temporal metrics (per graph)
+├── subject1/motifs_enriched_<s|t|st>.json   # Frequent subgraph patterns (if mined)
+└── subject2/motifs_enriched_<s|t|st>.json
 ```
 
 Files are only written when the corresponding processing step has been run. A freshly built
@@ -29,7 +25,7 @@ archive will contain only `areas.csv`, `matrices/`, and `graphs/`.
 
 ## Graph JSON Format
 
-Each graph is serialised as a JSON file using the NetworkX `node_link_data` format with
+Each graph is serialized as a JSON file using the NetworkX `node_link_data` format with
 additional fSTG-specific metadata:
 
 ```text
@@ -39,9 +35,9 @@ additional fSTG-specific metadata:
     {"id": "(1, 0)", "time": 0, "area": 1, "region": "Visual"},
     ...
   ],
-  "links": [
+  "edges": [
     {"source": "(1, 0)", "target": "(2, 0)", "type": "spatial", "correlation": 0.72},
-    {"source": "(1, 0)", "target": "(1, 1)", "type": "temporal", "rc5": "EQ"},
+    {"source": "(1, 0)", "target": "(1, 1)", "type": "temporal", "transition": "EQ"},
     ...
   ]
 }
@@ -105,7 +101,7 @@ from fstg_toolkit import save_spatio_temporal_graph, load_spatio_temporal_graph
 # Save a single graph (creates a ZIP archive with one graph)
 save_spatio_temporal_graph(graph, 'my_graph.zip')
 
-# Load a single graph (raises if the archive contains more than one)
+# Load a single graph (raises if the archive contains none)
 graph = load_spatio_temporal_graph('my_graph.zip')
 ```
 

@@ -84,9 +84,9 @@ python -m fstg_toolkit graph build --select -o my_graph.zip areas.csv matrices.n
 ## 4. Inspect the Output
 
 The output `.zip` archive contains:
-- `graphs/` — one JSON file per spatio-temporal graph
+-  one JSON file per spatio-temporal graph
 - `areas.csv` — the areas description
-- `matrices/` — the raw correlation matrix files (unless `--no-raw` was passed)
+-  one raw correlation matrices per subject (unless `--no-raw` was passed)
 
 You can load a graph programmatically:
 

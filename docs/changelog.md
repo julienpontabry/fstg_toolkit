@@ -2,6 +2,26 @@
 
 All notable changes to fSTG Toolkit are documented here.
 
+
+## fSTG-Toolkit v1.2.1
+
+- Matplotlib dependency possible versions changed to avoid a API break.
+
+
+## fSTG-Toolkit v1.2.0
+
+### Bug Fixes
+
+- Graph interactions: Fixed a performance issue causing slow graph interactions in the dashboard.
+- Optional dependencies: Fixed a crash that occurred when optional dependencies were not installed.
+- GitHub Actions: Fixed the publish workflow.
+
+### Features
+
+- Documentation: Added project documentation and logos.
+- CLI extras tips: Improved handling of epilog tips for extras dependencies in the CLI.
+
+
 ## fSTG-Toolkit v1.1.0
 
 ### Features
