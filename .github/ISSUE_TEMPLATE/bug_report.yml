@@ -8,7 +8,7 @@ body:
         Thanks for taking the time to report a bug!
 
         For questions about *using* the toolkit, please open a
-        [discussion](https://github.com/julienpontabry/fstg_toolkit/discussions) instead.
+        [discussion](https://github.com/ICube-Medical-Image-Computing/fstg_toolkit/discussions) instead.
 
   - type: checkboxes
     id: checks
@@ -92,5 +92,5 @@ body:
     attributes:
       label: Code of conduct
       options:
-        - label: I agree to follow this project's [Code of Conduct](https://github.com/julienpontabry/fstg_toolkit/blob/main/CODE_OF_CONDUCT.md).
+        - label: I agree to follow this project's [Code of Conduct](https://github.com/ICube-Medical-Image-Computing/fstg_toolkit/blob/main/CODE_OF_CONDUCT.md).
           required: true

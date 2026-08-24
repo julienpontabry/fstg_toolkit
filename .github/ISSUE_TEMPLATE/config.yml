@@ -1,7 +1,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: Questions and usage help
-    url: https://github.com/julienpontabry/fstg_toolkit/discussions
+    url: https://github.com/ICube-Medical-Image-Computing/fstg_toolkit/discussions
     about: Ask how to use the toolkit in the Q&A category of the discussions.
   - name: Documentation
     url: https://fstg-toolkit.readthedocs.io/

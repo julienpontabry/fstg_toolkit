@@ -16,7 +16,7 @@ authors:
 version: "1.2.1"
 date-released: "2026-06-19"
 license: CECILL-2.1
-repository-code: "https://github.com/julienpontabry/fstg_toolkit"
+repository-code: "https://github.com/ICube-Medical-Image-Computing/fstg_toolkit"
 url: "https://fstg-toolkit.readthedocs.io/"
 identifiers:
   - type: url

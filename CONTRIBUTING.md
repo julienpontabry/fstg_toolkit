@@ -22,7 +22,7 @@ If you have a question about *using* the toolkit rather than a bug to report:
 1. Check the documentation at <https://fstg-toolkit.readthedocs.io/>.
 2. Check the built-in help: `python -m fstg_toolkit --help`, or `--help` on any subcommand
    (for instance `python -m fstg_toolkit graph build --help`).
-3. Ask in [GitHub Discussions](https://github.com/julienpontabry/fstg_toolkit/discussions),
+3. Ask in [GitHub Discussions](https://github.com/ICube-Medical-Image-Computing/fstg_toolkit/discussions),
    in the **Q&A** category.
 
 Please use Discussions rather than the issue tracker for usage questions: it keeps the answers
@@ -30,8 +30,8 @@ searchable for the next person with the same question.
 
 ## Reporting a bug
 
-Open an issue with the [bug report form](https://github.com/julienpontabry/fstg_toolkit/issues/new/choose).
-Before that, please search the [existing issues](https://github.com/julienpontabry/fstg_toolkit/issues)
+Open an issue with the [bug report form](https://github.com/ICube-Medical-Image-Computing/fstg_toolkit/issues/new/choose).
+Before that, please search the [existing issues](https://github.com/ICube-Medical-Image-Computing/fstg_toolkit/issues)
 in case the problem is already known.
 
 A useful report contains:

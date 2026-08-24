@@ -60,7 +60,7 @@ body:
     attributes:
       label: Contribution
       options:
-        - label: I would be willing to work on this myself (see [CONTRIBUTING.md](https://github.com/julienpontabry/fstg_toolkit/blob/main/CONTRIBUTING.md)).
+        - label: I would be willing to work on this myself (see [CONTRIBUTING.md](https://github.com/ICube-Medical-Image-Computing/fstg_toolkit/blob/main/CONTRIBUTING.md)).
           required: false
 
   - type: checkboxes
@@ -68,5 +68,5 @@ body:
     attributes:
       label: Code of conduct
       options:
-        - label: I agree to follow this project's [Code of Conduct](https://github.com/julienpontabry/fstg_toolkit/blob/main/CODE_OF_CONDUCT.md).
+        - label: I agree to follow this project's [Code of Conduct](https://github.com/ICube-Medical-Image-Computing/fstg_toolkit/blob/main/CODE_OF_CONDUCT.md).
           required: true

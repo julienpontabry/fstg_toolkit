@@ -76,7 +76,7 @@ html_static_path = ['_static']
 html_logo = '_static/images/fSTG_logo.svg'
 
 html_theme_options = {
-    'source_repository': 'https://github.com/julienpontabry/fstg_toolkit',
+    'source_repository': 'https://github.com/ICube-Medical-Image-Computing/fstg_toolkit',
     'source_branch': 'main',
     'source_directory': 'docs/',
 }

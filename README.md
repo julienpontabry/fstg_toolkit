@@ -5,8 +5,8 @@
 <div style="text-align: center">
 
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/fSTG-Toolkit)
-[![CI](https://github.com/julienpontabry/fstg_toolkit/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/julienpontabry/fstg_toolkit/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/julienpontabry/c923f99a7adf99424c8c17066285ed3d/raw/fstg_toolkit_coverage.json)](https://github.com/julienpontabry/fstg_toolkit/actions/workflows/ci.yml)
+[![CI](https://github.com/ICube-Medical-Image-Computing/fstg_toolkit/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ICube-Medical-Image-Computing/fstg_toolkit/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/julienpontabry/c923f99a7adf99424c8c17066285ed3d/raw/fstg_toolkit_coverage.json)](https://github.com/ICube-Medical-Image-Computing/fstg_toolkit/actions/workflows/ci.yml)
 ![PyPI - Version](https://img.shields.io/pypi/v/fSTG-Toolkit)
 ![PyPI - License](https://img.shields.io/pypi/l/fSTG-Toolkit)
 [![Read the Docs](https://img.shields.io/readthedocs/fstg-toolkit)](https://fstg-toolkit.readthedocs.io/)
@@ -92,8 +92,8 @@ Full usage documentation, tutorials, and API reference are available at **[fstg-
 
 ## Community
 
-- **Questions about using the toolkit?** Ask in the [discussions](https://github.com/julienpontabry/fstg_toolkit/discussions), in the *Q&A* category.
-- **Found a bug?** Open an [issue](https://github.com/julienpontabry/fstg_toolkit/issues/new/choose) with the bug report form.
+- **Questions about using the toolkit?** Ask in the [discussions](https://github.com/ICube-Medical-Image-Computing/fstg_toolkit/discussions), in the *Q&A* category.
+- **Found a bug?** Open an [issue](https://github.com/ICube-Medical-Image-Computing/fstg_toolkit/issues/new/choose) with the bug report form.
 - **Want to contribute?** Bug fixes, new features, and documentation improvements are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup, the test suites, and the pull request process.
 
 Everyone taking part in the project is expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
