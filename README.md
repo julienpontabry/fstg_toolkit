@@ -87,3 +87,5 @@ python -m fstg_toolkit graph build --help
 Full usage documentation, tutorials, and API reference are available at **[fstg-toolkit.readthedocs.io](https://fstg-toolkit.readthedocs.io/)**.
 
 ![Illustration of the dashboard.](docs/_static/images/illustration_web-viewer.png)
+
+The fSTG Toolkit is distributed under the CeCILL Free Software Agreement v2.1. See LICENSE for more information.
