@@ -638,7 +638,7 @@ GRAPH_SEQUENCE_DESCRIPTION = GraphSequenceDescription()
 
 
 @graph.group()
-@click.option('-o', '--output_path', type=click.Path(writable=True),
+@click.option('-o', '--output_path', type=click.Path(writable=True, path_type=Path),
               default="output", show_default="a file named 'output' in the current directory",
               help="Path where to write the simulated output.")
 @click.pass_context

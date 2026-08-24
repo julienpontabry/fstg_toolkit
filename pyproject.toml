@@ -57,6 +57,17 @@ relative_files = true
 
 [tool.coverage.report]
 show_missing = true
+# Code that cannot run unattended: matplotlib widgets driven by mouse and
+# keyboard events, commands starting a Dash server or requiring the Docker
+# based SPMiner service, and the screen probing behind figure sizing.
+exclude_also = [
+    "^class DynamicPlot",
+    "^class DynamicTimeCursor",
+    "^def __figure_screen_setup",
+    "^def frequent",
+    "^def show",
+    "^def serve",
+]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
