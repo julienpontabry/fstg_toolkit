@@ -1,0 +1,118 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata from this file."
+type: software
+title: "fSTG-Toolkit"
+abstract: >-
+  An open-source software for spatio-temporal graph analysis of fMRI data. It
+  turns a sequence of connectivity matrices into a single graph object that
+  keeps the time axis, and provides spatial and temporal graph metrics,
+  frequent pattern mining across subjects and interactive visual exploration.
+authors:
+  - family-names: "Pontabry"
+    given-names: "Julien"
+    orcid: "https://orcid.org/0000-0001-7412-4645"
+    email: "jpontabry@unistra.fr"
+    affiliation: "ICube Laboratory -- University of Strasbourg"
+version: "1.2.1"
+date-released: "2026-06-19"
+license: CECILL-2.1
+repository-code: "https://github.com/julienpontabry/fstg_toolkit"
+url: "https://fstg-toolkit.readthedocs.io/"
+identifiers:
+  - type: url
+    value: "https://hal.science/hal-05687216"
+    description: "HAL software deposit of fSTG-Toolkit 1.2.1"
+keywords:
+  - Python
+  - graph
+  - spatio-temporal
+  - fMRI
+  - neuroimaging
+  - brain connectivity
+  - dynamic functional connectivity
+  - visualization
+
+references:
+  # The software paper is still in preparation, so it is recorded here rather
+  # than as `preferred-citation`: the citation handed to users must remain the
+  # software itself until the paper exists. Once the paper is accepted, move
+  # this entry to a top-level `preferred-citation:` key, drop `status` and
+  # `notes`, and add `doi`, `volume`, `issue`, `pages` and `year`.
+  - type: article
+    title: >-
+      fSTG-Toolkit: a toolkit for modeling, processing, and analyzing the
+      longitudinal reorganization of brain connectivity data using
+      spatio-temporal graph methods
+    authors:
+      - family-names: "Pontabry"
+        given-names: "Julien"
+        orcid: "https://orcid.org/0000-0001-7412-4645"
+      - family-names: "Zeghina"
+        given-names: "Assaad"
+        orcid: "https://orcid.org/0000-0002-2649-5609"
+      - family-names: "Meillier"
+        given-names: "Céline"
+        orcid: "https://orcid.org/0000-0001-6563-7449"
+      - family-names: "Vacavant"
+        given-names: "Antoine"
+        orcid: "https://orcid.org/0000-0001-9616-3282"
+      - family-names: "Leborgne"
+        given-names: "Aurélie"
+        orcid: "https://orcid.org/0000-0001-8456-2745"
+    journal: "Journal of Open Source Software"
+    status: in-preparation
+    notes: "Manuscript in preparation; source in paper/paper.md."
+
+  # Multi-SPMiner is bundled under src/fstg_toolkit/spminer/ because it is not
+  # distributed as an installable package. See that directory's NOTICE.md.
+  - type: software
+    title: "Multi-SPMiner"
+    authors:
+      - family-names: "Zeghina"
+        given-names: "Assaad"
+        orcid: "https://orcid.org/0000-0002-2649-5609"
+      - family-names: "Leborgne"
+        given-names: "Aurélie"
+        orcid: "https://orcid.org/0000-0001-8456-2745"
+      - family-names: "Le Ber"
+        given-names: "Florence"
+      - family-names: "Vacavant"
+        given-names: "Antoine"
+        orcid: "https://orcid.org/0000-0001-9616-3282"
+    notes: >-
+      Bundled under src/fstg_toolkit/spminer/ and used for frequent subgraph
+      pattern mining. See src/fstg_toolkit/spminer/NOTICE.md for the provenance
+      and licensing of the bundled files.
+
+  - type: article
+    title: >-
+      Multi-SPMiner: A Deep Learning Framework for Multi-Graph Frequent Pattern
+      Mining with Application to Spatiotemporal Graphs
+    authors:
+      - family-names: "Zeghina"
+        given-names: "Assaad"
+        orcid: "https://orcid.org/0000-0002-2649-5609"
+      - family-names: "Leborgne"
+        given-names: "Aurélie"
+        orcid: "https://orcid.org/0000-0001-8456-2745"
+      - family-names: "Le Ber"
+        given-names: "Florence"
+      - family-names: "Vacavant"
+        given-names: "Antoine"
+        orcid: "https://orcid.org/0000-0001-9616-3282"
+    journal: "Procedia Computer Science"
+    volume: 225
+    start: 1094
+    end: 1103
+    year: 2023
+    doi: "10.1016/j.procs.2023.10.097"
+
+  - type: software
+    title: "SPMiner (neural-subgraph-learning-GNN)"
+    authors:
+      - name: "The SPMiner authors (Ying et al., Stanford SNAP group)"
+    repository-code: "https://github.com/snap-stanford/neural-subgraph-learning-GNN"
+    notes: >-
+      Files from this repository are bundled unchanged under
+      src/fstg_toolkit/spminer/. It carries no license file, so its authors
+      retain all rights over them; see src/fstg_toolkit/spminer/NOTICE.md.
