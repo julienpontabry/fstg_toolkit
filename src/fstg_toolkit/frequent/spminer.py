@@ -68,13 +68,14 @@ class SPMinerService:
     def prepare(self):
         """Build or load the SPMiner Docker image if it is not already loaded.
 
-        The image is built from the ``spminer/`` submodule located next to this
-        package. Subsequent calls are no-ops if the image is already loaded.
+        The image is built from the ``spminer/`` directory bundled inside the
+        ``fstg_toolkit`` package. Subsequent calls are no-ops if the image is
+        already loaded.
         """
         if self.__docker_image is None:
             # TODO use an external config file?
             tag = 'spminer:latest'
-            build_path = Path(__file__).parent.parent.parent / 'spminer'
+            build_path = Path(__file__).parent.parent / 'spminer'
             self.__docker_image = self.__docker_helper.load_local_image(tag, build_path)
 
     def run(self, input_dir: Path, output_dir: Path):

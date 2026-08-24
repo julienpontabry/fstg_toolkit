@@ -48,9 +48,6 @@ docs = [
     "sphinx-copybutton (>=0.5.2,<0.6.0)",
 ]
 
-[tool.setuptools.package-data]
-fstg_toolkit = ["logging.yml"]
-
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
