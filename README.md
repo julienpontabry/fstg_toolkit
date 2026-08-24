@@ -6,6 +6,7 @@
 
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/fSTG-Toolkit)
 [![CI](https://github.com/julienpontabry/fstg_toolkit/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/julienpontabry/fstg_toolkit/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/julienpontabry/c923f99a7adf99424c8c17066285ed3d/raw/fstg_toolkit_coverage.json)](https://github.com/julienpontabry/fstg_toolkit/actions/workflows/ci.yml)
 ![PyPI - Version](https://img.shields.io/pypi/v/fSTG-Toolkit)
 ![PyPI - License](https://img.shields.io/pypi/l/fSTG-Toolkit)
 [![Read the Docs](https://img.shields.io/readthedocs/fstg-toolkit)](https://fstg-toolkit.readthedocs.io/)

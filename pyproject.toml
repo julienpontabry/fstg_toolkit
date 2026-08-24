@@ -47,6 +47,17 @@ docs = [
     "sphinx-copybutton (>=0.5.2,<0.6.0)",
 ]
 
+[tool.coverage.run]
+source = ["src/fstg_toolkit"]
+omit = [
+    "src/fstg_toolkit/app/*",
+    "src/fstg_toolkit/spminer/*",
+]
+relative_files = true
+
+[tool.coverage.report]
+show_missing = true
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"

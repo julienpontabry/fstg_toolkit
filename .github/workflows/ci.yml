@@ -41,3 +41,68 @@ jobs:
 
       - name: Run unit tests
         run: poetry run python -m unittest discover -s test -p "test_*.py"
+  coverage:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - name: Install dependencies
+        run: poetry install --all-extras
+
+      - name: Run unit tests under coverage
+        run: poetry run coverage run -m unittest discover -s test -p "test_*.py"
+
+      - name: Run doctests under coverage
+        run: poetry run coverage run --append test/doctests_runner.py
+
+      - name: Write coverage summary
+        if: always()
+        run: |
+          echo '## Coverage' >> "$GITHUB_STEP_SUMMARY"
+          poetry run coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Extract total coverage
+        if: always()
+        run: echo "COVERAGE=$(poetry run coverage report --format=total)" >> "$GITHUB_ENV"
+
+      - name: Build HTML report
+        if: always()
+        run: poetry run coverage html
+
+      - name: Upload HTML coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: htmlcov/
+          retention-days: 14
+
+      - name: Update coverage badge
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: schneegans/dynamic-badges-action@v1.9.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: c923f99a7adf99424c8c17066285ed3d
+          filename: fstg_toolkit_coverage.json
+          label: coverage
+          message: ${{ env.COVERAGE }}%
+          valColorRange: ${{ env.COVERAGE }}
+          minColorRange: 50
+          maxColorRange: 90

@@ -2,3 +2,6 @@
 __pycache__
 docs/_build
 dist/
+.coverage
+htmlcov/
+coverage.xml
