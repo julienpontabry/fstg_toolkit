@@ -246,6 +246,62 @@ class SpatioTemporalGraphTestCase(unittest.TestCase):
         different_st = SpatioTemporalGraph(self.graph.copy(), different_areas)
         self.assertNotEqual(self.st_graph, different_st)
     
+    def test_copy(self):
+        """Test that a copy is equal to, but independent from, the original."""
+        copied = self.st_graph.copy()
+
+        self.assertIsInstance(copied, SpatioTemporalGraph)
+        self.assertEqual(self.st_graph, copied)
+        self.assertEqual(dict(self.st_graph.graph), dict(copied.graph))
+
+        # Structural changes on the copy must not affect the original.
+        copied.add_node(5, t=2, areas={5}, region='R1', internal_strength=0.5)
+        self.assertNotIn(5, self.st_graph)
+
+    def test_copy_areas(self):
+        """Test that the areas are carried over by copy and are independent."""
+        copied = self.st_graph.copy()
+
+        self.assertIsNotNone(copied.areas)
+        pd.testing.assert_frame_equal(self.st_graph.areas, copied.areas)
+        self.assertIsNot(self.st_graph.areas, copied.areas)
+
+        # Changes on the copied areas must not affect the original ones.
+        copied.areas.loc[1, 'Name_Area'] = 'Changed'
+        self.assertEqual('A1', self.st_graph.areas.loc[1, 'Name_Area'])
+
+    def test_copy_without_areas(self):
+        """Test that copying a graph without areas is supported."""
+        copied = SpatioTemporalGraph(self.graph).copy()
+
+        self.assertIsInstance(copied, SpatioTemporalGraph)
+        self.assertIsNone(copied.areas)
+
+    def test_copy_as_view(self):
+        """Test that a view reflects the changes made on the original graph."""
+        view = self.st_graph.copy(as_view=True)
+
+        self.assertIsInstance(view, SpatioTemporalGraph)
+        self.assertEqual(self.st_graph, view)
+
+        # The areas are shared, as is the structure.
+        self.assertIs(self.st_graph.areas, view.areas)
+
+        self.st_graph.add_node(5, t=2, areas={5}, region='R1', internal_strength=0.5)
+        self.assertIn(5, view)
+
+    def test_copy_preserves_features(self):
+        """Test that the spatio-temporal features are preserved by copy."""
+        for as_view in (False, True):
+            with self.subTest(as_view=as_view):
+                copied = self.st_graph.copy(as_view=as_view)
+
+                self.assertEqual(self.st_graph.time_range, copied.time_range)
+                self.assertEqual(set(self.st_graph.sub(t=0).nodes), set(copied.sub(t=0).nodes))
+                self.assertEqual(set(self.st_graph.sub_spatial().edges), set(copied.sub_spatial().edges))
+                self.assertEqual(set(self.st_graph.sub_temporal().edges), set(copied.sub_temporal().edges))
+                self.assertEqual(str(self.st_graph), str(copied))
+
     def test_string_representation(self):
         """Test string representation."""
         repr_str = str(self.st_graph)

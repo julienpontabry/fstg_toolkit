@@ -36,7 +36,7 @@ from collections.abc import Iterable
 from enum import Enum, auto, unique
 from math import isclose
 from numbers import Number
-from typing import Any
+from typing import Any, Self
 
 import networkx as nx
 import pandas as pd
@@ -234,17 +234,55 @@ class SpatioTemporalGraph(nx.DiGraph):
     """
 
     def __init__(self, graph: nx.Graph = None, areas: pd.DataFrame = None) -> None:
-        """Initialise the spatio-temporal graph.
+        """Initialize the spatio-temporal graph.
 
         Parameters
         ----------
         graph: nx.Graph, optional
-            An existing NetworkX graph to initialise from.
+            An existing NetworkX graph to initialize from.
         areas: pandas.DataFrame, optional
             A DataFrame describing brain areas (index: ``Id_Area``).
         """
         super().__init__(graph)
         self.areas = areas
+
+    def copy(self, as_view: bool = False) -> Self:
+        """Copy the spatio-temporal graph.
+
+        The graph structure is copied as NetworkX does, and the areas are carried over.
+        A view shares the areas with the original graph, whereas a copy gets its own.
+
+        Parameters
+        ----------
+        as_view: bool, optional
+            Copy as a view if set as True (default is False).
+
+        Returns
+        -------
+        SpatioTemporalGraph
+            The copied spatio-temporal graph.
+
+        Examples
+        --------
+        >>> G = nx.DiGraph()
+        >>> G.add_nodes_from([(1, dict(t=0, areas={1}, region='R1'))])
+        >>> G.graph['max_time'] = 0
+        >>> areas = pd.DataFrame(dict(Name_Area=['A1'], Name_Region=['R1']), index=pd.Index([1], name='Id_Area'))
+        >>> graph = SpatioTemporalGraph(G, areas)
+        >>> copied = graph.copy()
+        >>> copied == graph
+        True
+        >>> copied.areas is graph.areas
+        False
+        >>> graph.copy(as_view=True).areas is graph.areas
+        True
+        """
+        # NetworkX instantiates the copy through `self.__class__()`, hence the returned
+        # graph is already a spatio-temporal one; only the areas are left to carry over.
+        # Rewrapping it would drop the view semantics and copy the structure twice.
+        copied = super().copy(as_view)
+        copied.areas = self.areas if as_view or self.areas is None else self.areas.copy()
+        return copied
 
     @property
     def time_range(self) -> range:
