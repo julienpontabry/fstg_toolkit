@@ -1,3 +1,15 @@
+# This file is derived from SPMiner
+# (https://github.com/snap-stanford/neural-subgraph-learning-GNN).
+# Its authors distribute it without an explicit license and retain all
+# rights over their original work.
+#
+# The modifications adding multi-graph support (loading a preprocessed
+# multi-graph dataset) are Copyright 2025 ICube (University of
+# Strasbourg - CNRS), by Assaad ZEGHINA (ICube). ICube claims authorship
+# of these modifications only; they cannot be licensed independently of
+# the underlying work, and no license granted by ICube elsewhere in this
+# repository applies to this file.
+
 import os
 import pickle
 import random
