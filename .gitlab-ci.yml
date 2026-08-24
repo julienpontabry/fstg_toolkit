@@ -7,14 +7,14 @@ stages:
     - micromamba install --yes --name base --file environment.yml
     - micromamba clean --all --yes
     - micromamba run poetry config virtualenvs.create false --local
-    - micromamba run poetry install
+    - micromamba run poetry install --all-extras
     - export PYTHONPATH="$PYTHONPATH:src"
 
 unit-tests:
   stage: test
   extends: .install-dependencies
   script:
-    - micromamba run python test/tests_runner.py
+    - micromamba run python -m unittest discover -s test -p "test_*.py"
 
 docstring-tests:
   stage: test
