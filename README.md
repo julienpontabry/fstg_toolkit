@@ -88,4 +88,7 @@ Full usage documentation, tutorials, and API reference are available at **[fstg-
 
 ![Illustration of the dashboard.](docs/_static/images/illustration_web-viewer.png)
 
+
+## License
+
 The fSTG Toolkit is distributed under the CeCILL Free Software Agreement v2.1. See LICENSE for more information. The Multi-SPMiner sources bundled under `src/fstg_toolkit/spminer/` are an exception: see `src/fstg_toolkit/spminer/NOTICE.md` for their provenance and status.
