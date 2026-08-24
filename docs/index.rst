@@ -31,6 +31,7 @@ analysing, and interactively visualising them via a Dash web dashboard.
    cli
    api/index
    changelog
+   contributing
 
 Indices and tables
 ------------------

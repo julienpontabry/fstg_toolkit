@@ -1,0 +1,72 @@
+name: Feature request
+description: Suggest a new feature or an improvement
+labels: [ enhancement ]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement! Please describe the need first, then the solution
+        you have in mind — it often turns out there is more than one way to address it.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before requesting
+      options:
+        - label: I searched the existing issues and did not find a similar request.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: >-
+        What are you trying to do, and what makes it difficult or impossible today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: What should the toolkit do? A sketch of the API or the CLI call is welcome.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you thought about, or workarounds you currently use.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area concerned
+      options:
+        - core library
+        - command line interface
+        - dashboard
+        - frequent pattern mining
+        - documentation
+        - other
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I would be willing to work on this myself (see [CONTRIBUTING.md](https://github.com/julienpontabry/fstg_toolkit/blob/main/CONTRIBUTING.md)).
+          required: false
+
+  - type: checkboxes
+    id: coc
+    attributes:
+      label: Code of conduct
+      options:
+        - label: I agree to follow this project's [Code of Conduct](https://github.com/julienpontabry/fstg_toolkit/blob/main/CODE_OF_CONDUCT.md).
+          required: true

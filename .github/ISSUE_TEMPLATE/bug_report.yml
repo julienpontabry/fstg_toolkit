@@ -1,0 +1,96 @@
+name: Bug report
+description: Something does not work as documented
+labels: [ bug ]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug!
+
+        For questions about *using* the toolkit, please open a
+        [discussion](https://github.com/julienpontabry/fstg_toolkit/discussions) instead.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before reporting
+      options:
+        - label: I searched the existing issues and did not find this problem.
+          required: true
+        - label: I checked the [documentation](https://fstg-toolkit.readthedocs.io/) and the command help (`--help`).
+          required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: fSTG-Toolkit version
+      description: Output of `python -m fstg_toolkit --version`.
+      placeholder: "1.2.1"
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Python version and operating system
+      placeholder: "Python 3.12.7 on Ubuntu 24.04"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: extras
+    attributes:
+      label: Extras installed
+      description: Select every optional feature set installed in your environment.
+      multiple: true
+      options:
+        - none
+        - dashboard
+        - plot
+        - frequent
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproducible example
+      description: >-
+        The shortest script or command that triggers the problem. If your own data cannot be
+        shared, use simulated data (`python -m fstg_toolkit graph simulate --help`).
+      render: python
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: What happened instead? Paste the full traceback if there is one.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, dataset characteristics, or anything else that may help.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: coc
+    attributes:
+      label: Code of conduct
+      options:
+        - label: I agree to follow this project's [Code of Conduct](https://github.com/julienpontabry/fstg_toolkit/blob/main/CODE_OF_CONDUCT.md).
+          required: true

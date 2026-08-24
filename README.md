@@ -89,6 +89,14 @@ Full usage documentation, tutorials, and API reference are available at **[fstg-
 ![Illustration of the dashboard.](docs/_static/images/illustration_web-viewer.png)
 
 
+## Community
+
+- **Questions about using the toolkit?** Ask in the [discussions](https://github.com/julienpontabry/fstg_toolkit/discussions), in the *Q&A* category.
+- **Found a bug?** Open an [issue](https://github.com/julienpontabry/fstg_toolkit/issues/new/choose) with the bug report form.
+- **Want to contribute?** Bug fixes, new features, and documentation improvements are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup, the test suites, and the pull request process.
+
+Everyone taking part in the project is expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## License
 
 The fSTG Toolkit is distributed under the CeCILL Free Software Agreement v2.1. See LICENSE for more information. The Multi-SPMiner sources bundled under `src/fstg_toolkit/spminer/` are an exception: see `src/fstg_toolkit/spminer/NOTICE.md` for their provenance and status.

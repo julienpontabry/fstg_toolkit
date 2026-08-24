@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and usage help
+    url: https://github.com/julienpontabry/fstg_toolkit/discussions
+    about: Ask how to use the toolkit in the Q&A category of the discussions.
+  - name: Documentation
+    url: https://fstg-toolkit.readthedocs.io/
+    about: User guide, tutorials, CLI reference and API reference.
+  - name: Code of conduct concerns
+    url: mailto:jpontabry@unistra.fr
+    about: Report unacceptable behaviour privately to the maintainer.
