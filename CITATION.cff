@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it using the metadata from this file."
 type: software
-title: "fSTG-Toolkit"
+title: "fSTG-Toolkit: A toolkit for modeling, processing, and analyzing the longitudinal reorganization of brain connectivity data (e.g., fMRI) using spatio-temporal graph methods"
 abstract: >-
   An open-source software for spatio-temporal graph analysis of fMRI data. It
   turns a sequence of connectivity matrices into a single graph object that
