@@ -97,7 +97,7 @@ The RCC-5 model has been chosen as temporal transition algebra because it offers
 
 A spatio-temporal graph is implemented as a subclass of the NetworkX `DiGraph` class. This choice makes the entire package's ecosystem available and encompasses both representation of spatial and temporal edges, at a cost of storing twice the spatial edges. Then, most metrics are a few lines long, without having to convert between structures.
 
-The core of the toolkit depends only on NetworkX [@hagberg2008networkx], NumPy [@harris2020numpy], pandas [@mckinney2010pandas] and Click, plus a few small helper packages. Opt-in extras add plotting with Matplotlib [@hunter2007matplotlib], the dashboard with Dash/Plotly [@dash] and frequent pattern mining. The latter relies on Multi-SPMiner [@zeghina2023multispminer], the authors' adaptation of SPMiner [@ying2024spminer] to spatio-temporal graphs, shipped alongside fSTG-Toolkit and run in a Docker container to avoid dependency conflicts. Therefore, it requires a running Docker daemon, and the first run is slowed by the build of the image.
+The core of the toolkit depends only on NetworkX [@hagberg2008networkx], NumPy [@harris2020numpy], pandas [@mckinney2010pandas] and Click, plus a few small helper packages. Opt-in extras add plotting with Matplotlib [@hunter2007matplotlib], the dashboard with Dash/Plotly [@dash] and frequent pattern mining. The latter relies on Multi-SPMiner [@zeghina2023multispminer], the authors' adaptation of SPMiner [@ying2024spminer] to spatio-temporal graphs, bundled inside the installed package and run in a Docker container to avoid dependency conflicts. Therefore, it requires a running Docker daemon, and the first run is slowed by the build of the image.
 
 The dashboard, available with the `dashboard` extra, lets the user explore interactively the spatio-temporal graphs, the metrics and the frequent patterns. It comes in two flavors: a local dashboard that opens a single result archive, and a service on local network where users can upload a dataset, start its processing and return later to explore the results. \autoref{fig:dashboard} shows the graph view.
 
@@ -111,7 +111,7 @@ The toolkit also ships a simulator that generates spatio-temporal graph patterns
 
 Two limits follow from these choices. First, the correlation threshold is a user parameter that applies to the whole sequence and its choice can be difficult and arbitrary. Furthermore, results can change depending on this threshold. Second, the toolkit includes metrics but performs no group-level statistical inference: comparisons between subjects or cohorts are descriptive. Two conventions are also worth noting: burstiness and memory return sentinel values when a graph contains no or too few reorganization events and single-area networks are assigned an efficiency of 1.
 
-Finally, the toolkit is extensively tested, with more than four thousand lines of tests plus executed doctests, run in continuous integration on Linux and macOS across Python 3.12 and 3.13. However, the Dash callbacks are only tested manually rather than by automated tests.
+Finally, the toolkit is extensively tested, with nearly five thousand lines of tests plus executed doctests covering 90% of the core library's statements, run in continuous integration on Linux and macOS across Python 3.12 and 3.13. However, the Dash callbacks are only tested manually rather than by automated tests, so the dashboard is excluded from that coverage figure.
 
 
 # Research impact statement

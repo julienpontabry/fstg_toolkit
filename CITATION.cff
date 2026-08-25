@@ -13,7 +13,7 @@ authors:
     orcid: "https://orcid.org/0000-0001-7412-4645"
     email: "jpontabry@unistra.fr"
     affiliation: "ICube Laboratory -- University of Strasbourg"
-version: "1.2.1"
+version: "1.3.0"
 date-released: "2026-06-19"
 license: CECILL-2.1
 repository-code: "https://github.com/ICube-Medical-Image-Computing/fstg_toolkit"
