@@ -10,6 +10,7 @@
 ![PyPI - Version](https://img.shields.io/pypi/v/fSTG-Toolkit)
 ![PyPI - License](https://img.shields.io/pypi/l/fSTG-Toolkit)
 [![Read the Docs](https://img.shields.io/readthedocs/fstg-toolkit)](https://fstg-toolkit.readthedocs.io/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22093918.svg)](https://doi.org/10.5281/zenodo.22093918)
 
 </div>
 

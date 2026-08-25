@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it using the metadata from this file."
 type: software
-title: "fSTG-Toolkit: A toolkit for modeling, processing, and analyzing the longitudinal reorganization of brain connectivity data (e.g., fMRI) using spatio-temporal graph methods"
+title: "fSTG-Toolkit: a toolkit for modeling, processing, and analyzing the longitudinal reorganization of brain connectivity data using spatio-temporal graph methods"
 abstract: >-
   An open-source software for spatio-temporal graph analysis of fMRI data. It
   turns a sequence of connectivity matrices into a single graph object that
@@ -14,14 +14,17 @@ authors:
     email: "jpontabry@unistra.fr"
     affiliation: "ICube Laboratory -- University of Strasbourg"
 version: "1.3.0"
-date-released: "2026-06-19"
+date-released: "2026-08-25"
 license: CECILL-2.1
 repository-code: "https://github.com/ICube-Medical-Image-Computing/fstg_toolkit"
 url: "https://fstg-toolkit.readthedocs.io/"
 identifiers:
-  - type: url
-    value: "https://hal.science/hal-05687216"
-    description: "HAL software deposit of fSTG-Toolkit 1.2.1"
+  - type: doi
+    value: "10.5281/zenodo.22093919"
+    description: "Zenodo archive of fSTG-Toolkit 1.3.0"
+  - type: doi
+    value: "10.5281/zenodo.22093918"
+    description: "Concept DOI resolving to the latest release of fSTG-Toolkit"
 keywords:
   - Python
   - graph
